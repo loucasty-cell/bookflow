@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bookflow Pro</title>
+    <style>
+        body {
+            font-size: 18px;
+            line-height: 1.65;
+            max-width: 75ch;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            color: #333;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        /* Typography */
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: #121212;
+                color: #e0e0e0;
+            }
+        }
+        @media (prefers-color-scheme: sepia) {
+            body {
+                background-color: #f5f0e1;
+                color: #4b3c31;
+            }
+        }
+        /* PDF.js canvas */
+        #pdf-viewer {
+            margin: 20px 0;
+            border: 1px solid #ccc;
+        }
+        /* Note-taking */
+        .note {
+            border-left: 4px solid #007bff;
+            margin: 10px 0;
+            padding: 10px;
+        }
+        /* Buttons */
+        .btn {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Welcome to Bookflow Pro</h1>
+        <div class="theme-switcher">
+            <button class="btn" id="light-theme">Light Theme</button>
+            <button class="btn" id="dark-theme">Dark Theme</button>
+            <button class="btn" id="sepia-theme">Sepia Theme</button>
+        </div>
+    </header>
+    <main>
+        <section id="pdf-viewer">
+            <h2>Your Document</h2>
+            <!-- PDF.js will handle rendering here -->
+            <canvas id="pdf-canvas"></canvas>
+        </section>
+        <section class="notes">
+            <h2>Notes</h2>
+            <div class="note">Capture your important quotes and insights here.</div>
+            <textarea id="note-input" placeholder="Write your notes here..."></textarea>
+            <button class="btn" id="save-note">Save Note</button>
+        </section>
+        <section class="bookmarks">
+            <h2>Bookmarks</h2>
+            <button class="btn" id="add-bookmark">Add Bookmark</button>
+        </section>
+        <section class="progress">
+            <h2>Reading Progress</h2>
+            <div id="progress-tracker">Track your reading progress here.</div>
+        </section>
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script>
+        // Add your JavaScript to manage PDF.js, note-taking, bookmarking, and other features.
+
+        document.getElementById('light-theme').onclick = function() {
+            document.body.style.backgroundColor = '#fff';
+            document.body.style.color = '#333';
+        };
+        document.getElementById('dark-theme').onclick = function() {
+            document.body.style.backgroundColor = '#121212';
+            document.body.style.color = '#e0e0e0';
+        };
+        document.getElementById('sepia-theme').onclick = function() {
+            document.body.style.backgroundColor = '#f5f0e1';
+            document.body.style.color = '#4b3c31';
+        };
+
+        // Functionality for PDF.js, bookmarking, and note-saving will be added here.
+    </script>
+</body>
+</html>
