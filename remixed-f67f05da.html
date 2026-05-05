@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bookflow Pro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f13;
+  --surface:#18181f;
+  --surface2:#222230;
+  --border:#2e2e3e;
+  --accent:#7c6ffd;
+  --accent2:#a78bfa;
+  --accent-glow:rgba(124,111,253,0.18);
+  --text:#e8e8f0;
+  --text2:#9090a8;
+  --text3:#55556a;
+  --paper:#faf9f7;
+  --paper-text:#1a1a2e;
+  --paper-text2:#4a4a6a;
+  --highlight:#7c6ffd22;
+  --serif:'Georgia','Times New Roman',serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+
+/* ── TOPBAR ── */
+.topbar{
+  height:52px;flex-shrink:0;
+  background:rgba(15,15,19,0.95);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 20px;gap:12px;
+  position:relative;z-index:50;
+}
+.logo{font-size:1.1rem;font-weight:700;letter-spacing:-0.04em;
+  background:linear-gradient(135deg,#a78bfa,#7c6ffd);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-right:8px;white-space:nowrap;
+}
+.topbar-sep{width:1px;height:20px;background:var(--border)}
+.topbar-title{flex:1;font-size:.875rem;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar-btn{
+  padding:6px 14px;border-radius:6px;border:none;cursor:pointer;
+  font-size:.8125rem;font-weight:500;font-family:var(--sans);
+  transition:all .15s;white-space:nowrap;
+}
+.tb-ghost{background:transparent;color:var(--text2)}
+.tb-ghost:hover{background:var(--surface2);color:var(--text)}
+.tb-accent{background:var(--accent);color:#fff}
+.tb-accent:hover{background:#6c5fe8;box-shadow:0 0 20px var(--accent-glow)}
+.tb-outline{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.tb-outline:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
+.progress-pill{
+  font-size:.75rem;font-weight:600;padding:3px 10px;
+  background:var(--surface2);border-radius:20px;color:var(--accent2);
+  border:1px solid var(--border);
+}
+
+/* ── SCREENS ── */
+.screen{display:none;flex:1;overflow:hidden;min-height:0}
+.screen.active{display:flex}
+
+/* ── HOME ── */
+#home{align-items:center;justify-content:center;flex-direction:column;gap:32px;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(124,111,253,.1),transparent 70%)}
+.home-hero{text-align:center;max-width:520px}
+.home-hero h1{
+  font-size:clamp(2.2rem,4vw,3rem);font-weight:800;letter-spacing:-.04em;
+  line-height:1.1;margin-bottom:12px;
+  background:linear-gradient(135deg,#fff 30%,#a78bfa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.home-hero p{font-size:1.05rem;color:var(--text2);line-height:1.7}
+.drop-zone{
+  width:440px;max-width:90vw;
+  border:2px dashed var(--border);border-radius:16px;
+  padding:48px 32px;text-align:center;cursor:pointer;
+  background:var(--surface);position:relative;
+  transition:all .2s;
+}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--accent);background:rgba(124,111,253,.06)}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{
+  width:56px;height:56px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),#a78bfa);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 16px;font-size:1.5rem;
+  box-shadow:0 0 32px var(--accent-glow);
+}
+.drop-label{font-weight:600;font-size:1rem;margin-bottom:6px}
+.drop-hint{font-size:.875rem;color:var(--text2)}
+.badges{display:flex;gap:8px;justify-content:center;margin-top:16px}
+.badge{padding:4px 10px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:4px;font-size:.7rem;font-weight:700;color:var(--text2);letter-spacing:.08em}
+
+/* ── PROCESSING ── */
+#processing{flex-direction:column;align-items:center;justify-content:center;gap:28px;
+  background:radial-gradient(ellipse 60% 50% at 50% 30%,rgba(124,111,253,.08),transparent)}
+.proc-spinner{
+  width:56px;height:56px;border-radius:50%;
+  border:3px solid var(--border);border-top-color:var(--accent);
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.proc-title{font-size:1.25rem;font-weight:700;letter-spacing:-.02em}
+.proc-steps{width:340px;display:flex;flex-direction:column;gap:8px}
+.pstep{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 14px;border-radius:10px;
+  background:var(--surface);border:1px solid var(--border);
+  font-size:.9rem;transition:all .2s;color:var(--text2);
+}
+.pstep.active{background:rgba(124,111,253,.12);border-color:var(--accent);color:var(--text);font-weight:600}
+.pstep.done{opacity:.4}
+.pstep-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:all .2s}
+.pstep.active .pstep-dot{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.pstep.done .pstep-dot{background:var(--text3)}
+.proc-file{font-size:.8125rem;color:var(--text2);max-width:280px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── READER LAYOUT ── */
+#reader{flex-direction:row;overflow:hidden}
+.sidebar{
+  width:220px;flex-shrink:0;
+  background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.sidebar-header{padding:14px 16px;border-bottom:1px solid var(--border);font-size:.75rem;font-weight:700;
+  letter-spacing:.08em;color:var(--text3);text-transform:uppercase}
+.toc-list{flex:1;overflow-y:auto;padding:8px}
+.toc-list::-webkit-scrollbar{width:4px}
+.toc-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.toc-item{
+  padding:8px 10px;border-radius:7px;font-size:.8125rem;
+  color:var(--text2);cursor:pointer;transition:all .15s;margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.toc-item:hover{background:var(--surface2);color:var(--text)}
+.toc-item.active{background:var(--accent-glow);color:var(--accent2);font-weight:600}
+
+.reader-center{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.reader-scroll{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  background:var(--paper);
+  scrollbar-width:thin;scrollbar-color:#ccc transparent;
+}
+.reader-scroll::-webkit-scrollbar{width:5px}
+.reader-scroll::-webkit-scrollbar-thumb{background:#d0d0d8;border-radius:3px}
+
+.reading-col{
+  max-width:720px;width:100%;margin:0 auto;
+  padding:52px clamp(24px,5vw,64px) 80px;
+}
+
+/* ── READING PROGRESS ── */
+.read-progress-bar{
+  position:sticky;top:0;left:0;right:0;height:3px;
+  background:transparent;z-index:10;
+}
+.read-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:width .2s}
+
+/* ── DOC HEADER ── */
+.doc-header{margin-bottom:48px;padding-bottom:32px;border-bottom:2px solid #e8e8f0}
+.doc-kicker{font-size:.75rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:10px}
+.doc-title{font-family:var(--serif);font-size:clamp(1.75rem,3.5vw,2.6rem);
+  font-weight:700;line-height:1.2;color:var(--paper-text);letter-spacing:-.02em;margin-bottom:12px}
+.doc-meta{font-size:.875rem;color:var(--paper-text2)}
+
+/* ── CONTENT BLOCKS ── */
+.cb{margin-bottom:28px}
+.cb p{
+  font-family:var(--serif);font-size:clamp(1.05rem,1.6vw,1.2rem);
+  line-height:1.85;color:var(--paper-text);margin-bottom:1.3em;
+  text-align:justify;hyphens:auto;
+}
+.cb.first p:first-child::first-letter{
+  font-size:4em;font-weight:700;line-height:.8;float:left;
+  margin:.05em .1em -.05em 0;color:var(--accent);
+  font-family:var(--serif);
+}
+.kw{
+  background:rgba(124,111,253,.12);color:#4f46e5;
+  border-bottom:1.5px solid rgba(124,111,253,.4);
+  border-radius:2px;padding:0 2px;font-weight:600;
+}
+.pullq{
+  font-family:var(--serif);font-size:1.3rem;font-weight:600;font-style:italic;
+  line-height:1.6;color:#2d2d5a;
+  border-left:4px solid var(--accent);
+  background:linear-gradient(to right,rgba(124,111,253,.07),transparent);
+  padding:18px 22px;margin:32px 0;border-radius:0 8px 8px 0;position:relative;
+}
+.pullq::before{content:'\201C';font-size:5rem;color:var(--accent);opacity:.12;
+  position:absolute;top:-8px;left:12px;line-height:1;font-style:normal}
+.insight-box{
+  background:#fffbf0;border:1px solid #f0d080;border-left:4px solid #f59e0b;
+  border-radius:0 8px 8px 0;padding:14px 18px;margin:24px 0;
+}
+.insight-label{font-size:.7rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:#b45309;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.insight-label::before{content:'◆';font-size:.6rem}
+.insight-body{font-size:.9375rem;line-height:1.7;color:#5a4000}
+.section-div{display:flex;align-items:center;gap:16px;margin:40px 0;color:#c8c8d8}
+.section-div::before,.section-div::after{content:'';flex:1;height:1px;background:#e8e8f0}
+.section-div-sym{font-size:.7rem;letter-spacing:.5em;opacity:.5}
+
+/* ── NOTES PANEL ── */
+.notes-panel{
+  width:0;flex-shrink:0;background:var(--surface);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:width .25s cubic-bezier(.4,0,.2,1);
+}
+.notes-panel.open{width:280px}
+.np-header{
+  padding:14px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:.75rem;font-weight:700;letter-spacing:.08em;
+  color:var(--text3);text-transform:uppercase;flex-shrink:0;
+}
+.np-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:1.2rem;line-height:1;padding:2px}
+.np-close:hover{color:var(--text)}
+.np-list{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px}
+.np-list::-webkit-scrollbar{width:4px}
+.np-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.note-card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;position:relative;transition:border-color .15s;
+}
+.note-card:hover{border-color:var(--accent)}
+.note-quote{font-size:.75rem;font-style:italic;color:var(--text2);
+  border-left:2px solid var(--accent);padding-left:8px;margin-bottom:6px;
+  overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.note-body{font-size:.8125rem;color:var(--text);line-height:1.5}
+.note-del{position:absolute;top:6px;right:8px;background:none;border:none;
+  color:var(--text3);cursor:pointer;font-size:.9rem;opacity:0;transition:opacity .15s;padding:2px}
+.note-card:hover .note-del{opacity:1}
+.note-del:hover{color:var(--text)}
+.np-empty{padding:20px 16px;font-size:.8125rem;color:var(--text3);text-align:center;line-height:1.7}
+.np-composer{padding:10px;border-top:1px solid var(--border);flex-shrink:0;display:flex;flex-direction:column;gap:8px}
+.np-textarea{
+  width:100%;resize:none;min-height:72px;
+  background:var(--surface2);border:1px solid var(--border);border-radius:8px;
+  padding:10px 12px;font-family:var(--sans);font-size:.8125rem;
+  color:var(--text);line-height:1.5;
+}
+.np-textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.np-textarea::placeholder{color:var(--text3)}
+.np-save{
+  width:100%;padding:8px;border-radius:7px;border:none;cursor:pointer;
+  background:var(--accent);color:#fff;font-size:.8125rem;font-weight:600;
+  font-family:var(--sans);transition:all .15s;
+}
+.np-save:hover{background:#6c5fe8;box-shadow:0 0 16px var(--accent-glow)}
+
+/* ── STATUS BAR ── */
+.statusbar{
+  height:28px;flex-shrink:0;
+  background:var(--surface);border-top:1px solid var(--border);
+  display:flex;align-items:center;padding:0 20px;gap:16px;
+  font-size:.7375rem;color:var(--text3);
+}
+.sb-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);
+  box-shadow:0 0 6px var(--accent);flex-shrink:0}
+
+/* ── SELECTION TOOLTIP ── */
+.sel-tip{
+  position:fixed;display:none;z-index:200;
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:6px 8px;box-shadow:0 8px 32px rgba(0,0,0,.5);
+  gap:4px;
+}
+.sel-tip.show{display:flex}
+.st-btn{
+  padding:5px 10px;border-radius:5px;border:none;cursor:pointer;
+  font-size:.75rem;font-weight:600;font-family:var(--sans);transition:all .15s;
+}
+.st-note{background:var(--accent);color:#fff}
+.st-note:hover{background:#6c5fe8}
+.st-copy{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.st-copy:hover{color:var(--text)}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="logo">Bookflow</div>
+  <div class="topbar-sep"></div>
+  <div class="topbar-title" id="topTitle">Drop a PDF or text file to begin</div>
+  <button class="topbar-btn tb-ghost" id="btnHome" onclick="S.home()" style="display:none">⌂ Home</button>
+  <button class="topbar-btn tb-outline" id="btnNotes" onclick="S.toggleNotes()" style="display:none">Notes</button>
+  <button class="topbar-btn tb-outline" id="btnFont" onclick="S.cycleFont()" style="display:none">Aa</button>
+  <div class="progress-pill" id="progPill" style="display:none">0%</div>
+</div>
+
+<!-- HOME -->
+<div class="screen active" id="home">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;gap:36px;padding:40px 20px;
+    background:radial-gradient(ellipse 80% 60% at 50% 10%,rgba(124,111,253,.09),transparent)">
+    <div class="home-hero">
+      <h1>Read smarter,<br>not harder</h1>
+      <p>Drop any PDF or text document. Bookflow reformats it into a beautiful, distraction-free reading experience with AI-powered highlights, pull quotes, and smart notes.</p>
+    </div>
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileIn" accept=".pdf,.txt,.md">
+      <div class="drop-icon">📄</div>
+      <div class="drop-label">Drop your document here</div>
+      <div class="drop-hint">or click to browse</div>
+      <div class="badges">
+        <span class="badge">PDF</span>
+        <span class="badge">TXT</span>
+        <span class="badge">MD</span>
+      </div>
+    </div>
+    <div style="font-size:.8rem;color:var(--text3);text-align:center;max-width:380px;line-height:1.7">
+      Files are processed locally and via Anthropic AI. Nothing is stored between sessions.
+    </div>
+  </div>
+</div>
+
+<!-- PROCESSING -->
+<div class="screen" id="processing">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%;gap:24px">
+    <div class="proc-spinner"></div>
+    <div class="proc-title">Building your reading experience</div>
+    <div class="proc-file" id="procFile"></div>
+    <div class="proc-steps">
+      <div class="pstep active" id="ps1"><div class="pstep-dot"></div>Reading file</div>
+      <div class="pstep" id="ps2"><div class="pstep-dot"></div>Extracting text</div>
+      <div class="pstep" id="ps3"><div class="pstep-dot"></div>Cleaning & structuring</div>
+      <div class="pstep" id="ps4"><div class="pstep-dot"></div>AI formatting</div>
+      <div class="pstep" id="ps5"><div class="pstep-dot"></div>Rendering reader</div>
+    </div>
+  </div>
+</div>
+
+<!-- READER -->
+<div class="screen" id="reader">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">Contents</div>
+    <div class="toc-list" id="tocList"></div>
+  </div>
+  <div class="reader-center">
+    <div class="reader-scroll" id="readerScroll">
+      <div class="read-progress-bar"><div class="read-progress-fill" id="rpFill"></div></div>
+      <div class="reading-col" id="readerCol"></div>
+    </div>
+    <div class="statusbar">
+      <div class="sb-dot"></div>
+      <span id="sbWords"></span>
+      <span>·</span>
+      <span id="sbTime"></span>
+      <span>·</span>
+      <span id="sbChunks"></span>
+    </div>
+  </div>
+  <div class="notes-panel" id="notesPanel">
+    <div class="np-header">
+      <span>Notes</span>
+      <button class="np-close" onclick="S.toggleNotes()">×</button>
+    </div>
+    <div class="np-list" id="npList"></div>
+    <div class="np-composer">
+      <textarea class="np-textarea" id="npInput" placeholder="Type a note or select text first…"></textarea>
+      <button class="np-save" onclick="S.saveNote()">Save Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- SELECTION TOOLTIP -->
+<div class="sel-tip" id="selTip">
+  <button class="st-btn st-note" onclick="S.noteFromSelection()">+ Note</button>
+  <button class="st-btn st-copy" onclick="S.copySelection()">Copy</button>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ── STATE (all in-memory) ──────────────────────────────────────────────────
+const state = {
+  notes: [],
+  selectedText: '',
+  currentTitle: '',
+  fontIdx: 1,
+  fonts: ['1rem','1.125rem','1.25rem'],
+  chunkCount: 0
+};
+
+// ── SCREEN MANAGER ────────────────────────────────────────────────────────
+const S = (() => {
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    const inReader = id === 'reader';
+    document.getElementById('btnHome').style.display = inReader ? '' : 'none';
+    document.getElementById('btnNotes').style.display = inReader ? '' : 'none';
+    document.getElementById('btnFont').style.display = inReader ? '' : 'none';
+    document.getElementById('progPill').style.display = inReader ? '' : 'none';
+  }
+
+  function home() {
+    show('home');
+    document.getElementById('topTitle').textContent = 'Drop a PDF or text file to begin';
+    document.getElementById('fileIn').value = '';
+  }
+
+  function toggleNotes() {
+    const p = document.getElementById('notesPanel');
+    p.classList.toggle('open');
+    document.getElementById('btnNotes').textContent = p.classList.contains('open') ? 'Close Notes' : 'Notes';
+  }
+
+  function cycleFont() {
+    state.fontIdx = (state.fontIdx + 1) % state.fonts.length;
+    const sz = state.fonts[state.fontIdx];
+    document.querySelectorAll('.cb p').forEach(p => p.style.fontSize = sz);
+  }
+
+  function saveNote() {
+    const input = document.getElementById('npInput');
+    const txt = input.value.trim();
+    if (!txt) return;
+    state.notes.unshift({ id: Date.now(), quote: state.selectedText.substring(0, 120), body: txt });
+    state.selectedText = '';
+    input.value = '';
+    input.placeholder = 'Type a note or select text first…';
+    renderNotes();
+    const p = document.getElementById('notesPanel');
+    if (!p.classList.contains('open')) toggleNotes();
+  }
+
+  function noteFromSelection() {
+    document.getElementById('selTip').classList.remove('show');
+    const p = document.getElementById('notesPanel');
+    if (!p.classList.contains('open')) toggleNotes();
+    const inp = document.getElementById('npInput');
+    inp.placeholder = `Note on: "${state.selectedText.substring(0,50)}…"`;
+    inp.focus();
+    if (!p.classList.contains('open')) {
+      document.getElementById('btnNotes').textContent = 'Close Notes';
+    }
+  }
+
+  function copySelection() {
+    navigator.clipboard.writeText(state.selectedText).catch(() => {});
+    document.getElementById('selTip').classList.remove('show');
+  }
+
+  return { show, home, toggleNotes, cycleFont, saveNote, noteFromSelection, copySelection };
+})();
+
+// ── NOTES RENDER ─────────────────────────────────────────────────────────
+function renderNotes() {
+  const list = document.getElementById('npList');
+  if (!state.notes.length) {
+    list.innerHTML = '<div class="np-empty">No notes yet.<br>Select text in the document to get started.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  state.notes.forEach(n => {
+    const d = document.createElement('div');
+    d.className = 'note-card';
+    d.innerHTML = `
+      <button class="note-del" onclick="delNote(${n.id})">×</button>
+      ${n.quote ? `<div class="note-quote">${esc(n.quote)}</div>` : ''}
+      <div class="note-body">${esc(n.body)}</div>
+    `;
+    list.appendChild(d);
+  });
+}
+function delNote(id) {
+  state.notes = state.notes.filter(n => n.id !== id);
+  renderNotes();
+}
+renderNotes();
+
+// ── TEXT SELECTION TOOLTIP ────────────────────────────────────────────────
+document.addEventListener('mouseup', (e) => {
+  const tip = document.getElementById('selTip');
+  if (tip.contains(e.target)) return;
+
+  setTimeout(() => {
+    const sel = window.getSelection();
+    const txt = sel.toString().trim();
+    if (txt.length > 8 && document.getElementById('readerScroll').contains(sel.anchorNode)) {
+      state.selectedText = txt;
+      const r = sel.getRangeAt(0).getBoundingClientRect();
+      tip.style.left = Math.max(4, r.left + r.width / 2 - 60) + 'px';
+      tip.style.top = (r.top + window.scrollY - 44) + 'px';
+      // Fix: use fixed positioning
+      tip.style.position = 'fixed';
+      tip.style.top = (r.top - 46) + 'px';
+      tip.classList.add('show');
+    } else {
+      tip.classList.remove('show');
+    }
+  }, 10);
+});
+
+document.addEventListener('mousedown', (e) => {
+  if (!document.getElementById('selTip').contains(e.target)) {
+    document.getElementById('selTip').classList.remove('show');
+  }
+});
+
+// ── SCROLL PROGRESS ───────────────────────────────────────────────────────
+document.getElementById('readerScroll').addEventListener('scroll', function() {
+  const el = this;
+  const pct = el.scrollHeight <= el.clientHeight ? 0
+    : Math.round(el.scrollTop / (el.scrollHeight - el.clientHeight) * 100);
+  document.getElementById('rpFill').style.width = pct + '%';
+  document.getElementById('progPill').textContent = pct + '%';
+
+  // TOC active
+  const headings = document.querySelectorAll('.section-anchor');
+  let active = 0;
+  headings.forEach((h, i) => {
+    if (h.getBoundingClientRect().top < 120) active = i;
+  });
+  document.querySelectorAll('.toc-item').forEach((t, i) => {
+    t.classList.toggle('active', i === active);
+  });
+});
+
+// ── FILE INPUT ────────────────────────────────────────────────────────────
+const dz = document.getElementById('dropZone');
+const fi = document.getElementById('fileIn');
+
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fi.addEventListener('change', () => { if (fi.files[0]) handleFile(fi.files[0]); });
+
+// ── MAIN FILE HANDLER ─────────────────────────────────────────────────────
+async function handleFile(file) {
+  S.show('processing');
+  document.getElementById('procFile').textContent = file.name;
+
+  let rawText = '';
+  try {
+    await step(1);
+    if (file.name.toLowerCase().endsWith('.pdf')) {
+      await step(2);
+      rawText = await extractPDF(file);
+    } else {
+      await step(2);
+      rawText = await readText(file);
+    }
+  } catch(err) {
+    alert('Could not read file:\n' + err.message);
+    S.home(); return;
+  }
+
+  if (!rawText || rawText.trim().length < 100) {
+    alert('No readable text found in this file.');
+    S.home(); return;
+  }
+
+  await step(3);
+  const chunks = splitChunks(rawText);
+
+  await step(4);
+  const formatted = await formatChunks(chunks);
+
+  await step(5);
+  const title = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g,' ');
+  renderReader(title, formatted);
+}
+
+async function step(n) {
+  for (let i = 1; i <= 5; i++) {
+    const el = document.getElementById('ps' + i);
+    el.className = 'pstep' + (i < n ? ' done' : i === n ? ' active' : '');
+  }
+  await delay(600);
+}
+
+// ── PDF EXTRACTION ────────────────────────────────────────────────────────
+async function extractPDF(file) {
+  const buf = await file.arrayBuffer();
+  let pdf;
+  try {
+    pdf = await pdfjsLib.getDocument({ data: buf, verbosity: 0 }).promise;
+  } catch(e) {
+    throw new Error('Cannot parse PDF — it may be encrypted or corrupted.');
+  }
+
+  const totalPages = pdf.numPages;
+  const allLines = [];
+  const lineFreq = new Map();
+
+  for (let p = 1; p <= totalPages; p++) {
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent({ normalizeWhitespace: true });
+
+    // Sort by Y (descending) then X
+    const items = tc.items
+      .filter(i => i.str && i.str.trim())
+      .sort((a, b) => {
+        const dy = b.transform[5] - a.transform[5];
+        return Math.abs(dy) > 3 ? dy : a.transform[4] - b.transform[4];
+      });
+
+    // Group into lines by Y coordinate
+    const lines = [];
+    let buf = [], lastY = null;
+    for (const item of items) {
+      const y = Math.round(item.transform[5]);
+      if (lastY === null || Math.abs(y - lastY) < 5) {
+        buf.push(item.str);
+      } else {
+        if (buf.length) { const l = buf.join(' ').trim(); if (l) lines.push(l); }
+        buf = [item.str];
+      }
+      lastY = y;
+    }
+    if (buf.length) { const l = buf.join(' ').trim(); if (l) lines.push(l); }
+
+    // Count line frequencies (for header/footer removal)
+    lines.forEach(l => { const k = l.toLowerCase(); lineFreq.set(k, (lineFreq.get(k)||0)+1); });
+    allLines.push(lines);
+  }
+
+  const threshold = Math.max(2, Math.floor(totalPages * 0.28));
+  const isJunk = l => {
+    if (!l || l.trim().length <= 2) return true;
+    if (/^\d+$/.test(l.trim())) return true; // bare page numbers
+    const k = l.toLowerCase();
+    return lineFreq.get(k) >= threshold;
+  };
+
+  // Rebuild as paragraphs
+  const paragraphs = [];
+  let para = [];
+
+  for (const lines of allLines) {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (isJunk(line)) continue;
+
+      // Detect paragraph break: line ends with period/etc and next starts capitalised
+      const endsBlock = /[.!?:]\s*$/.test(line) || line.length < 50;
+      const prev = para[para.length - 1] || '';
+
+      // Handle soft hyphen
+      if (prev.endsWith('-')) {
+        para[para.length - 1] = prev.slice(0, -1) + line.trim();
+      } else {
+        para.push(line);
+      }
+
+      const next = lines[i + 1] || '';
+      if (endsBlock && (!next || /^[A-Z\d]/.test(next.trim()))) {
+        if (para.length) { paragraphs.push(para.join(' ').trim()); para = []; }
+      }
+    }
+    if (para.length) { paragraphs.push(para.join(' ').trim()); para = []; }
+  }
+
+  return paragraphs.filter(p => p.length > 40).join('\n\n');
+}
+
+// ── TEXT / MD ─────────────────────────────────────────────────────────────
+function readText(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsText(file, 'UTF-8');
+  });
+}
+
+// ── CHUNK SPLITTER ────────────────────────────────────────────────────────
+function splitChunks(text) {
+  const paras = text.split(/\n{2,}/)
+    .map(p => p.replace(/\s+/g, ' ').trim())
+    .filter(p => p.length > 60);
+
+  const chunks = [];
+  let cur = '';
+  for (const p of paras) {
+    if ((cur + '\n\n' + p).length > 1600 && cur) {
+      chunks.push(cur.trim());
+      cur = p;
+    } else {
+      cur = cur ? cur + '\n\n' + p : p;
+    }
+  }
+  if (cur.trim()) chunks.push(cur.trim());
+  return chunks.slice(0, 25);
+}
+
+// ── AI FORMAT ─────────────────────────────────────────────────────────────
+async function formatChunks(chunks) {
+  const MAX_API = 5; // first N chunks get AI treatment
+  const out = [];
+
+  for (let i = 0; i < chunks.length; i++) {
+    if (i < MAX_API) {
+      try {
+        const r = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1000,
+            messages: [{
+              role: 'user',
+              content: `You are a professional editor. Reformat this passage for a beautiful reading app.
+
+STRICT RULES:
+- Keep all original facts and meaning intact
+- Write SHORT paragraphs: 2-3 sentences max
+- Wrap 2-4 key terms with **term** (bold keywords)
+- Pick the 1 most powerful sentence, wrap it: [PULLQUOTE: the sentence]
+- Add 1 short insight: [INSIGHT: max 18 words]
+- No bullet points, no headers, no markdown lists
+- Output only the rewritten passage, nothing else
+
+PASSAGE:
+${chunks[i]}`
+            }]
+          })
+        });
+        const d = await r.json();
+        const txt = (d.content || []).map(c => c.text || '').join('');
+        out.push(txt || chunks[i]);
+      } catch(e) {
+        out.push(chunks[i]);
+      }
+    } else {
+      out.push(chunks[i]);
+    }
+  }
+  return out;
+}
+
+// ── RENDER READER ─────────────────────────────────────────────────────────
+function renderReader(title, chunks) {
+  state.currentTitle = title;
+  state.notes = [];
+  state.chunkCount = chunks.length;
+  renderNotes();
+
+  document.getElementById('topTitle').textContent = title;
+
+  // Count words
+  const totalWords = chunks.reduce((s, c) => s + c.split(/\s+/).length, 0);
+  const mins = Math.ceil(totalWords / 230);
+  document.getElementById('sbWords').textContent = totalWords.toLocaleString() + ' words';
+  document.getElementById('sbTime').textContent = mins + ' min read';
+  document.getElementById('sbChunks').textContent = chunks.length + ' sections';
+
+  // Build TOC labels
+  const tocLabels = chunks.map((_, i) => `Section ${i + 1}`);
+
+  // Build TOC
+  const tocList = document.getElementById('tocList');
+  tocList.innerHTML = '';
+  tocLabels.forEach((lbl, i) => {
+    const d = document.createElement('div');
+    d.className = 'toc-item' + (i === 0 ? ' active' : '');
+    d.textContent = lbl;
+    d.onclick = () => {
+      const anchor = document.getElementById('anchor-' + i);
+      if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    tocList.appendChild(d);
+  });
+
+  // Build content
+  const col = document.getElementById('readerCol');
+  let html = `
+    <div class="doc-header">
+      <div class="doc-kicker">Document</div>
+      <div class="doc-title">${esc(title)}</div>
+      <div class="doc-meta">${totalWords.toLocaleString()} words · ${mins} min read · ${chunks.length} sections</div>
+    </div>
+  `;
+
+  chunks.forEach((chunk, idx) => {
+    html += `<div class="section-anchor" id="anchor-${idx}"></div>`;
+
+    // Parse formatting tokens
+    let processed = chunk
+      .replace(/\[PULLQUOTE:\s*([\s\S]+?)\]/g, '\n\n%%PQ%%$1%%/PQ%%\n\n')
+      .replace(/\[INSIGHT:\s*([\s\S]+?)\]/g, '\n\n%%IN%%$1%%/IN%%\n\n')
+      .replace(/\*\*(.+?)\*\*/g, '<span class="kw">$1</span>');
+
+    const lines = processed.split(/\n+/).map(l => l.trim()).filter(Boolean);
+    const cls = 'cb' + (idx === 0 ? ' first' : '');
+    html += `<div class="${cls}">`;
+
+    lines.forEach(line => {
+      if (line.startsWith('%%PQ%%')) {
+        const t = line.replace('%%PQ%%','').replace('%%/PQ%%','');
+        html += `<div class="pullq">${t}</div>`;
+      } else if (line.startsWith('%%IN%%')) {
+        const t = line.replace('%%IN%%','').replace('%%/IN%%','');
+        html += `<div class="insight-box"><div class="insight-label">Key Insight</div><div class="insight-body">${t}</div></div>`;
+      } else {
+        html += `<p>${line}</p>`;
+      }
+    });
+
+    html += '</div>';
+
+    if ((idx + 1) % 4 === 0 && idx < chunks.length - 1) {
+      html += '<div class="section-div"><span class="section-div-sym">• • •</span></div>';
+    }
+  });
+
+  col.innerHTML = html;
+
+  // Reset scroll
+  const rs = document.getElementById('readerScroll');
+  rs.scrollTop = 0;
+  document.getElementById('rpFill').style.width = '0%';
+  document.getElementById('progPill').textContent = '0%';
+
+  S.show('reader');
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
