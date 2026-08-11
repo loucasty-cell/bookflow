@@ -34,7 +34,6 @@ export function ReaderPage({
   closeBook,
   jumpToChapter,
   focusSentence,
-  setHoveredId,
   toggleBookmark,
   copyFocusedSentence,
   addNote,
@@ -98,23 +97,21 @@ export function ReaderPage({
                   <p key={`${chapterIndex}-${paragraphIndex}`}>
                     {paragraph.sentences.map((sentence) => (
                       <span
-                        className={`sentence ${focusId === sentence.id ? 'is-active' : ''} ${bookmarks.includes(sentence.id) ? 'is-bookmarked' : ''}`}
-                        data-sentence-id={sentence.id}
-                        data-chapter={chapterIndex}
+                        className={`${chapter.focusEligible ? 'sentence' : 'sentence-static'} ${focusId === sentence.id ? 'is-active' : ''} ${bookmarks.includes(sentence.id) ? 'is-bookmarked' : ''}`}
+                        data-sentence-id={chapter.focusEligible ? sentence.id : undefined}
+                        data-chapter={chapter.focusEligible ? chapterIndex : undefined}
                         key={sentence.id}
-                        role="button"
-                        tabIndex={0}
-                        onMouseEnter={() => setHoveredId(sentence.id)}
-                        onMouseLeave={() => setHoveredId('')}
-                        onClick={() => focusSentence(sentence.id)}
-                        onKeyDown={(event) => {
+                        role={chapter.focusEligible ? 'button' : undefined}
+                        tabIndex={chapter.focusEligible ? 0 : undefined}
+                        onClick={chapter.focusEligible ? () => focusSentence(sentence.id) : undefined}
+                        onKeyDown={chapter.focusEligible ? (event) => {
                           if (event.key === 'Enter' || event.key === ' ') {
                             event.preventDefault()
                             focusSentence(sentence.id)
                           }
-                        }}
-                        aria-pressed={pinnedId === sentence.id}
-                        title="Click to hold this sentence in focus"
+                        } : undefined}
+                        aria-pressed={chapter.focusEligible ? pinnedId === sentence.id : undefined}
+                        title={chapter.focusEligible ? 'Click to hold this sentence in focus' : undefined}
                       >
                         {sentence.text}{' '}
                       </span>

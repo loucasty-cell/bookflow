@@ -1,17 +1,20 @@
 # Bookflow
 
-Bookflow is a private, browser-based reading space for PDFs, EPUB ebooks, text files, and Markdown. It follows the sentence nearest the reader's natural focus line with a gentle highlight, helping long reading sessions feel calmer and easier to continue.
+Bookflow is a private, browser-based reading space for PDFs, EPUB ebooks, text files, and Markdown. It follows the sentence nearest a quiet upper-page focus rail as the reader scrolls, helping long reading sessions feel calmer and easier to continue.
 
-![Bookflow sentence-focused reader](https://img.shields.io/badge/reader-local--first-284e42) ![React](https://img.shields.io/badge/React-18-61dafb) ![Vite](https://img.shields.io/badge/Vite-6-646cff)
+![Bookflow sentence-focused reader](https://img.shields.io/badge/reader-local--first-507B9C) ![React](https://img.shields.io/badge/React-18-61dafb) ![Vite](https://img.shields.io/badge/Vite-6-646cff)
 
 ## What works
 
 - Import `.pdf`, `.epub`, `.txt`, `.md`, and `.markdown` files up to 50 MB.
 - Extract selectable PDF text locally with PDF.js.
 - Read EPUB chapters locally with JSZip and the ebook's package/spine metadata.
-- Follow complete sentences automatically as the page scrolls.
+- Follow complete sentences automatically from an upper-page rail as the page scrolls; pointer position does not change focus.
+- Skip likely front matter, introductions, and end matter when choosing the automatic focus sentence.
 - Click or press Enter on a sentence to hold it in focus, then resume the natural flow.
+- Navigate long PDFs with a compact current-page/total-pages control such as `8 / 283`.
 - Choose soft, deep, or disabled focus; adjust font size, line spacing, and page width.
+- Use a soft-white reading surface with `#507B9C`, `#C2DCFF`, and `#E3242B` interaction accents.
 - Switch between warm paper and dusk reading atmospheres.
 - Save sentence bookmarks, margin notes, reading progress, and settings in local browser storage.
 - Use responsive layouts on desktop, tablet, and mobile.

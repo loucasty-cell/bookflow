@@ -1,4 +1,4 @@
-import { BookOpen, Clock3, FileText, Library, Plus, X } from 'lucide-react'
+import { BookOpen, ChevronDown, ChevronUp, Clock3, FileText, Library, Plus, X } from 'lucide-react'
 
 export function ContentsPanel({ book, chapters, activeChapter, minutes, totalWords, sidebarOpen, setSidebarOpen, jumpToChapter, closeBook }) {
   return (
@@ -12,13 +12,28 @@ export function ContentsPanel({ book, chapters, activeChapter, minutes, totalWor
           <div className="mini-cover"><BookOpen size={28} /></div>
           <div><strong>{book.title}</strong><span>{book.author || book.kind}</span></div>
         </div>
-        <nav className="chapter-list" aria-label="Book contents">
-          {chapters.map((chapter, index) => (
-            <button key={`${chapter.title}-${index}`} className={activeChapter === index ? 'active' : ''} onClick={() => jumpToChapter(index)}>
-              <span>{String(index + 1).padStart(2, '0')}</span><b>{chapter.title}</b>
-            </button>
-          ))}
-        </nav>
+        <div className="page-navigator" aria-label="Page navigation">
+          <div className="page-fraction">
+            <strong>{activeChapter + 1}</strong>
+            <span>/ {chapters.length}</span>
+          </div>
+          <div className="page-context">
+            <span>Current page</span>
+            <strong>{chapters[activeChapter]?.title || `Page ${activeChapter + 1}`}</strong>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max={Math.max(0, chapters.length - 1)}
+            value={activeChapter}
+            onChange={(event) => jumpToChapter(Number(event.target.value))}
+            aria-label={`Go to page ${activeChapter + 1} of ${chapters.length}`}
+          />
+          <div className="page-stepper">
+            <button onClick={() => jumpToChapter(activeChapter - 1)} disabled={activeChapter === 0} aria-label="Previous page"><ChevronUp size={15} /> Previous</button>
+            <button onClick={() => jumpToChapter(activeChapter + 1)} disabled={activeChapter === chapters.length - 1} aria-label="Next page">Next <ChevronDown size={15} /></button>
+          </div>
+        </div>
         <div className="side-stats">
           <div><Clock3 size={15} /><span><strong>{minutes} min</strong> remaining at a relaxed pace</span></div>
           <div><FileText size={15} /><span><strong>{totalWords.toLocaleString()}</strong> words across {chapters.length} sections</span></div>

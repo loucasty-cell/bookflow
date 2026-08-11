@@ -4,6 +4,23 @@ import { LandingPage } from './features/landing/index.js'
 import { DEFAULT_SETTINGS, ReaderPage } from './features/reader/index.js'
 import { documentId, documentStorageKey, safeParse, splitSentences, wordCount } from './shared/lib/index.js'
 
+const FRONT_MATTER_PATTERN = /cover|title page|contents|table of contents|copyright|dedication|acknowledg|preface|foreword|prologue|introduction|epigraph|author(?:'s)? note|opening note/i
+const BACK_MATTER_PATTERN = /appendix|bibliograph|references|glossary|index|credits|afterword|epilogue|about the author/i
+
+function isFocusEligibleChapter(chapter, index, total) {
+  if (total <= 2) return true
+
+  const title = String(chapter.title ?? '')
+  const words = wordCount(chapter.paragraphs.join(' '))
+  const chapterLikeTitle = /chapter|part|section|lesson|unit|act|volume/i.test(title)
+  if (FRONT_MATTER_PATTERN.test(title)) return false
+  if (index >= total - 2 && BACK_MATTER_PATTERN.test(title)) return false
+  if (index < 2 && /^(page\s*)?[12]$/i.test(title.trim())) return false
+  if (index < 2 && words < 90 && !chapterLikeTitle) return false
+  if (index >= total - 2 && words < 80 && !chapterLikeTitle) return false
+  return true
+}
+
 function App() {
   const [book, setBook] = useState(null)
   const [bookId, setBookId] = useState('')
@@ -18,7 +35,6 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
   const [activeId, setActiveId] = useState('')
-  const [hoveredId, setHoveredId] = useState('')
   const [pinnedId, setPinnedId] = useState('')
   const [activeChapter, setActiveChapter] = useState(0)
   const [progress, setProgress] = useState(0)
@@ -33,8 +49,9 @@ function App() {
   const chapters = useMemo(() => {
     if (!book) return []
 
-    return book.chapters.map((chapter, chapterIndex) => ({
+    const chaptersWithEligibility = book.chapters.map((chapter, chapterIndex) => ({
       ...chapter,
+      focusEligible: isFocusEligibleChapter(chapter, chapterIndex, book.chapters.length),
       paragraphs: chapter.paragraphs.map((paragraph, paragraphIndex) => ({
         text: paragraph,
         sentences: splitSentences(paragraph).map((text, sentenceIndex) => ({
@@ -44,6 +61,9 @@ function App() {
         })),
       })),
     }))
+
+    if (chaptersWithEligibility.some((chapter) => chapter.focusEligible)) return chaptersWithEligibility
+    return chaptersWithEligibility.map((chapter) => ({ ...chapter, focusEligible: true }))
   }, [book])
 
   const sentenceMap = useMemo(() => {
@@ -56,7 +76,7 @@ function App() {
     [book],
   )
   const minutes = Math.max(1, Math.ceil(totalWords / 230))
-  const focusId = hoveredId || pinnedId || activeId
+  const focusId = pinnedId || activeId
   const focusedSentence = sentenceMap.get(focusId)
   const isBookmarked = focusId ? bookmarks.includes(focusId) : false
 
@@ -90,7 +110,7 @@ function App() {
 
         if (!pinnedId) {
           const readerBounds = reader.getBoundingClientRect()
-          const targetY = readerBounds.top + reader.clientHeight * 0.42
+          const targetY = readerBounds.top + reader.clientHeight * 0.32
           let nearest = null
           let nearestDistance = Number.POSITIVE_INFINITY
 
@@ -127,6 +147,14 @@ function App() {
     }
   }, [book, pinnedId])
 
+  useEffect(() => {
+    if (!book || !chapters.length) return
+    const firstFocusableSentence = chapters
+      .filter((chapter) => chapter.focusEligible)
+      .flatMap((chapter) => chapter.paragraphs.flatMap((paragraph) => paragraph.sentences))[0]
+    if (firstFocusableSentence) setActiveId(firstFocusableSentence.id)
+  }, [book, bookId, chapters])
+
   const openBook = useCallback((nextBook, id) => {
     const saved = safeParse(localStorage.getItem(documentStorageKey(id)), {})
     restoreScrollRef.current = saved.scrollTop ?? 0
@@ -135,7 +163,7 @@ function App() {
     setNotes(saved.notes ?? [])
     setBookmarks(saved.bookmarks ?? [])
     setProgress(saved.progress ?? 0)
-    setActiveId('0-0-0')
+    setActiveId('')
     setPinnedId('')
     setActiveChapter(0)
     setSidebarOpen(false)
@@ -248,7 +276,6 @@ function App() {
       closeBook={closeBook}
       jumpToChapter={jumpToChapter}
       focusSentence={focusSentence}
-      setHoveredId={setHoveredId}
       toggleBookmark={toggleBookmark}
       copyFocusedSentence={copyFocusedSentence}
       addNote={addNote}
