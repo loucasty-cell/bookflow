@@ -1,60 +1,67 @@
 # Bookflow
 
-Bookflow is a lightweight app for managing and exploring books, notes, and reading flow. It helps authors, readers, and learners collect ideas, track reading progress, and connect notes across books for better discovery and creative workflows.
+Bookflow is a private, browser-based reading space for PDFs, EPUB ebooks, text files, and Markdown. It follows the sentence nearest the reader's natural focus line with a gentle highlight, helping long reading sessions feel calmer and easier to continue.
 
-Key features (examples)
-- Add and organize books, chapters, and notes.
-- Link notes across books to build a knowledge graph.
-- Track reading progress and session history.
-- Export notes and reading lists.
-- Plugin-friendly: add importers (Kindle, EPUB), exporters, or integrations (Notion, Obsidian).
+![Bookflow sentence-focused reader](https://img.shields.io/badge/reader-local--first-284e42) ![React](https://img.shields.io/badge/React-18-61dafb) ![Vite](https://img.shields.io/badge/Vite-6-646cff)
 
-Makefile quick usage
-Bookflow repository includes a Makefile with convenient cross-language targets. The Makefile auto-detects common project files (package.json, pyproject.toml, requirements.txt, go.mod, Cargo.toml) and chooses sensible commands.
+## What works
 
-Common commands:
-- make install    # install dependencies
-- make dev        # run in development mode (hot-reload if available)
-- make run        # run the app (production or default run command)
-- make build      # build artifacts (if applicable)
-- make test       # run tests
-- make lint       # run linter if configured
-- make format     # format code if configured
-- make clean      # remove build artifacts and environments
+- Import `.pdf`, `.epub`, `.txt`, `.md`, and `.markdown` files up to 50 MB.
+- Extract selectable PDF text locally with PDF.js.
+- Read EPUB chapters locally with JSZip and the ebook's package/spine metadata.
+- Follow complete sentences automatically as the page scrolls.
+- Click or press Enter on a sentence to hold it in focus, then resume the natural flow.
+- Choose soft, deep, or disabled focus; adjust font size, line spacing, and page width.
+- Switch between warm paper and dusk reading atmospheres.
+- Save sentence bookmarks, margin notes, reading progress, and settings in local browser storage.
+- Use responsive layouts on desktop, tablet, and mobile.
+- Try the full reader with a built-in sample before importing a book.
 
-Examples
-- Install dependencies and start development server:
+Files are processed in the browser. Bookflow does not upload book contents to an API or require an account. Scanned/image-only PDFs do not contain selectable text and must be OCR-processed before Bookflow can read them.
 
-  make install
-  make dev
+## Lightweight tools used
 
-- Build and run (if project has a build step):
+| Tool | Purpose |
+| --- | --- |
+| React | Component state and accessible reader interactions |
+| Vite | Fast local development and optimized static builds |
+| PDF.js (`pdfjs-dist`) | Local PDF text extraction |
+| JSZip | Local EPUB package and chapter extraction |
+| Lucide React | Small, consistent interface icons |
+| `Intl.Segmenter` | Native sentence boundaries with a regex fallback |
+| Vitest + ESLint | Text-helper tests and code-quality checks |
 
-  make build
-  make run
+PDF.js and JSZip are loaded as separate chunks only when their file type is opened, keeping the initial experience lighter.
 
-How the Makefile decides what to run
-- If package.json exists, Makefile uses npm scripts (npm install, npm run dev, npm start, npm test, npm run build).
-- If pyproject.toml or requirements.txt exists, Makefile creates/uses a .venv and runs Python commands (python -m <module> or python main.py). If Poetry is available it prefers poetry install.
-- If go.mod exists, runs `go run`/`go build`/`go test`.
-- If Cargo.toml exists, uses cargo commands.
-- If none are present, the Makefile prints a helpful message — edit it to match your run/build commands.
+## Run locally
 
-Adding custom commands
-If your Bookflow app uses a custom start command, update the Makefile `run` and `dev` targets to call your preferred commands (for example: `uvicorn bookflow.main:app --reload` for a FastAPI app, or `next dev` for a Next.js app).
+Requires Node.js 18 or newer.
 
-Cool ideas and feature suggestions
-- Reading cards: short summary cards for each chapter with highlights and tags.
-- Daily reading goals with streaks and session timers.
-- Automatic highlight import from Kindle/EPUB and smart-summarization of passages.
-- Graph view of notes and concepts to discover connections between books.
-- Public reading lists and collaborative annotations.
-- Plugin system: allow community extensions for importers, exporters and AI summarizers.
+```bash
+npm install
+npm run dev
+```
 
-If you want, I can also:
-- Detect the primary language of this repository and tailor the Makefile to specific commands.
-- Add example start scripts for Node/Python/Go/Rust projects.
+Open the local URL printed by Vite. To create and inspect a production build:
 
----
+```bash
+npm run build
+npm run preview
+```
 
-Made with ❤️ for Bookflow by loucasty-cell. 
+## Verify
+
+```bash
+npm run lint
+npm run test
+npm run build
+```
+
+The Vite build uses relative asset paths, so the generated `dist/` folder can be hosted from a repository subpath or any static host.
+
+## Privacy and storage
+
+- Imported file contents remain in the active browser session.
+- Notes, sentence bookmarks, progress, and appearance preferences use `localStorage` on the same device.
+- No AI service, analytics service, backend, or account system is connected.
+- Opening the same local file again restores its saved progress from its name, size, and last-modified metadata.
