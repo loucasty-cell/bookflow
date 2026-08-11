@@ -1,4 +1,4 @@
-import { normalizeText, splitParagraphs, stripMarkdown } from './text.js'
+import { normalizeText, splitParagraphs, stripMarkdown } from '../../../shared/lib/text.js'
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024
 const SUPPORTED = ['pdf', 'epub', 'txt', 'md', 'markdown']
