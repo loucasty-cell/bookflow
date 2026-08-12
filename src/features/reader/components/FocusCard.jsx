@@ -16,10 +16,14 @@ export function FocusCard({
       data-reader-bottom-overlay
       aria-label="Paragraph in focus"
     >
-      <div className="focus-card-label"><Focus size={14} /> In focus</div>
+      <div className="focus-card-label">
+        <Focus size={14} />
+        <span>{pinnedId ? "Held in focus" : "In focus"}</span>
+        <small>{pinnedId ? "Paused" : "Live"}</small>
+      </div>
       <p>{focusedParagraph.text}</p>
-      <div>
-        <button onClick={toggleBookmark}>
+      <div className="focus-card-actions">
+        <button onClick={toggleBookmark} aria-pressed={isBookmarked}>
           {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
           {isBookmarked ? "Saved" : "Save"}
         </button>

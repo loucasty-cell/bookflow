@@ -32,7 +32,7 @@ export function LandingPage({
         <Brand />
         <div className="landing-nav-actions">
           <div className="nav-trust">
-            <ShieldCheck size={15} /> Private by design
+            <ShieldCheck size={15} /> Local by design
           </div>
           <button
             className="theme-toggle"
@@ -48,17 +48,15 @@ export function LandingPage({
       <section className="hero">
         <div className="hero-copy-column">
           <div className="eyebrow">
-            <Sparkles size={14} /> A private reading studio
+            <Sparkles size={14} /> Your private reading library
           </div>
           <h1>
             Read deeper.
             <br />
-            <span>Stay longer.</span>
+            <span>Keep going.</span>
           </h1>
           <p className="hero-copy">
-            Bookflow turns PDFs and ebooks into a calm, focused reading space.
-            One complete paragraph stays gently present while the rest of the
-            page gets out of your way.
+            Bookflow keeps your place, quiets the chrome, and brings one complete paragraph forward at a time. Read privately, then come back exactly where the thread still feels alive.
           </p>
 
           <div
@@ -93,7 +91,7 @@ export function LandingPage({
                 {dragging ? "Release to begin" : "Open a book"}
               </strong>
               <span>Drop it here or choose a file</span>
-              <small>Verified locally before opening</small>
+              <small>Private check. No upload.</small>
             </div>
             <div className="format-row" aria-label="Supported formats">
               <span>PDF</span>
@@ -104,8 +102,7 @@ export function LandingPage({
           </div>
 
           <p className="import-guidance">
-            PDF, EPUB, plain text, or Markdown up to 50 MB. English scanned PDFs
-            are read privately with on-device OCR.
+            PDF, EPUB, plain text, or Markdown up to 50 MB. Scanned English PDFs can be read with on-device OCR.
           </p>
 
           <div className="hero-actions">
@@ -113,7 +110,7 @@ export function LandingPage({
               className="sample-button"
               onClick={() => openBook(SAMPLE_BOOK, "bookflow-sample")}
             >
-              <BookOpen size={17} /> Try the sample <ChevronRight size={16} />
+              <BookOpen size={17} /> Read the sample <ChevronRight size={16} />
             </button>
             <span><ShieldCheck size={15} /> Nothing leaves your device</span>
           </div>
@@ -139,16 +136,16 @@ export function LandingPage({
             />
             <figcaption>
               <span>Bookflow focus</span>
-              <strong>One paragraph. Less noise.</strong>
+              <strong>One paragraph. Keep the thread.</strong>
             </figcaption>
           </figure>
           <div className="visual-card visual-card-focus">
             <Highlighter size={17} />
-            <span><strong>Gentle focus</strong>Scroll sets the rhythm</span>
+            <span><strong>Keep your place</strong>Scroll sets the rhythm</span>
           </div>
           <div className="visual-card visual-card-private">
             <ShieldCheck size={17} />
-            <span><strong>Local first</strong>Your book stays yours</span>
+            <span><strong>Local by default</strong>Your book stays yours</span>
           </div>
         </div>
       </section>
@@ -161,12 +158,12 @@ export function LandingPage({
         </article>
         <article>
           <span>02</span>
-          <h2>Built around you</h2>
+          <h2>Find your pace</h2>
           <p>Adjust type, spacing, width, focus depth, and atmosphere.</p>
         </article>
         <article>
           <span>03</span>
-          <h2>Private memory</h2>
+          <h2>Private by default</h2>
           <p>Keep bookmarks, notes, and progress on this device.</p>
         </article>
       </section>

@@ -8,6 +8,7 @@ export function ContentsPanel({
   activeChapter,
   minutes,
   bookmarkCount,
+  progress,
   sidebarOpen,
   setSidebarOpen,
   jumpToChapter,
@@ -58,6 +59,14 @@ export function ContentsPanel({
             </div>
           </div>
 
+          <div className="contents-continue" aria-label={`Continue reading at ${Math.round(progress)} percent`}>
+            <div>
+              <span>Continue reading</span>
+              <strong>{Math.round(progress)}%</strong>
+            </div>
+            <i><b style={{ width: `${progress}%` }} /></i>
+            <small>{chapters[activeChapter]?.title ?? "Start at the beginning"}</small>
+          </div>
           <nav className="contents-list" aria-label="Chapter navigation">
             {chapters.map((chapter, index) => (
               <button
@@ -73,7 +82,7 @@ export function ContentsPanel({
                   <span>{index + 1}</span>
                   <strong title={chapter.title}>{chapter.title}</strong>
                 </div>
-                <small>{chapter.paragraphs.length} paragraphs</small>
+                <small>{chapter.paragraphs.length} {chapter.paragraphs.length === 1 ? "paragraph" : "paragraphs"}</small>
               </button>
             ))}
           </nav>

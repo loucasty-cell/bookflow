@@ -94,6 +94,10 @@ export function ReaderPage({
           </div>
           <i><b style={{ width: `${progress}%` }} /></i>
         </div>
+        <div className="reader-continue" aria-live="polite">
+          <span>Continue</span>
+          <strong>{activeChapter + 1} / {chapters.length}</strong>
+        </div>
         <button
           className={`topbar-action ${notesOpen ? "is-active" : ""}`}
           onClick={() => {
@@ -136,6 +140,7 @@ export function ReaderPage({
           activeChapter={activeChapter}
           minutes={minutes}
           bookmarkCount={bookmarks.length}
+          progress={progress}
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
           jumpToChapter={jumpToChapter}
@@ -175,6 +180,12 @@ export function ReaderPage({
                 <span>{formatReadingTime(minutes)} read</span>
                 <i />
                 <span>Saved locally</span>
+              </div>
+
+              <div className="document-continue">
+                <span>Continue reading</span>
+                <strong>{chapters[activeChapter]?.title ?? "Your next chapter"}</strong>
+                <small>{Math.round(progress)}% through this book</small>
               </div>
             </header>
 
