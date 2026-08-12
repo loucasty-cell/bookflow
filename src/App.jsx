@@ -28,6 +28,8 @@ import {
   wordCount,
 } from "./shared/lib/index.js";
 
+const IMPORT_COMPLETE_DELAY = 480;
+
 function readSettings() {
   const saved = safeParse(localStorage.getItem("bookflow:settings"), {});
   const savedPace = Number(saved.focusPace);
@@ -581,12 +583,27 @@ function App() {
         name: file.name,
         percent: 5,
         label: "Checking your document",
+        detail: "Confirming the file type and readable book content locally.",
       });
 
       try {
         const parsed = await parseDocument(file, (percent, label) => {
-          setLoading({ name: file.name, percent, label });
+          setLoading({
+            name: file.name,
+            percent: Math.min(96, Math.max(10, Math.round(percent))),
+            label,
+            detail: "Your book stays on this device while Bookflow prepares it.",
+          });
         });
+        setLoading({
+          name: file.name,
+          percent: 100,
+          label: "Book ready",
+          detail: `${parsed.chapters.length} ${parsed.chapters.length === 1 ? "section" : "sections"} checked and ready to read.`,
+        });
+        await new Promise((resolve) =>
+          window.setTimeout(resolve, IMPORT_COMPLETE_DELAY),
+        );
         openBook(parsed, documentId(file));
       } catch (caught) {
         setError(
@@ -734,7 +751,6 @@ function App() {
       copyFocusedParagraph={copyFocusedParagraph}
       addNote={addNote}
       resumeFlow={resumeFlow}
-      navigateBy={navigateBy}
     />
   );
 }

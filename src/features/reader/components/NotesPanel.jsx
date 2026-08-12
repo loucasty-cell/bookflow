@@ -1,6 +1,6 @@
 import { MessageSquareText, Plus, X } from 'lucide-react'
 
-export function NotesPanel({ open, close, notes, setNotes, draft, setDraft, addNote, focusedSentence }) {
+export function NotesPanel({ open, close, notes, setNotes, draft, setDraft, addNote, focusedParagraph }) {
   return (
     <aside className={`notes-drawer ${open ? 'is-open' : ''}`} aria-hidden={!open}>
       <div className="panel-heading">
@@ -8,7 +8,7 @@ export function NotesPanel({ open, close, notes, setNotes, draft, setDraft, addN
         <button className="icon-button" onClick={close} aria-label="Close notes"><X size={18} /></button>
       </div>
       <div className="note-composer">
-        {focusedSentence && <blockquote>{focusedSentence.text}</blockquote>}
+        {focusedParagraph && <blockquote>{focusedParagraph.text}</blockquote>}
         <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="What do you want to remember?" />
         <button onClick={addNote} disabled={!draft.trim()}><Plus size={16} /> Add note</button>
       </div>
@@ -17,7 +17,7 @@ export function NotesPanel({ open, close, notes, setNotes, draft, setDraft, addN
           <div className="empty-notes">
             <MessageSquareText size={24} />
             <strong>Your margins are quiet</strong>
-            <span>Focus a sentence, then capture the thought it sparked.</span>
+            <span>Focus a paragraph, then capture the thought it sparked.</span>
           </div>
         )}
         {notes.map((note) => (

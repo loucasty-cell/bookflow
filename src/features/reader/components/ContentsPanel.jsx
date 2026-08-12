@@ -1,4 +1,6 @@
-import { BookOpen, Clock3, FileText, Library, Plus, X } from "lucide-react";
+import { Library, Plus, X } from "lucide-react";
+import bookflowArtwork from "../../../assets/bookflow-quill.png";
+import { formatReadingTime } from "../lib/readingTime.js";
 
 export function ContentsPanel({
   book,
@@ -30,10 +32,10 @@ export function ContentsPanel({
 
           <div className="book-miniature">
             <div className="mini-cover">
-              <BookOpen size={22} />
+              <img src={bookflowArtwork} alt="" />
             </div>
-            <div>
-              <strong>{book.title}</strong>
+            <div className="book-miniature-copy">
+              <strong title={book.title}>{book.title}</strong>
               <span>{book.author || book.kind}</span>
             </div>
           </div>
@@ -48,7 +50,7 @@ export function ContentsPanel({
               <span>Bookmarks</span>
             </div>
             <div>
-              <strong>{minutes} min</strong>
+              <strong>{formatReadingTime(minutes)}</strong>
               <span>Read time</span>
             </div>
           </div>
@@ -65,7 +67,7 @@ export function ContentsPanel({
               >
                 <div>
                   <span>{index + 1}</span>
-                  <strong>{chapter.title}</strong>
+                  <strong title={chapter.title}>{chapter.title}</strong>
                 </div>
                 <small>{chapter.paragraphs.length} paragraphs</small>
               </button>

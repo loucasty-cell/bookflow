@@ -4,6 +4,7 @@ import { ContentsPanel } from "./ContentsPanel.jsx";
 import { FocusCard } from "./FocusCard.jsx";
 import { NotesPanel } from "./NotesPanel.jsx";
 import { SettingsPanel } from "./SettingsPanel.jsx";
+import { formatReadingTime } from "../lib/readingTime.js";
 
 export function ReaderPage({
   book,
@@ -38,7 +39,6 @@ export function ReaderPage({
   copyFocusedParagraph,
   addNote,
   resumeFlow,
-  navigateBy,
 }) {
   return (
     <div
@@ -62,7 +62,7 @@ export function ReaderPage({
           <Brand compact />
         </button>
         <div className="book-identity">
-          <span>{book.title}</span>
+          <span title={book.title}>{book.title}</span>
           <small>{book.author || `${book.kind} document`}</small>
         </div>
         <button
@@ -133,7 +133,7 @@ export function ReaderPage({
               <div className="document-stats">
                 <span>{totalWords.toLocaleString()} words</span>
                 <i />
-                <span>{minutes} min read</span>
+                <span>{formatReadingTime(minutes)} read</span>
                 <i />
                 <span>Saved locally</span>
               </div>
