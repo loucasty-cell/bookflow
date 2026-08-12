@@ -18,8 +18,8 @@ Bookflow is a private, browser-based reading space for PDFs, EPUB ebooks, text f
 - Click or press Enter on a real-context paragraph to hold it in focus, then resume the natural flow.
 - Navigate long PDFs with a compact current-page/total-pages control such as `8 / 283`.
 - Choose Focus or Normal Reading Mode, soft/deep/disabled focus, font size, line spacing, page width, and paragraph cooldown.
-- Use a soft-white reading surface with `#507B9C`, `#C2DCFF`, and `#E3242B` interaction accents.
-- Switch between warm paper and dusk reading atmospheres.
+- Use a content-first, Apple-inspired interface with precise spacing, glass materials, safe-area support, and 44px mobile controls.
+- Keep the soft-white `#507B9C`, `#C2DCFF`, and `#E3242B` palette in light mode, or switch to a near-black reading atmosphere with restrained blue and wine accents.
 - Save paragraph bookmarks, margin notes, reading progress, and settings in local browser storage.
 - Use responsive layouts on desktop, tablet, and mobile.
 - Try the full reader with a built-in sample before importing a book.

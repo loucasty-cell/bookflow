@@ -29,9 +29,9 @@ export function ReaderPage({
   isBookmarked,
   minutes,
   totalWords,
+  progress,
+  readerState,
   readerRef,
-  showCelebration,
-  dismissCelebration,
   closeBook,
   jumpToChapter,
   focusParagraph,
@@ -40,17 +40,27 @@ export function ReaderPage({
   addNote,
   resumeFlow,
 }) {
+  const readerStatus = {
+    focused: "In focus",
+    transitioning: "Moving",
+    snapping: "Aligning",
+    skimming: "Skimming",
+    paused: "Held",
+  }[readerState] ?? "Reading";
+
   return (
     <div
       className="app-shell"
       data-theme={settings.theme}
       data-reader-mode={settings.mode}
+      data-reader-state={readerState}
     >
       <header className="reader-topbar">
         <button
           className="icon-button mobile-only"
           onClick={() => setSidebarOpen(true)}
           aria-label="Open contents"
+          aria-expanded={sidebarOpen}
         >
           <Menu size={20} />
         </button>
@@ -65,10 +75,28 @@ export function ReaderPage({
           <span title={book.title}>{book.title}</span>
           <small>{book.author || `${book.kind} document`}</small>
         </div>
+        <div
+          className="reader-progress"
+          role="progressbar"
+          aria-label="Reading progress"
+          aria-valuemin="0"
+          aria-valuemax="100"
+          aria-valuenow={Math.round(progress)}
+        >
+          <div>
+            <span>{readerStatus}</span>
+            <strong>{Math.round(progress)}%</strong>
+          </div>
+          <i><b style={{ width: `${progress}%` }} /></i>
+        </div>
         <button
           className={`topbar-action ${notesOpen ? "is-active" : ""}`}
-          onClick={() => setNotesOpen((open) => !open)}
+          onClick={() => {
+            setNotesOpen((open) => !open);
+            setSettingsOpen(false);
+          }}
           aria-label="Open notes"
+          aria-expanded={notesOpen}
         >
           <MessageSquareText size={18} />
           <span>Notes</span>
@@ -76,8 +104,12 @@ export function ReaderPage({
         </button>
         <button
           className={`icon-button ${settingsOpen ? "is-active" : ""}`}
-          onClick={() => setSettingsOpen((open) => !open)}
+          onClick={() => {
+            setSettingsOpen((open) => !open);
+            setNotesOpen(false);
+          }}
           aria-label="Reading settings"
+          aria-expanded={settingsOpen}
         >
           <Settings2 size={19} />
         </button>
@@ -201,21 +233,6 @@ export function ReaderPage({
             </footer>
           </article>
         </main>
-
-        {showCelebration ? (
-          <div className="celebration-banner" role="status" aria-live="polite">
-            <div className="celebration-content">
-              <strong>15 pages read!</strong>
-              <p>
-                Nice work keeping the rhythm. Keep going with one more warm
-                paragraph.
-              </p>
-              <button onClick={dismissCelebration} type="button">
-                Celebrate
-              </button>
-            </div>
-          </div>
-        ) : null}
 
         <FocusCard
           focusedParagraph={focusedParagraph}

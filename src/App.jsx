@@ -67,7 +67,6 @@ function App() {
   const [bookmarks, setBookmarks] = useState([]);
   const [noteDraft, setNoteDraft] = useState("");
   const [readerState, setReaderState] = useState("focused");
-  const [showCelebration, setShowCelebration] = useState(false);
   const fileInputRef = useRef(null);
   const readerRef = useRef(null);
   const paragraphsRef = useRef([]);
@@ -562,7 +561,6 @@ function App() {
       setActiveParagraphId(restoredActive);
       setPinnedId("");
       setReaderState("focused");
-      setShowCelebration(false);
       activeParagraphIdRef.current = restoredActive;
       pinnedIdRef.current = "";
       paragraphsRef.current = [];
@@ -628,7 +626,6 @@ function App() {
     setSidebarOpen(false);
     setPinnedId("");
     setActiveParagraphId("");
-    setShowCelebration(false);
     activeParagraphIdRef.current = "";
     pinnedIdRef.current = "";
     paragraphsRef.current = [];
@@ -710,6 +707,13 @@ function App() {
         openBook={openBook}
         error={error}
         loading={loading}
+        theme={settings.theme}
+        toggleTheme={() =>
+          setSettings((current) => ({
+            ...current,
+            theme: current.theme === "dusk" ? "paper" : "dusk",
+          }))
+        }
       />
     );
   }
@@ -742,8 +746,6 @@ function App() {
       minutes={minutes}
       totalWords={totalWords}
       readerRef={readerRef}
-      showCelebration={showCelebration}
-      dismissCelebration={() => setShowCelebration(false)}
       closeBook={closeBook}
       jumpToChapter={jumpToChapter}
       focusParagraph={focusParagraph}

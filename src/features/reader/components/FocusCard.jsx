@@ -1,4 +1,4 @@
-import { Bookmark, BookmarkCheck, Check, Copy } from "lucide-react";
+import { Bookmark, BookmarkCheck, Check, Copy, Focus } from "lucide-react";
 
 export function FocusCard({
   focusedParagraph,
@@ -11,7 +11,8 @@ export function FocusCard({
   if (!focusedParagraph) return null;
 
   return (
-    <div className="focus-card">
+    <section className="focus-card" aria-label="Paragraph in focus">
+      <div className="focus-card-label"><Focus size={14} /> In focus</div>
       <p>{focusedParagraph.text}</p>
       <div>
         <button onClick={toggleBookmark}>
@@ -27,6 +28,6 @@ export function FocusCard({
           </button>
         )}
       </div>
-    </div>
+    </section>
   );
 }

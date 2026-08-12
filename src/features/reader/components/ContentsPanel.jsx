@@ -15,7 +15,10 @@ export function ContentsPanel({
 }) {
   return (
     <>
-      <aside className={`contents-panel ${sidebarOpen ? "is-open" : ""}`}>
+      <aside
+        className={`contents-panel ${sidebarOpen ? "is-open" : ""}`}
+        aria-label="Book navigator"
+      >
         <div className="contents-shell">
           <div className="panel-heading">
             <span>
@@ -64,6 +67,7 @@ export function ContentsPanel({
                   jumpToChapter(index);
                   setSidebarOpen(false);
                 }}
+                aria-current={activeChapter === index ? "page" : undefined}
               >
                 <div>
                   <span>{index + 1}</span>
