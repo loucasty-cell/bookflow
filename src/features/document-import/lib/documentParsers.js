@@ -8,6 +8,12 @@ import {
   extensionOf,
   validateBookFile,
 } from "./fileValidation.js";
+import {
+  createPdfOcrWorker,
+  pageNeedsOcr,
+  pdfPageProgress,
+  recognizePdfPage,
+} from "./pdfOcr.js";
 
 function cleanTitle(filename) {
   return filename
@@ -269,71 +275,129 @@ async function parsePdf(file, onProgress) {
   const chapters = [];
   const documentTitle =
     normalizeText(metadata?.info?.Title) || cleanTitle(file.name);
+  let ocrWorker = null;
+  let ocrPageCount = 0;
+  let lastProgress = 10;
+  let activeOcrPage = 1;
 
-  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-    const page = await pdf.getPage(pageNumber);
-    const content = await page.getTextContent({ normalizeWhitespace: true });
-    const lines = [];
-    let line = [];
-    let lastY = null;
+  const reportProgress = (percent, label) => {
+    lastProgress = Math.max(lastProgress, Math.min(96, Math.round(percent)));
+    onProgress?.(lastProgress, label);
+  };
+  const ocrLogger = (message) => {
+    const rawProgress = Number(message?.progress) || 0;
+    const pageProgress =
+      message?.status === "recognizing text"
+        ? 0.18 + rawProgress * 0.78
+        : rawProgress * 0.16;
+    reportProgress(
+      pdfPageProgress(activeOcrPage, pdf.numPages, pageProgress),
+      `Reading scanned page ${activeOcrPage} of ${pdf.numPages}`,
+    );
+  };
 
-    for (const item of content.items) {
-      const value = item.str?.trim();
-      if (!value) continue;
-      const y = Math.round(item.transform?.[5] ?? 0);
-      if (lastY !== null && Math.abs(y - lastY) > 4 && line.length) {
-        lines.push(line.join(" "));
-        line = [];
+  try {
+    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+      reportProgress(
+        pdfPageProgress(pageNumber, pdf.numPages, 0),
+        `Reading page ${pageNumber} of ${pdf.numPages}`,
+      );
+      const page = await pdf.getPage(pageNumber);
+      const content = await page.getTextContent({ normalizeWhitespace: true });
+      const lines = [];
+      let currentLine = [];
+      let lastY = null;
+
+      for (const item of content.items) {
+        const value = item.str?.trim();
+        if (!value) continue;
+        const y = Math.round(item.transform?.[5] ?? 0);
+        if (lastY !== null && Math.abs(y - lastY) > 4 && currentLine.length) {
+          lines.push(currentLine.join(" "));
+          currentLine = [];
+        }
+        currentLine.push(value);
+        if (item.hasEOL) {
+          lines.push(currentLine.join(" "));
+          currentLine = [];
+        }
+        lastY = y;
       }
-      line.push(value);
-      if (item.hasEOL) {
-        lines.push(line.join(" "));
-        line = [];
+      if (currentLine.length) lines.push(currentLine.join(" "));
+
+      const readableLines = lines.filter(
+        (candidate) =>
+          !(pageNumber === 1 && normalizeText(candidate) === documentTitle),
+      );
+      const nativeText = readableLines.join("\n");
+      const requiresOcr = pageNeedsOcr(nativeText);
+      let paragraphs;
+
+      if (requiresOcr) {
+        activeOcrPage = pageNumber;
+        if (!ocrWorker) {
+          reportProgress(
+            pdfPageProgress(pageNumber, pdf.numPages, 0.04),
+            "Starting private on-device OCR",
+          );
+          try {
+            ocrWorker = await createPdfOcrWorker(ocrLogger);
+          } catch {
+            throw new Error(
+              "Bookflow could not start local OCR in this browser. Check that Web Workers and WebAssembly are enabled, then try again.",
+            );
+          }
+        }
+        const recognized = await recognizePdfPage(ocrWorker, page);
+        paragraphs = recognized.paragraphs;
+        if (paragraphs.length) ocrPageCount += 1;
+      } else {
+        const pageText = readableLines
+          .map((line, index) => {
+            const next = readableLines[index + 1] || "";
+            const headingLike =
+              line.length < 90 &&
+              !/[.!?…]["'’”)]?$/.test(line) &&
+              /^[A-Z\d]/.test(line);
+            const paragraphEnd =
+              /[.!?…]["'’”)]?$/.test(line) &&
+              (!next || /^[A-Z\d“"'’]/.test(next));
+            return `${line}${headingLike || paragraphEnd ? "\n\n" : " "}`;
+          })
+          .join("")
+          .replace(/(\p{L})-\n(\p{Ll})/gu, "$1$2")
+          .replace(/\n(?=\p{Ll})/gu, " ");
+        paragraphs = splitParagraphs(pageText).filter(
+          (paragraph) => paragraph.length > 15,
+        );
       }
-      lastY = y;
+
+      const pageTitleCandidate = normalizeText(
+        paragraphs?.[0] ?? readableLines[0] ?? "",
+      );
+      const pageTitle =
+        pageTitleCandidate &&
+        pageTitleCandidate.length <= 62 &&
+        !/[.!?…]["'’”)]?$/.test(pageTitleCandidate) &&
+        /^[A-Z\d]/.test(pageTitleCandidate)
+          ? pageTitleCandidate
+          : `Page ${pageNumber}`;
+
+      if (paragraphs?.length) chapters.push({ title: pageTitle, paragraphs });
+      reportProgress(
+        pdfPageProgress(pageNumber, pdf.numPages, 1),
+        requiresOcr
+          ? `Recovered scanned page ${pageNumber} of ${pdf.numPages}`
+          : `Read page ${pageNumber} of ${pdf.numPages}`,
+      );
     }
-    if (line.length) lines.push(line.join(" "));
-
-    const readableLines = lines.filter(
-      (line) => !(pageNumber === 1 && normalizeText(line) === documentTitle),
-    );
-    const pageTitleCandidate = normalizeText(readableLines[0] ?? "");
-    const pageTitle =
-      pageTitleCandidate &&
-      pageTitleCandidate.length <= 62 &&
-      !/[.!?…]["'’”)]?$/.test(pageTitleCandidate) &&
-      /^[A-Z\d]/.test(pageTitleCandidate)
-        ? pageTitleCandidate
-        : `Page ${pageNumber}`;
-
-    const pageText = readableLines
-      .map((line, index) => {
-        const next = readableLines[index + 1] || "";
-        const headingLike =
-          line.length < 90 &&
-          !/[.!?…]["'’”)]?$/.test(line) &&
-          /^[A-Z\d]/.test(line);
-        const paragraphEnd =
-          /[.!?…]["'’”)]?$/.test(line) && (!next || /^[A-Z\d“"'’]/.test(next));
-        return `${line}${headingLike || paragraphEnd ? "\n\n" : " "}`;
-      })
-      .join("")
-      .replace(/(\p{L})-\n(\p{Ll})/gu, "$1$2")
-      .replace(/\n(?=\p{Ll})/gu, " ");
-
-    const paragraphs = splitParagraphs(pageText).filter(
-      (paragraph) => paragraph.length > 15,
-    );
-    if (paragraphs.length) chapters.push({ title: pageTitle, paragraphs });
-    onProgress?.(
-      Math.round((pageNumber / pdf.numPages) * 100),
-      `Reading page ${pageNumber} of ${pdf.numPages}`,
-    );
+  } finally {
+    await ocrWorker?.terminate().catch(() => undefined);
   }
 
   if (!chapters.length)
     throw new Error(
-      "No selectable text was found. Scanned PDFs need OCR before Bookflow can read them.",
+      "Local OCR could not find readable English text in this PDF. Try a clearer, upright scan or an OCR-ready copy.",
     );
 
   return {
@@ -341,6 +405,7 @@ async function parsePdf(file, onProgress) {
     author: normalizeText(metadata?.info?.Author),
     kind: "PDF",
     chapters,
+    ocrPageCount,
   };
 }
 

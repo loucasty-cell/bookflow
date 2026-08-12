@@ -1,6 +1,6 @@
 ---
 name: improve-bookflow-reader
-description: Audit, diagnose, design, implement, and verify improvements to this Bookflow React/Vite repository. Use for Bookflow reader focus or navigation changes, local PDF/EPUB/TXT/Markdown imports, file validation, loading progress, privacy, accessibility, responsive layouts, long-title overflow, reading-time consistency, logo usage, Apple-inspired content-first design, near-black dark mode, theme and color-palette work, five-star web polish, regression testing, documentation alignment, or an explicitly requested commit and push. Do not use to claim native App Store or Google Play readiness, universal ebook support, OCR, AI processing, analytics, cloud sync, or perfect book classification unless those capabilities are explicitly implemented and verified.
+description: Audit, diagnose, design, implement, and verify improvements to this Bookflow React/Vite repository. Use for Bookflow reader focus or navigation changes, private local PDF OCR, PDF/EPUB/TXT/Markdown imports, file validation, loading progress, privacy, accessibility, responsive layouts, long-title overflow, reading-time consistency, logo usage, Apple-inspired content-first design, near-black dark mode, theme and color-palette work, five-star web polish, regression testing, documentation alignment, or an explicitly requested commit and push. Do not use to claim native App Store or Google Play readiness, universal ebook or language support, AI processing, analytics, cloud sync, or perfect book classification unless those capabilities are explicitly implemented and verified.
 ---
 
 # Improve Bookflow Reader
@@ -34,7 +34,7 @@ Never assume a previous Bookflow checkout represents this repository. The curren
 - Render imported text through React text nodes, never untrusted HTML.
 - Treat archives, filenames, metadata, and extracted markup as untrusted input.
 - Keep every page or section reachable; do not silently discard uncertain content.
-- Preserve the scanned-PDF limitation and state that image-only PDFs require OCR.
+- Keep scanned-PDF OCR inside the browser, preserve the original page order, and state that the bundled model currently targets English text.
 - Preserve keyboard, pointer, wheel, touch, reduced-motion, desktop, and mobile behavior.
 - Avoid decorative motion, popups, or gamification that competes with long-form reading.
 
@@ -68,9 +68,11 @@ Do not invent benchmarks, user research, store ratings, or support claims.
 3. Verify PDF and EPUB signatures instead of trusting filenames alone.
 4. Reject binary or disguised text files with actionable errors while allowing legitimate short prose.
 5. Keep PDF and EPUB parsing asynchronous and heavy parser dependencies lazy.
-6. Show an explicit message when a PDF has no selectable text.
-7. Ensure import progress is monotonic and visibly reaches `100%` before the reader replaces the loading state.
-8. Test both a representative valid book and a disguised or unsupported file when import behavior changes.
+6. Prefer native PDF text and invoke OCR only for pages whose selectable text is missing or too sparse.
+7. Reuse one OCR worker across scanned pages, terminate it after every success or failure, and use bundled same-origin worker, WebAssembly, and language assets.
+8. Show an actionable error when neither native extraction nor local English OCR finds readable text.
+9. Ensure import progress is monotonic and visibly reaches `100%` before the reader replaces the loading state.
+10. Test a native-text PDF, a controlled image-only English PDF, and a disguised or unsupported file when PDF import behavior changes.
 
 Describe file detection as format and readable-content validation, not guaranteed proof that a file is a book.
 
@@ -137,6 +139,7 @@ For reader, parser, or visual changes, use the real browser to verify:
 
 - Landing and sample-book entry.
 - A representative imported document when parsing or structure changes.
+- A controlled scanned PDF with no selectable text when OCR behavior changes, confirming the recognized page order against the source image.
 - A renamed, malformed, empty, oversized, or unsupported file relevant to the change.
 - The active focus/navigation model with relevant wheel, keyboard, and touch-equivalent input.
 - Notes, bookmarks, settings, progress restoration, and error states touched by the change.

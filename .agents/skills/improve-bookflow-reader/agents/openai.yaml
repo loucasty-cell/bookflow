@@ -1,5 +1,5 @@
 interface:
   display_name: "Improve Bookflow Reader"
   short_description: "Build a private five-star Bookflow reader"
-  default_prompt: "Use $improve-bookflow-reader to audit and refine Bookflow with content-first Apple-inspired design, near-black dark mode, privacy, responsive UX, and verified tests."
+  default_prompt: "Use $improve-bookflow-reader to audit and refine Bookflow with private local scanned-PDF OCR, content-first Apple-inspired design, responsive UX, and verified tests."
   brand_color: "#507B9C"

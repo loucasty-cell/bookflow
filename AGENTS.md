@@ -50,7 +50,7 @@ Sentence focus is the primary behavior. As the reader scrolls, one complete sent
 3. Preserve sentence focus as the main feature.
 4. Maintain accessible keyboard controls and responsive desktop, tablet, and mobile layouts.
 5. Never describe an unimplemented or unverified feature as complete.
-6. State that image-only or scanned PDFs require OCR before Bookflow can extract their text.
+6. Keep scanned-PDF OCR local, preserve original page order, and state that the bundled model currently targets English text.
 7. Avoid unnecessary dependencies, backend services, and abstractions.
 
 ## Current technology
@@ -58,6 +58,7 @@ Sentence focus is the primary behavior. As the reader scrolls, one complete sent
 - React for components and state.
 - Vite for development and production builds.
 - PDF.js for local PDF text extraction.
+- Tesseract.js with bundled assets for local English OCR on image-only PDF pages.
 - JSZip for local EPUB package extraction.
 - Lucide React for interface icons.
 - `Intl.Segmenter` with a fallback for sentence boundaries.
@@ -141,7 +142,7 @@ Create folders only when they contain real files required by a requested change.
 - Avoid direct DOM manipulation when React state can express the behavior.
 - Render imported text through React text nodes. Never use `dangerouslySetInnerHTML` for book content.
 - Handle parser failures with clear, actionable messages.
-- Preserve lazy loading for heavy PDF and EPUB dependencies.
+- Preserve lazy loading for heavy PDF, OCR, and EPUB dependencies.
 - Do not introduce a global state library unless the user approves it and the application genuinely requires it.
 - Match the codebase's imports, spacing, and component conventions.
 
@@ -163,7 +164,9 @@ Create folders only when they contain real files required by a requested change.
 - Preserve document order and useful chapter or page labels.
 - Remove repeated headers, footers, and page numbers only when detection is reliable.
 - Never silently discard large portions of a document.
-- Show an explicit message when a PDF has no selectable text.
+- Use native PDF text as the source of truth and OCR only pages without enough selectable text.
+- Reuse one OCR worker per import, terminate it after the import, and keep progress monotonic.
+- Show an explicit message when neither native extraction nor local English OCR finds readable text.
 - Treat document markup, archives, filenames, and metadata as untrusted input.
 - Validate archive paths inside EPUB files.
 - Do not log or persist full imported book contents.

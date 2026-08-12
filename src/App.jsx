@@ -949,7 +949,9 @@ function App() {
           name: file.name,
           percent: 100,
           label: "Book ready",
-          detail: `${parsed.chapters.length} ${parsed.chapters.length === 1 ? "section" : "sections"} checked and ready to read.`,
+          detail: parsed.ocrPageCount
+            ? `${parsed.ocrPageCount} ${parsed.ocrPageCount === 1 ? "scanned page" : "scanned pages"} recovered privately and kept in the original page order.`
+            : `${parsed.chapters.length} ${parsed.chapters.length === 1 ? "section" : "sections"} checked and ready to read.`,
         });
         await new Promise((resolve) =>
           window.setTimeout(resolve, IMPORT_COMPLETE_DELAY),

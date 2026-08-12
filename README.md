@@ -9,7 +9,7 @@ Bookflow is a private, browser-based reading space for PDFs, EPUB ebooks, text f
 - Import `.pdf`, `.epub`, `.txt`, `.md`, and `.markdown` files up to 50 MB.
 - Verify PDF and EPUB signatures and reject empty, binary, spoofed, or unreadable text files before opening.
 - Show a clear local import status through a visible 100% ready state before entering the reader.
-- Extract selectable PDF text locally with PDF.js.
+- Extract selectable PDF text locally with PDF.js and recover image-only English pages with local OCR.
 - Read EPUB chapters locally with JSZip and the ebook's package/spine metadata.
 - Group Markdown chapters and EPUB chapter content into one subheading level while keeping deeper headings as readable text.
 - Focus Reading Mode keeps a fixed reading rail near 42% of the viewport and moves the book one small whole paragraph at a time behind it.
@@ -28,7 +28,7 @@ Bookflow is a private, browser-based reading space for PDFs, EPUB ebooks, text f
 
 In Focus Reading Mode, use Arrow Down / J for the next paragraph, Arrow Up / K for the previous paragraph, Space for the next paragraph, Shift + Space for the previous paragraph, Page Down / Page Up for small groups, and Escape to pause the focus controller. Click or press Enter on a real-context paragraph to hold it, then use Resume flow to continue. Introductions and front/end matter remain visible as normal book pages, scroll natively, and are not selectable focus targets.
 
-Files are processed in the browser. Bookflow does not upload book contents to an API or require an account. Scanned/image-only PDFs do not contain selectable text and must be OCR-processed before Bookflow can read them.
+Files are processed in the browser. Bookflow does not upload book contents to an API or require an account. For scanned or image-only PDF pages, Bookflow renders each page locally and uses its bundled English OCR model while preserving the PDF's original page order. OCR accuracy depends on scan clarity, orientation, typography, and language; unclear or non-English scans may need a better source file.
 
 ## Lightweight tools used
 
@@ -37,12 +37,13 @@ Files are processed in the browser. Bookflow does not upload book contents to an
 | React | Component state and accessible reader interactions |
 | Vite | Fast local development and optimized static builds |
 | PDF.js (`pdfjs-dist`) | Local PDF text extraction |
+| Tesseract.js | Private browser OCR for image-only English PDF pages |
 | JSZip | Local EPUB package and chapter extraction |
 | Lucide React | Small, consistent interface icons |
 | `Intl.Segmenter` | Native sentence boundaries with a regex fallback |
 | Vitest + ESLint | Text-helper tests and code-quality checks |
 
-PDF.js and JSZip are loaded as separate chunks only when their file type is opened, keeping the initial experience lighter.
+PDF.js, JSZip, and Tesseract.js are loaded only when their file type or OCR fallback is needed, keeping the initial experience lighter. OCR worker, WebAssembly, and English language assets are bundled with the production build rather than fetched from a third-party service.
 
 ## Run locally
 

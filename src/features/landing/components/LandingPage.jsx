@@ -104,7 +104,8 @@ export function LandingPage({
           </div>
 
           <p className="import-guidance">
-            PDF, EPUB, plain text, or Markdown up to 50 MB. Scanned PDFs need OCR.
+            PDF, EPUB, plain text, or Markdown up to 50 MB. English scanned PDFs
+            are read privately with on-device OCR.
           </p>
 
           <div className="hero-actions">
