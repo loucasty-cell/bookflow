@@ -4,13 +4,13 @@ This document separates the verified product today from the work Bookflow should
 
 ## Product vision
 
-Bookflow should make long-form reading feel calm and sustainable. It turns a local book file into a private reading space where one complete sentence receives gentle emphasis near the reader's natural upper-page focus area while scrolling.
+Bookflow should make long-form reading feel calm and sustainable. It turns a local book file into a private reading space where one eligible paragraph receives gentle emphasis near the reader's natural upper-page focus area while scrolling.
 
 ## Non-negotiable goals
 
 1. Keep imported book contents on the user's device by default.
-2. Preserve scroll-driven sentence focus as the central experience.
-3. Keep the active sentence readable, bold, and softly highlighted without hiding nearby context.
+2. Preserve scroll-driven paragraph focus as the central experience.
+3. Keep the active paragraph readable and softly highlighted without hiding nearby context.
 4. Support keyboard, pointer, touch, desktop, tablet, and mobile use.
 5. Avoid unnecessary services, tracking, dependencies, and visual distractions.
 6. Describe current and planned features accurately.
@@ -21,15 +21,17 @@ Bookflow should make long-form reading feel calm and sustainable. It turns a loc
 | --- | --- |
 | Import PDF, EPUB, TXT, and Markdown | Implemented for files up to 50 MB |
 | Keep document parsing local | Implemented in the browser |
-| Sentence-level reading focus | Implemented using complete sentence boundaries |
-| Scroll-based focus movement | Implemented near 32% of the reader viewport |
+| Paragraph-level reading focus | Implemented using eligible paragraph boundaries |
+| Scroll-based focus movement | Implemented near 42% of the reader viewport |
 | Prevent pointer hover from changing focus | Implemented |
-| Pin and resume a sentence | Implemented |
-| Bookmark focused sentences | Implemented with local browser storage |
+| Pin and resume a paragraph | Implemented |
+| Bookmark focused paragraphs | Implemented with local browser storage |
 | Add and delete margin notes | Implemented with local browser storage |
 | Restore progress for the same file | Implemented using file metadata as a document identifier |
 | Compact page navigation | Implemented with current/total, slider, and previous/next controls |
 | Ignore likely non-body sections | Implemented as a heading, position, and length heuristic |
+| Preserve Markdown and EPUB subheading structure | Implemented for one level with a flat paragraph compatibility list |
+| Free-scroll static introductions in Focus mode | Implemented with native wheel, touch, and keyboard scrolling |
 | Reader customization | Implemented for font size, line height, width, focus level, and atmosphere |
 | Responsive reader | Implemented for desktop and mobile layouts |
 | Private sample experience | Implemented without an account |
@@ -50,7 +52,7 @@ Success means representative books keep their reading order, selectable body tex
 
 - Add an optional local library of recently opened document metadata.
 - Let users rename a local library entry without changing the original file.
-- Add bookmark and note navigation back to the related sentence.
+- Add bookmark and note navigation back to the related paragraph.
 - Export and import notes and bookmarks as a user-controlled file.
 - Add a clear action to delete saved progress for one book or all books.
 

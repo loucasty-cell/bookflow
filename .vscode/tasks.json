@@ -1,0 +1,74 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Bookflow (Vite)",
+      "type": "process",
+      "command": "npm.cmd",
+      "args": ["run", "dev"],
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*",
+          "endsPattern": "Local:.*http://localhost:5173"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      }
+    },
+    {
+      "label": "Run Bookflow tests",
+      "type": "process",
+      "command": "npm.cmd",
+      "args": ["run", "test"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Lint Bookflow",
+      "type": "process",
+      "command": "npm.cmd",
+      "args": ["run", "lint"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Build Bookflow",
+      "type": "process",
+      "command": "npm.cmd",
+      "args": ["run", "build"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Run current Go file",
+      "type": "process",
+      "command": "go",
+      "args": ["run", "${file}"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Run current Dart file",
+      "type": "process",
+      "command": "dart",
+      "args": ["run", "${file}"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "Run current R file",
+      "type": "process",
+      "command": "Rscript",
+      "args": ["${file}"],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "shared" }
+    }
+  ]
+}

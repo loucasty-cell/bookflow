@@ -31,6 +31,9 @@ export function ReaderPage({
   totalWords,
   progress,
   readerState,
+  activeParagraphIsLarge,
+  overStaticRegion,
+  staticRegionLabel,
   readerRef,
   closeBook,
   jumpToChapter,
@@ -40,12 +43,14 @@ export function ReaderPage({
   addNote,
   resumeFlow,
 }) {
+  const isStaticFocusRegion = settings.mode === "focus" && overStaticRegion;
   const readerStatus = {
     focused: "In focus",
     transitioning: "Moving",
     snapping: "Aligning",
     skimming: "Skimming",
     paused: "Held",
+    reading: "Reading",
   }[readerState] ?? "Reading";
 
   return (
@@ -122,7 +127,9 @@ export function ReaderPage({
         </button>
       </header>
 
-      <div className="reader-layout">
+      <div
+        className={`reader-layout ${settingsOpen || notesOpen ? "has-reader-panel" : ""} ${settingsOpen ? "has-settings-panel" : ""} ${notesOpen ? "has-notes-panel" : ""}`}
+      >
         <ContentsPanel
           book={book}
           chapters={chapters}
@@ -136,7 +143,7 @@ export function ReaderPage({
         />
 
         <div
-          className={`focus-rail focus-rail-${settings.focus}`}
+          className={`focus-rail focus-rail-${settings.focus} ${isStaticFocusRegion ? "is-dimmed" : ""}`}
           aria-hidden="true"
         >
           <span key={focusId || "idle"} />
@@ -145,7 +152,7 @@ export function ReaderPage({
 
         <main
           ref={readerRef}
-          className={`reader-canvas focus-${settings.focus} reader-mode-${settings.mode}`}
+          className={`reader-canvas focus-${settings.focus} reader-mode-${settings.mode} ${activeParagraphIsLarge ? "has-large-selection" : ""} ${isStaticFocusRegion ? "is-over-static" : ""}`}
           style={{
             "--reader-size": `${settings.fontSize}px`,
             "--reader-leading": settings.lineHeight,
@@ -175,54 +182,64 @@ export function ReaderPage({
               <section
                 className={`reading-section ${chapter.focusEligible ? "is-focus-section" : "is-static-section"}`}
                 data-focus-eligible={chapter.focusEligible}
+                data-chapter-index={chapterIndex}
                 id={`chapter-${chapterIndex}`}
                 key={`${chapter.title}-${chapterIndex}`}
               >
                 <div className="section-number">
+                  <span>{book.kind === "PDF" ? "Page" : "Section"}</span>{" "}
                   {String(chapterIndex + 1).padStart(2, "0")}
                 </div>
                 <h2>{chapter.title}</h2>
-                {chapter.paragraphs.map((paragraph) => (
-                  <p
-                    className={`${chapter.focusEligible ? "reading-paragraph" : "reading-paragraph-static"} ${focusId === paragraph.id ? "is-active" : ""} ${bookmarks.includes(paragraph.id) ? "is-bookmarked" : ""}`}
-                    data-paragraph-id={
-                      chapter.focusEligible ? paragraph.id : undefined
-                    }
-                    data-chapter={
-                      chapter.focusEligible ? chapterIndex : undefined
-                    }
-                    key={paragraph.id}
-                    role={chapter.focusEligible ? "button" : undefined}
-                    tabIndex={chapter.focusEligible ? 0 : undefined}
-                    onClick={
-                      chapter.focusEligible
-                        ? () => focusParagraph(paragraph.id)
-                        : undefined
-                    }
-                    onKeyDown={
-                      chapter.focusEligible
-                        ? (event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              focusParagraph(paragraph.id);
-                            }
-                          }
-                        : undefined
-                    }
-                    aria-current={focusId === paragraph.id ? "true" : undefined}
-                    aria-pressed={
-                      chapter.focusEligible
-                        ? pinnedId === paragraph.id
-                        : undefined
-                    }
-                    title={
-                      chapter.focusEligible
-                        ? "Select this paragraph and hold it in focus"
-                        : undefined
-                    }
+                {chapter.sections.map((section, sectionIndex) => (
+                  <div
+                    className="reading-subsection"
+                    key={`${chapter.title}-${section.title ?? "leading"}-${sectionIndex}`}
                   >
-                    {paragraph.text}
-                  </p>
+                    {section.title && <h3>{section.title}</h3>}
+                    {section.paragraphs.map((paragraph) => (
+                      <p
+                        className={`${chapter.focusEligible ? "reading-paragraph" : "reading-paragraph-static"} ${focusId === paragraph.id ? "is-active" : ""} ${bookmarks.includes(paragraph.id) ? "is-bookmarked" : ""}`}
+                        data-paragraph-id={
+                          chapter.focusEligible ? paragraph.id : undefined
+                        }
+                        data-chapter={
+                          chapter.focusEligible ? chapterIndex : undefined
+                        }
+                        key={paragraph.id}
+                        role={chapter.focusEligible ? "button" : undefined}
+                        tabIndex={chapter.focusEligible ? 0 : undefined}
+                        onClick={
+                          chapter.focusEligible
+                            ? () => focusParagraph(paragraph.id)
+                            : undefined
+                        }
+                        onKeyDown={
+                          chapter.focusEligible
+                            ? (event) => {
+                                if (event.key === "Enter" || event.key === " ") {
+                                  event.preventDefault();
+                                  focusParagraph(paragraph.id);
+                                }
+                              }
+                            : undefined
+                        }
+                        aria-current={focusId === paragraph.id ? "true" : undefined}
+                        aria-pressed={
+                          chapter.focusEligible
+                            ? pinnedId === paragraph.id
+                            : undefined
+                        }
+                        title={
+                          chapter.focusEligible
+                            ? "Select this paragraph and hold it in focus"
+                            : undefined
+                        }
+                      >
+                        {paragraph.text}
+                      </p>
+                    ))}
+                  </div>
                 ))}
               </section>
             ))}
@@ -234,14 +251,20 @@ export function ReaderPage({
           </article>
         </main>
 
-        <FocusCard
-          focusedParagraph={focusedParagraph}
-          pinnedId={pinnedId}
-          isBookmarked={isBookmarked}
-          toggleBookmark={toggleBookmark}
-          copyFocusedParagraph={copyFocusedParagraph}
-          resumeFlow={resumeFlow}
-        />
+        {isStaticFocusRegion ? (
+          <div className="static-region-label" role="status">
+            {staticRegionLabel}
+          </div>
+        ) : (
+          <FocusCard
+            focusedParagraph={focusedParagraph}
+            pinnedId={pinnedId}
+            isBookmarked={isBookmarked}
+            toggleBookmark={toggleBookmark}
+            copyFocusedParagraph={copyFocusedParagraph}
+            resumeFlow={resumeFlow}
+          />
+        )}
         <SettingsPanel
           settings={settings}
           setSettings={setSettings}

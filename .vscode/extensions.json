@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "formulahendry.code-runner",
+    "ritwickdey.liveserver",
+    "redhat.java",
+    "golang.go",
+    "dart-code.dart-code",
+    "reditorsupport.r",
+    "ms-python.python"
+  ]
+}

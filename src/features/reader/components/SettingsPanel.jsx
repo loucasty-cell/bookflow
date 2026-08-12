@@ -7,6 +7,7 @@ import {
   Sun,
   X,
 } from "lucide-react";
+import { FONT_SIZE_MAX, FONT_SIZE_MIN } from "../config.js";
 
 export function SettingsPanel({ settings, setSettings, open, close }) {
   const update = (key, value) =>
@@ -84,8 +85,8 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
           <input
             id="font-size"
             type="range"
-            min="17"
-            max="25"
+            min={FONT_SIZE_MIN}
+            max={FONT_SIZE_MAX}
             value={settings.fontSize}
             onChange={(event) => update("fontSize", Number(event.target.value))}
           />

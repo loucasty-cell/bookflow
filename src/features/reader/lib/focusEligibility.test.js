@@ -18,4 +18,14 @@ describe('focus eligibility', () => {
     expect(isFocusEligibleChapter(chapter('References'), 1, 2)).toBe(false)
     expect(isFocusEligibleChapter(chapter('Index'), 1, 2)).toBe(false)
   })
+
+  it('uses the flat paragraph list for chapters made only of subheadings', () => {
+    expect(isFocusEligibleChapter({
+      title: 'Untitled',
+      paragraphs: [Array(100).fill('context').join(' ')],
+      subheadings: [
+        { title: 'A beginning', paragraphs: ['Nested content.'] },
+      ],
+    }, 0, 3)).toBe(true)
+  })
 })

@@ -2,7 +2,7 @@
 
 ## Status
 
-This is an implementation specification for a future Bookflow feature. It matches the current React/Vite application and normalized `book.chapters` data model, but it is not implemented yet. The algorithm is designed to run entirely in the browser without a backend, AI service, or new dependency.
+This is an implementation specification for Bookflow's future structural classification work. The normalized chapter model and one-level Markdown/EPUB subheading grouping described below are implemented; the confidence-scored role classifier remains future work. The algorithm is designed to run entirely in the browser without a backend, AI service, or new dependency.
 
 The system may target 90% or better agreement with human labels, but that accuracy must be measured on a representative test corpus before it is claimed. The fail-safe rule is to keep uncertain content visible and focusable.
 
@@ -11,7 +11,7 @@ The system may target 90% or better agreement with human labels, but that accura
 The algorithm has two connected responsibilities:
 
 1. Detect the structural role of each PDF page or ebook section.
-2. Decide whether Bookflow should show the text normally, apply gentle focus, or use the full sentence highlight.
+2. Decide whether Bookflow should show the text normally, apply gentle focus, or use the full paragraph highlight.
 
 It should recognize:
 
@@ -32,17 +32,21 @@ The current parser already returns this structure:
 {
   title: 'Book title',
   author: 'Author name',
-  kind: 'PDF',
+  kind: 'MARKDOWN',
   chapters: [
     {
-      title: 'Page 1',
-      paragraphs: ['Readable paragraph text.']
+      title: 'Chapter One',
+      paragraphs: ['Leading text.', 'Subheading text.'],
+      subheadings: [
+        { title: null, paragraphs: ['Leading text.'] },
+        { title: 'A subheading', paragraphs: ['Subheading text.'] }
+      ]
     }
   ]
 }
 ```
 
-For PDFs, one unit is normally one parsed page. For EPUB and Markdown, one unit is normally a chapter or heading section. The algorithm uses the neutral term `unit` so the same implementation supports every current format.
+`paragraphs` remains the flat document-order list used for counts, eligibility, focus measurement, notes, bookmarks, and progress. `subheadings` is optional and contains one level only; its first entry may have a null title for leading untitled content. Markdown chooses the minimum heading level as the chapter level and its next level as subheadings; deeper headings stay as inline text. EPUB keeps one spine item per chapter and groups internal h2/h3 blocks. PDFs and TXT remain flat. For PDFs, one unit is normally one parsed page. For EPUB and Markdown, one unit is normally a chapter or heading section. The algorithm uses the neutral term `unit` so the same implementation supports every current format.
 
 ## Output contract
 
@@ -92,7 +96,7 @@ For PDFs, one unit is normally one parsed page. For EPUB and Markdown, one unit 
 | --- | --- |
 | `GLANCE` | Opening material that is usually scanned or selectively read |
 | `ENTERING` | Transition from introduction into the main body |
-| `IMMERSION` | Stable main-body reading where sentence focus should be strongest |
+| `IMMERSION` | Stable main-body reading where paragraph focus should be strongest |
 | `RESOLUTION` | Closing main content where focus should continue through the ending |
 | `REFERENCE` | Back matter intended mainly for lookup |
 
@@ -100,9 +104,9 @@ For PDFs, one unit is normally one parsed page. For EPUB and Markdown, one unit 
 
 | Policy | Reader behavior |
 | --- | --- |
-| `SHOW_ONLY` | Keep all text visible but do not select it for automatic sentence focus |
+| `SHOW_ONLY` | Keep all text visible but do not select it for automatic paragraph focus |
 | `SOFT_FOCUS` | Allow automatic focus with reduced highlight strength |
-| `HIGHLIGHT` | Use Bookflow's normal bold sentence and pale-blue/red focus treatment |
+| `HIGHLIGHT` | Use Bookflow's normal bold paragraph and pale-blue/red focus treatment |
 
 ## Algorithm overview
 
@@ -384,7 +388,7 @@ function assignPhase(unit, boundaries) {
 | User-marked include | Any | `HIGHLIGHT` |
 | User-marked exclude | Any | `SHOW_ONLY` |
 
-This policy protects the ending: conclusions and the final main-body units continue to receive full sentence highlighting. References and indexes remain visible but do not compete for automatic focus.
+This policy protects the ending: conclusions and the final main-body units continue to receive full paragraph highlighting. References and indexes remain visible but do not compete for automatic focus.
 
 ### Optional session-based immersion score
 
@@ -496,6 +500,8 @@ const chapters = useMemo(
   [book, structure],
 )
 ```
+
+The current reader enrichment also creates `sections`, using the flat paragraph objects shared by `paragraphs`. A chapter without subheadings receives one untitled section; a structured chapter receives its optional leading section followed by its titled subheading sections. Section headings are rendered as headings only and never receive focus paragraph identifiers.
 
 Each enriched chapter should expose:
 

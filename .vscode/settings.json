@@ -1,0 +1,96 @@
+{
+  "files.encoding": "utf8",
+  "files.autoGuessEncoding": false,
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "prettier.requireConfig": false,
+  "prettier.useEditorConfig": true,
+  "eslint.format.enable": false,
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[less]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[java]": {
+    "editor.defaultFormatter": "redhat.java"
+  },
+  "[go]": {
+    "editor.defaultFormatter": "golang.go",
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+  "[dart]": {
+    "editor.defaultFormatter": "dart-code.dart-code"
+  },
+  "[r]": {
+    "editor.defaultFormatter": "reditorsupport.r"
+  },
+  "code-runner.runInTerminal": true,
+  "code-runner.fileDirectoryAsCwd": false,
+  "code-runner.cwd": "${workspaceFolder}",
+  "code-runner.ignoreSelection": true,
+  "code-runner.preserveFocus": false,
+  "code-runner.executorMap": {
+    "javascript": "node \"$fullFileName\"",
+    "javascriptreact": "npm.cmd run dev",
+    "typescript": "npx --yes tsx \"$fullFileName\"",
+    "typescriptreact": "npm.cmd run dev",
+    "python": "py -u \"$fullFileName\"",
+    "java": "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"& javac '$fullFileName'; if (`$LASTEXITCODE -eq 0) { & java -cp '$dir' '$fileNameWithoutExt' }\"",
+    "go": "go run \"$fullFileName\"",
+    "dart": "dart run \"$fullFileName\"",
+    "r": "Rscript \"$fullFileName\"",
+    "html": "npm.cmd run dev",
+    "css": "powershell.exe -NoProfile -Command \"Write-Host 'CSS is not standalone. Run Bookflow (Vite) to preview it.'\""
+  },
+  "files.exclude": {
+    "**/.git": true,
+    "**/.dart_tool": true,
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/*.class": true
+  }
+}

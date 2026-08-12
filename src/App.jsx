@@ -10,11 +10,14 @@ import { parseDocument } from "./features/document-import/index.js";
 import { LandingPage } from "./features/landing/index.js";
 import {
   DEFAULT_SETTINGS,
+  FONT_SIZE_MAX,
+  FONT_SIZE_MIN,
   FOCUS_RAIL_RATIO,
   MAX_SCROLL_INPUT,
   ReaderPage,
   SCROLL_INTENT_THRESHOLD,
   accumulateScrollIntent,
+  ensureSelectedSegmentVisible,
   getIntentDirection,
   isFocusEligibleChapter,
   readingProgress,
@@ -30,13 +33,61 @@ import {
 
 const IMPORT_COMPLETE_DELAY = 480;
 
+function sectionAtFocusRail(reader) {
+  if (!reader) return null;
+
+  const bounds = reader.getBoundingClientRect();
+  const anchorY = bounds.top + reader.clientHeight * FOCUS_RAIL_RATIO;
+  const anchorX = bounds.left + bounds.width / 2;
+  const element = document.elementFromPoint(anchorX, anchorY);
+  const directSection = element?.closest?.(".reading-section");
+  if (directSection && reader.contains(directSection)) return directSection;
+
+  const sections = [...reader.querySelectorAll(".reading-section")];
+  const containingSection = sections.find((section) => {
+    const sectionBounds = section.getBoundingClientRect();
+    return anchorY >= sectionBounds.top && anchorY <= sectionBounds.bottom;
+  });
+  if (containingSection) return containingSection;
+
+  const firstSection = sections[0];
+  if (
+    firstSection &&
+    anchorY < firstSection.getBoundingClientRect().top &&
+    firstSection.dataset.focusEligible === "false"
+  )
+    return firstSection;
+
+  return null;
+}
+
+function staticRegionName(section) {
+  const title = section?.querySelector("h2")?.textContent ?? "";
+  return /appendix|bibliograph|references|glossary|index|credits|afterword|epilogue|about the author/i.test(
+    title,
+  )
+    ? "Reading the end matter"
+    : "Reading the intro";
+}
+
+function startsWithStaticRegion(reader) {
+  return (
+    reader?.querySelector(".reading-section")?.dataset.focusEligible ===
+    "false"
+  );
+}
+
 function readSettings() {
   const saved = safeParse(localStorage.getItem("bookflow:settings"), {});
+  const savedFontSize = Number(saved.fontSize);
   const savedPace = Number(saved.focusPace);
 
   return {
     ...DEFAULT_SETTINGS,
     ...saved,
+    fontSize: Number.isFinite(savedFontSize)
+      ? Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, savedFontSize))
+      : DEFAULT_SETTINGS.fontSize,
     columnWidth:
       saved.columnWidth === 720
         ? DEFAULT_SETTINGS.columnWidth
@@ -67,17 +118,27 @@ function App() {
   const [bookmarks, setBookmarks] = useState([]);
   const [noteDraft, setNoteDraft] = useState("");
   const [readerState, setReaderState] = useState("focused");
+  const [activeParagraphIsLarge, setActiveParagraphIsLarge] = useState(false);
+  const [overStaticRegion, setOverStaticRegion] = useState(false);
+  const [staticRegionLabel, setStaticRegionLabel] = useState("Reading the intro");
   const fileInputRef = useRef(null);
   const readerRef = useRef(null);
+  const readerSizeRef = useRef({ width: 0, height: 0 });
   const paragraphsRef = useRef([]);
   const activeParagraphIdRef = useRef("");
   const pinnedIdRef = useRef("");
   const pendingRestoreParagraphRef = useRef("");
+  const hasRestorePositionRef = useRef(false);
+  const overStaticRegionRef = useRef(false);
   const frameRef = useRef(null);
   const alignTimerRef = useRef(null);
   const scrollSettleTimerRef = useRef(null);
   const wheelIdleTimerRef = useRef(null);
+  const alignmentDelayRef = useRef(null);
   const programmaticScrollRef = useRef(false);
+  const userScrollingRef = useRef(false);
+  const activeParagraphIsLargeRef = useRef(false);
+  const lastProgrammaticScrollTimeRef = useRef(0);
   const lastNavigationAtRef = useRef(0);
   const wheelRef = useRef({
     accumulated: 0,
@@ -85,9 +146,29 @@ function App() {
     lastAt: 0,
     rollCount: 0,
   });
+  const hasMeasuredBookRef = useRef(false);
   const touchStartRef = useRef(null);
   const navigationRef = useRef(null);
   const alignParagraphRef = useRef(null);
+
+  const updateStaticRegion = useCallback(() => {
+    const reader = readerRef.current;
+    const section = sectionAtFocusRail(reader);
+    const isStatic = section?.dataset.focusEligible === "false";
+    if (overStaticRegionRef.current !== isStatic) {
+      overStaticRegionRef.current = isStatic;
+      setOverStaticRegion(isStatic);
+    }
+    if (isStatic) setStaticRegionLabel(staticRegionName(section));
+    return { isStatic, section };
+  }, []);
+
+  const updateStaticScrollState = useCallback((reader, section) => {
+    if (section?.dataset.chapterIndex)
+      setActiveChapter(Number(section.dataset.chapterIndex));
+    const maximum = Math.max(0, reader.scrollHeight - reader.clientHeight);
+    setProgress(maximum ? Math.round((reader.scrollTop / maximum) * 100) : 0);
+  }, []);
 
   const chapters = useMemo(() => {
     if (!book) return [];
@@ -105,6 +186,28 @@ function App() {
         chapterIndex,
         paragraphIndex,
       })),
+      sections: (() => {
+        const flatParagraphs = chapter.paragraphs.map(
+          (paragraph, paragraphIndex) => ({
+            id: `paragraph-${chapterIndex}-${paragraphIndex}`,
+            text: paragraph,
+            chapterIndex,
+            paragraphIndex,
+          }),
+        );
+        const rawSections = chapter.subheadings?.length
+          ? chapter.subheadings
+          : [{ title: null, paragraphs: chapter.paragraphs }];
+        let paragraphOffset = 0;
+        return rawSections.map((section) => {
+          const enrichedParagraphs = section.paragraphs.map(() => {
+            const paragraph = flatParagraphs[paragraphOffset];
+            paragraphOffset += 1;
+            return paragraph;
+          });
+          return { ...section, paragraphs: enrichedParagraphs };
+        });
+      })(),
     }));
   }, [book]);
 
@@ -132,37 +235,87 @@ function App() {
       window.clearTimeout(scrollSettleTimerRef.current);
     if (wheelIdleTimerRef.current)
       window.clearTimeout(wheelIdleTimerRef.current);
+    if (alignmentDelayRef.current)
+      window.clearTimeout(alignmentDelayRef.current);
     alignTimerRef.current = null;
     scrollSettleTimerRef.current = null;
     wheelIdleTimerRef.current = null;
+    alignmentDelayRef.current = null;
   }, []);
 
   const commitFocus = useCallback((paragraph) => {
     if (!paragraph) return;
 
+    const measuredParagraph = paragraphsRef.current.find(
+      (candidate) => candidate.id === paragraph.id,
+    );
+    const chapterIndex = paragraph.chapter ?? paragraph.chapterIndex;
+    const paragraphIndex = paragraph.index ?? measuredParagraph?.index;
     activeParagraphIdRef.current = paragraph.id;
     setActiveParagraphId(paragraph.id);
-    setActiveChapter(paragraph.chapter);
-    setProgress(readingProgress(paragraph.index, paragraphsRef.current.length));
+    if (Number.isFinite(chapterIndex)) setActiveChapter(chapterIndex);
+    if (Number.isFinite(paragraphIndex)) {
+      setProgress(
+        readingProgress(paragraphIndex, paragraphsRef.current.length),
+      );
+    }
   }, []);
 
   const finishAlignment = useCallback(() => {
     programmaticScrollRef.current = false;
+    lastProgrammaticScrollTimeRef.current = performance.now();
     setReaderState(pinnedIdRef.current ? "paused" : "focused");
   }, []);
 
   const alignParagraph = useCallback(
-    (paragraph, behavior = "smooth") => {
+    (
+      paragraph,
+      behavior = "smooth",
+      preserveLargePosition = false,
+      forceAlignment = false,
+    ) => {
       const reader = readerRef.current;
       if (!reader || !paragraph) return;
 
-      const maximum = Math.max(0, reader.scrollHeight - reader.clientHeight);
-      const anchor = reader.clientHeight * FOCUS_RAIL_RATIO;
-      const paragraphCenter = (paragraph.top + paragraph.bottom) / 2;
-      const targetScrollTop = Math.min(
-        maximum,
-        Math.max(0, paragraphCenter - anchor),
+      const paragraphElement = reader.querySelector(
+        `[data-paragraph-id="${paragraph.id}"]`,
       );
+      if (!paragraphElement) return;
+
+      const bottomOverlay = reader.parentElement?.querySelector(
+        "[data-reader-bottom-overlay]",
+      );
+      const alignment = ensureSelectedSegmentVisible(
+        paragraphElement,
+        reader,
+        bottomOverlay,
+      );
+      activeParagraphIsLargeRef.current = alignment.isLarge;
+      setActiveParagraphIsLarge(alignment.isLarge);
+      reader.style.setProperty(
+        "--reader-safe-top",
+        `${alignment.safeTop}px`,
+      );
+      reader.style.setProperty(
+        "--reader-safe-bottom",
+        `${alignment.safeBottom}px`,
+      );
+
+      if (userScrollingRef.current && !forceAlignment) {
+        finishAlignment();
+        return;
+      }
+
+      if (preserveLargePosition && alignment.isLarge) {
+        finishAlignment();
+        return;
+      }
+
+      if (!alignment.shouldScroll) {
+        finishAlignment();
+        return;
+      }
+
       const reducedMotion = window.matchMedia?.(
         "(prefers-reduced-motion: reduce)",
       )?.matches;
@@ -172,7 +325,7 @@ function App() {
       programmaticScrollRef.current = true;
       setReaderState(pinnedIdRef.current ? "paused" : "transitioning");
       reader.scrollTo({
-        top: targetScrollTop,
+        top: alignment.targetScrollTop,
         behavior: shouldAnimate ? "smooth" : "auto",
       });
 
@@ -186,22 +339,36 @@ function App() {
     [clearTimers, finishAlignment],
   );
 
+  const queueParagraphAlignment = useCallback(
+    (
+      paragraph,
+      behavior = "smooth",
+      preserveLargePosition = false,
+      forceAlignment = false,
+    ) => {
+      if (!paragraph) return;
+      if (alignmentDelayRef.current)
+        window.clearTimeout(alignmentDelayRef.current);
+      alignmentDelayRef.current = window.setTimeout(() => {
+        alignmentDelayRef.current = null;
+        alignParagraph(
+          paragraph,
+          behavior,
+          preserveLargePosition,
+          forceAlignment,
+        );
+      }, 190);
+    },
+    [alignParagraph],
+  );
+
   const setSelectedParagraph = useCallback(
     (paragraph, behavior = "smooth") => {
       if (!paragraph) return;
       commitFocus(paragraph);
-
-      if (settings.mode === "focus") {
-        alignParagraph(paragraph, behavior);
-        return;
-      }
-
-      const paragraphElement = [
-        ...(readerRef.current?.querySelectorAll("[data-paragraph-id]") ?? []),
-      ].find((element) => element.dataset.paragraphId === paragraph.id);
-      paragraphElement?.scrollIntoView({ behavior, block: "center" });
+      queueParagraphAlignment(paragraph, behavior, false, true);
     },
-    [alignParagraph, commitFocus, settings.mode],
+    [commitFocus, queueParagraphAlignment],
   );
 
   const navigateBy = useCallback(
@@ -243,14 +410,14 @@ function App() {
       const paragraph = paragraphsRef.current.find(
         (candidate) => candidate.id === paragraphId,
       );
-      if (paragraph) alignParagraph(paragraph, behavior);
+      if (paragraph) queueParagraphAlignment(paragraph, behavior);
     };
 
     return () => {
       navigationRef.current = null;
       alignParagraphRef.current = null;
     };
-  }, [alignParagraph, navigateBy, setSelectedParagraph]);
+  }, [navigateBy, queueParagraphAlignment, setSelectedParagraph]);
 
   useEffect(() => {
     localStorage.setItem("bookflow:settings", JSON.stringify(settings));
@@ -280,7 +447,24 @@ function App() {
     const measureParagraphs = () => {
       if (disposed) return;
 
+      const isInitialMeasurement = !hasMeasuredBookRef.current;
+      const shouldStartAtDocumentTop =
+        isInitialMeasurement &&
+        settings.mode === "focus" &&
+        !hasRestorePositionRef.current &&
+        startsWithStaticRegion(reader);
+      if (shouldStartAtDocumentTop) reader.scrollTo({ top: 0, behavior: "auto" });
+
       const readerBounds = reader.getBoundingClientRect();
+      const previousReaderSize = readerSizeRef.current;
+      const readerSizeChanged =
+        previousReaderSize.width > 0 &&
+        (previousReaderSize.width !== reader.clientWidth ||
+          previousReaderSize.height !== reader.clientHeight);
+      readerSizeRef.current = {
+        width: reader.clientWidth,
+        height: reader.clientHeight,
+      };
       const nextParagraphs = [
         ...reader.querySelectorAll("[data-paragraph-id]"),
       ].map((element, index) => {
@@ -296,8 +480,17 @@ function App() {
       });
 
       paragraphsRef.current = nextParagraphs;
+      hasMeasuredBookRef.current = true;
 
-      if (!nextParagraphs.length) return;
+      const staticRegion = updateStaticRegion();
+      if (!nextParagraphs.length) {
+        if (staticRegion.isStatic) {
+          reader.scrollTo({ top: 0, behavior: "auto" });
+          updateStaticScrollState(reader, staticRegion.section);
+          setReaderState("reading");
+        }
+        return;
+      }
 
       const restored = nextParagraphs.find(
         (paragraph) => paragraph.id === pendingRestoreParagraphRef.current,
@@ -306,10 +499,47 @@ function App() {
         (paragraph) => paragraph.id === activeParagraphIdRef.current,
       );
       const target = restored ?? existing ?? nextParagraphs[0];
+      const targetElement = reader.querySelector(
+        `[data-paragraph-id="${target.id}"]`,
+      );
+
+      if (targetElement) {
+        const bottomOverlay = reader.parentElement?.querySelector(
+          "[data-reader-bottom-overlay]",
+        );
+        const alignment = ensureSelectedSegmentVisible(
+          targetElement,
+          reader,
+          bottomOverlay,
+        );
+        activeParagraphIsLargeRef.current = alignment.isLarge;
+        setActiveParagraphIsLarge(alignment.isLarge);
+        reader.style.setProperty(
+          "--reader-safe-top",
+          `${alignment.safeTop}px`,
+        );
+        reader.style.setProperty(
+          "--reader-safe-bottom",
+          `${alignment.safeBottom}px`,
+        );
+      }
 
       pendingRestoreParagraphRef.current = "";
       commitFocus(target);
-      if (settings.mode === "focus") alignParagraph(target, "auto");
+      if (
+        isInitialMeasurement &&
+        settings.mode === "focus" &&
+        !hasRestorePositionRef.current &&
+        (staticRegion.isStatic || shouldStartAtDocumentTop)
+      ) {
+        if (staticRegion.isStatic) {
+          updateStaticScrollState(reader, staticRegion.section);
+          setReaderState("reading");
+        }
+      } else if (isInitialMeasurement && settings.mode === "focus")
+        queueParagraphAlignment(target, "auto", false, true);
+      else if (readerSizeChanged && settings.mode === "focus")
+        queueParagraphAlignment(target, "auto");
     };
 
     const scheduleMeasurement = () => {
@@ -332,16 +562,19 @@ function App() {
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
       frameRef.current = null;
       paragraphsRef.current = [];
+      readerSizeRef.current = { width: 0, height: 0 };
     };
   }, [
-    alignParagraph,
     book,
     commitFocus,
     paragraphMap,
+    queueParagraphAlignment,
     settings.columnWidth,
     settings.fontSize,
     settings.lineHeight,
     settings.mode,
+    updateStaticRegion,
+    updateStaticScrollState,
   ]);
 
   useEffect(() => {
@@ -350,6 +583,42 @@ function App() {
     const reader = readerRef.current;
     const handleScroll = () => {
       const anchorY = reader.scrollTop + reader.clientHeight * FOCUS_RAIL_RATIO;
+      const wasStatic = overStaticRegionRef.current;
+      const staticRegion = updateStaticRegion();
+
+      if (staticRegion.isStatic) {
+        updateStaticScrollState(reader, staticRegion.section);
+        userScrollingRef.current = true;
+        if (settings.mode === "focus") setReaderState("reading");
+        return;
+      }
+
+      if (wasStatic) {
+        userScrollingRef.current = true;
+        const target = selectClosestParagraph(
+          paragraphsRef.current,
+          anchorY,
+          activeParagraphIdRef.current,
+        );
+        if (target) {
+          const targetElement = reader.querySelector(
+            `[data-paragraph-id="${target.id}"]`,
+          );
+          if (targetElement) {
+            const bottomOverlay = reader.parentElement?.querySelector(
+              "[data-reader-bottom-overlay]",
+            );
+            const alignment = ensureSelectedSegmentVisible(
+              targetElement,
+              reader,
+              bottomOverlay,
+            );
+            activeParagraphIsLargeRef.current = alignment.isLarge;
+            setActiveParagraphIsLarge(alignment.isLarge);
+          }
+          commitFocus(target);
+        }
+      }
 
       if (settings.mode === "normal") {
         if (!pinnedIdRef.current) {
@@ -363,25 +632,52 @@ function App() {
         return;
       }
 
-      if (programmaticScrollRef.current || pinnedIdRef.current) return;
+      if (
+        programmaticScrollRef.current ||
+        performance.now() - lastProgrammaticScrollTimeRef.current < 80
+      )
+        return;
+
+      if (pinnedIdRef.current) {
+        if (scrollSettleTimerRef.current)
+          window.clearTimeout(scrollSettleTimerRef.current);
+        scrollSettleTimerRef.current = window.setTimeout(() => {
+          userScrollingRef.current = false;
+        }, 180);
+        return;
+      }
 
       if (scrollSettleTimerRef.current)
         window.clearTimeout(scrollSettleTimerRef.current);
       scrollSettleTimerRef.current = window.setTimeout(() => {
+        userScrollingRef.current = false;
         const target = selectClosestParagraph(
           paragraphsRef.current,
           reader.scrollTop + reader.clientHeight * FOCUS_RAIL_RATIO,
           activeParagraphIdRef.current,
         );
-        if (target) {
+        if (target && target.id !== activeParagraphIdRef.current) {
           setReaderState("snapping");
           setSelectedParagraph(target);
+        } else if (!pinnedIdRef.current) {
+          setReaderState("focused");
         }
       }, 180);
     };
 
     const handleWheel = (event) => {
       if (settings.mode !== "focus") return;
+      const staticRegion = updateStaticRegion();
+      if (staticRegion.isStatic) {
+        userScrollingRef.current = true;
+        setReaderState("reading");
+        return;
+      }
+      if (activeParagraphIsLargeRef.current) {
+        userScrollingRef.current = true;
+        setReaderState(pinnedIdRef.current ? "paused" : "reading");
+        return;
+      }
       event.preventDefault();
       if (pinnedIdRef.current) return;
 
@@ -471,6 +767,12 @@ function App() {
         return;
       }
 
+      if (updateStaticRegion().isStatic) {
+        userScrollingRef.current = true;
+        setReaderState("reading");
+        return;
+      }
+
       if (event.key === " " || keyActions[event.key]) {
         event.preventDefault();
         if (pinnedIdRef.current) return;
@@ -483,17 +785,47 @@ function App() {
     };
 
     const handleTouchStart = (event) => {
-      if (settings.mode !== "focus" || pinnedIdRef.current) return;
+      if (settings.mode !== "focus") return;
+      if (updateStaticRegion().isStatic) {
+        userScrollingRef.current = true;
+        touchStartRef.current = null;
+        setReaderState("reading");
+        return;
+      }
+      if (activeParagraphIsLargeRef.current) {
+        userScrollingRef.current = true;
+        touchStartRef.current = null;
+        return;
+      }
+      if (pinnedIdRef.current) return;
       touchStartRef.current = event.touches[0]?.clientY ?? null;
+    };
+
+    const handlePointerDown = () => {
+      if (settings.mode === "focus" && updateStaticRegion().isStatic) {
+        userScrollingRef.current = true;
+        setReaderState("reading");
+        return;
+      }
+      if (
+        settings.mode === "focus" &&
+        activeParagraphIsLargeRef.current
+      )
+        userScrollingRef.current = true;
     };
 
     const handleTouchEnd = (event) => {
       if (
         settings.mode !== "focus" ||
         pinnedIdRef.current ||
+        activeParagraphIsLargeRef.current ||
         touchStartRef.current === null
       )
         return;
+      if (updateStaticRegion().isStatic) {
+        touchStartRef.current = null;
+        return;
+      }
       const endY = event.changedTouches[0]?.clientY ?? touchStartRef.current;
       const distance = touchStartRef.current - endY;
       touchStartRef.current = null;
@@ -511,6 +843,9 @@ function App() {
     reader.addEventListener("scroll", handleScroll, { passive: true });
     reader.addEventListener("wheel", handleWheel, { passive: false });
     reader.addEventListener("keydown", handleKeyDown);
+    reader.addEventListener("pointerdown", handlePointerDown, {
+      passive: true,
+    });
     reader.addEventListener("touchstart", handleTouchStart, { passive: true });
     reader.addEventListener("touchend", handleTouchEnd, { passive: true });
 
@@ -518,6 +853,7 @@ function App() {
       reader.removeEventListener("scroll", handleScroll);
       reader.removeEventListener("wheel", handleWheel);
       reader.removeEventListener("keydown", handleKeyDown);
+      reader.removeEventListener("pointerdown", handlePointerDown);
       reader.removeEventListener("touchstart", handleTouchStart);
       reader.removeEventListener("touchend", handleTouchEnd);
       clearTimers();
@@ -529,17 +865,26 @@ function App() {
     setSelectedParagraph,
     settings.focusPace,
     settings.mode,
+    updateStaticRegion,
+    updateStaticScrollState,
   ]);
 
   useEffect(() => {
     if (settings.mode !== "focus" || !activeParagraphIdRef.current)
       return undefined;
     const align = window.setTimeout(
-      () => alignParagraphRef.current?.(activeParagraphIdRef.current, "auto"),
+      () => {
+        if (updateStaticRegion().isStatic) {
+          userScrollingRef.current = true;
+          setReaderState("reading");
+          return;
+        }
+        alignParagraphRef.current?.(activeParagraphIdRef.current, "auto");
+      },
       0,
     );
     return () => window.clearTimeout(align);
-  }, [settings.mode]);
+  }, [settings.mode, updateStaticRegion]);
 
   const openBook = useCallback(
     (nextBook, id) => {
@@ -552,6 +897,9 @@ function App() {
         : "";
       pendingRestoreParagraphRef.current =
         saved.activeParagraphId ?? fallbackParagraph;
+      hasRestorePositionRef.current = Boolean(
+        saved.activeParagraphId || fallbackParagraph || Number(saved.scrollTop) > 0,
+      );
       const restoredActive = saved.activeParagraphId ?? fallbackParagraph;
       setBook(nextBook);
       setBookId(id);
@@ -561,9 +909,13 @@ function App() {
       setActiveParagraphId(restoredActive);
       setPinnedId("");
       setReaderState("focused");
+      overStaticRegionRef.current = false;
+      setOverStaticRegion(false);
+      setStaticRegionLabel("Reading the intro");
       activeParagraphIdRef.current = restoredActive;
       pinnedIdRef.current = "";
       paragraphsRef.current = [];
+      hasMeasuredBookRef.current = false;
       setActiveChapter(0);
       setSidebarOpen(false);
       setError("");
@@ -625,9 +977,17 @@ function App() {
     setSettingsOpen(false);
     setSidebarOpen(false);
     setPinnedId("");
+    setActiveParagraphIsLarge(false);
+    setOverStaticRegion(false);
+    setStaticRegionLabel("Reading the intro");
     setActiveParagraphId("");
+    userScrollingRef.current = false;
     activeParagraphIdRef.current = "";
     pinnedIdRef.current = "";
+    activeParagraphIsLargeRef.current = false;
+    hasRestorePositionRef.current = false;
+    hasMeasuredBookRef.current = false;
+    overStaticRegionRef.current = false;
     paragraphsRef.current = [];
     document.title = "Bookflow - Read in your rhythm";
   };
@@ -664,7 +1024,8 @@ function App() {
     pinnedIdRef.current = "";
     setPinnedId("");
     setReaderState("focused");
-    alignParagraphRef.current?.(activeParagraphIdRef.current, "smooth");
+    if (!activeParagraphIsLargeRef.current)
+      alignParagraphRef.current?.(activeParagraphIdRef.current, "smooth");
   };
 
   const toggleBookmark = () => {
@@ -727,6 +1088,9 @@ function App() {
       activeChapter={activeChapter}
       progress={progress}
       readerState={readerState}
+      activeParagraphIsLarge={activeParagraphIsLarge}
+      overStaticRegion={overStaticRegion}
+      staticRegionLabel={staticRegionLabel}
       notes={notes}
       setNotes={setNotes}
       bookmarks={bookmarks}

@@ -48,15 +48,20 @@ Validation currently accepts:
 {
   title: 'Book title',
   author: 'Author name',
-  kind: 'PDF',
+  kind: 'MARKDOWN',
   chapters: [
     {
       title: 'Page 1',
       paragraphs: ['First paragraph.', 'Second paragraph.']
+      // Markdown and EPUB chapters may also expose:
+      // subheadings: [{ title: null, paragraphs: ['Opening context.'] },
+      //   { title: 'A subheading', paragraphs: ['...'] }]
     }
   ]
 }
 ```
+
+`paragraphs` is always the flat, document-order list for the chapter. When `subheadings` exists, it contains exactly one level of groups; its first entry may have a null title for leading untitled content. Markdown uses the minimum heading level found as the chapter level and the next level as subheadings; deeper headings remain inline text. EPUB keeps one spine item per chapter and groups internal h2 and h3 blocks.
 
 `kind` currently resolves to `PDF`, `EPUB`, `TEXT`, or `MARKDOWN`.
 
@@ -95,29 +100,30 @@ After import, `App.jsx` enriches each chapter and paragraph for the reader:
   focusEligible: true,
   paragraphs: [
     {
+      id: 'paragraph-0-0',
       text: 'A complete paragraph.',
-      sentences: [
-        {
-          id: '0-0-0',
-          text: 'A complete paragraph.',
-          chapterIndex: 0
-        }
-      ]
+      chapterIndex: 0,
+      paragraphIndex: 0
     }
+  ],
+  sections: [
+    { title: null, paragraphs: [/* same enriched paragraph objects */] },
+    { title: 'A subheading', paragraphs: [/* enriched paragraph objects */] }
   ]
 }
 ```
 
-Sentence identifiers follow `chapterIndex-paragraphIndex-sentenceIndex`. They are stable only while the same parser output and document structure remain unchanged.
+Paragraph identifiers follow `paragraph-{chapterIndex}-{paragraphIndex}` and are indexed across all subheadings in document order. They are stable only while the same parser output and document structure remain unchanged.
 
 ## Focus-selection contract
 
-- Automatic focus considers only elements with `data-sentence-id`.
-- The target rail is 32% from the top of the reader viewport.
-- Focus updates during reader scrolling through `requestAnimationFrame`.
-- Pointer hover does not select a sentence.
-- Clicking a selectable sentence or pressing Enter or Space pins or unpins it.
+- Automatic focus considers only eligible elements with `data-paragraph-id`.
+- The target rail is near 42% from the top of the reader viewport.
+- Focus updates from the reader scroll position and settles on the nearest eligible paragraph.
+- Pointer hover does not select a paragraph.
+- Clicking a selectable paragraph or pressing Enter or Space pins or unpins it.
 - Pinned focus takes priority over automatic scroll focus.
+- While the rail is over `data-focus-eligible="false"`, wheel, touch, arrow, space, and page-key input use native scrolling. The focus card and rail are dimmed or replaced by a static-region label, and progress follows scroll position until eligible content returns.
 
 Likely front matter and end matter are excluded from automatic focus using heading, position, and word-count heuristics. This is not semantic or AI classification and may need a future manual override.
 
@@ -166,18 +172,18 @@ Stored value:
   notes: [
     {
       id: 'generated-uuid',
-      sentenceId: '0-0-0',
-      quote: 'Focused sentence text.',
+      paragraphId: 'paragraph-0-0',
+      quote: 'Focused paragraph text.',
       text: 'Reader note.'
     }
   ],
-  bookmarks: ['0-0-0'],
+  bookmarks: ['paragraph-0-0'],
   progress: 42,
   scrollTop: 1850
 }
 ```
 
-Book contents are not stored in this object. Notes may contain a user-selected sentence quote.
+Book contents are not stored in this object. Notes may contain a user-selected paragraph quote.
 
 ## Browser capabilities used
 
@@ -185,8 +191,8 @@ Book contents are not stored in this object. Notes may contain a user-selected s
 | --- | --- |
 | File API | Read a user-selected local file |
 | `localStorage` | Persist settings and reading state |
-| `Intl.Segmenter` | Split paragraphs into complete sentences |
-| Clipboard API | Copy the focused sentence |
+| `Intl.Segmenter` | Segment paragraph text for reading behavior |
+| Clipboard API | Copy the focused paragraph |
 | `crypto.randomUUID()` | Create note identifiers |
 | `requestAnimationFrame` | Throttle scroll focus calculations |
 

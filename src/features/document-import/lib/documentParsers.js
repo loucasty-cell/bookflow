@@ -37,15 +37,211 @@ function resolveArchivePath(baseFile, relativePath) {
   return result.join("/");
 }
 
-function paragraphsFromElement(element) {
+function collectContentBlocks(element) {
   element
     .querySelectorAll("script, style, nav, svg, noscript")
     .forEach((node) => node.remove());
-  const blocks = [...element.querySelectorAll("p, blockquote, li")]
-    .map((node) => normalizeText(node.textContent))
-    .filter((text) => text.length > 20);
+  const candidates = [
+    ...element.querySelectorAll("h1, h2, h3, h4, h5, h6, p, blockquote, li"),
+  ];
+  const blocks = [];
+  for (const node of candidates) {
+    if (
+      node.querySelector("h1, h2, h3, h4, h5, h6, p, blockquote, li")
+    )
+      continue;
+    const text = normalizeText(node.textContent);
+    const tag = node.tagName.toLowerCase();
+    if (tag === "p" || tag === "blockquote" || tag === "li") {
+      if (text.length > 20) blocks.push({ type: "content", text });
+    } else if (text.length > 0) {
+      blocks.push({ type: "heading", level: Number(tag[1]), text });
+    }
+  }
+  return blocks;
+}
 
-  return blocks.length ? blocks : splitParagraphs(element.textContent);
+export function buildEpubSections(blocks) {
+  const titleIndex = blocks.findIndex((block) => block.type === "heading");
+  const sections = [];
+  let current = null;
+  let inlineHeadingText = [];
+  const title = titleIndex >= 0 ? blocks[titleIndex].text : "";
+
+  const ensureLeading = () => {
+    if (!current) {
+      current = { title: null, paragraphs: [] };
+      sections.push(current);
+    }
+  };
+
+  const appendInlineHeadingText = () => {
+    if (!inlineHeadingText.length) return;
+    ensureLeading();
+    const inlineText = inlineHeadingText.join(" ");
+    if (current.paragraphs.length) {
+      const lastIndex = current.paragraphs.length - 1;
+      current.paragraphs[lastIndex] = `${current.paragraphs[lastIndex]} ${inlineText}`;
+    } else {
+      current.paragraphs.push(inlineText);
+    }
+    inlineHeadingText = [];
+  };
+
+  for (let index = 0; index < blocks.length; index += 1) {
+    const block = blocks[index];
+    if (
+      block.type === "heading" &&
+      index !== titleIndex &&
+      [2, 3].includes(block.level)
+    ) {
+      appendInlineHeadingText();
+      current = { title: block.text, paragraphs: [] };
+      sections.push(current);
+    } else if (block.type === "heading" && index !== titleIndex) {
+      inlineHeadingText.push(block.text);
+    } else if (index !== titleIndex) {
+      ensureLeading();
+      current.paragraphs.push(
+        [...inlineHeadingText, block.text].join(" "),
+      );
+      inlineHeadingText = [];
+    } else {
+      ensureLeading();
+    }
+  }
+  appendInlineHeadingText();
+  return { title, sections };
+}
+
+function chapterFromSections(title, sections) {
+  const populated = sections.filter((section) => section.paragraphs.length);
+  const paragraphs = populated.flatMap((section) => section.paragraphs);
+  const subheadings = populated.map((section) => ({
+    title: section.title,
+    paragraphs: section.paragraphs,
+  }));
+  return {
+    title,
+    paragraphs,
+    ...(subheadings.some((section) => section.title)
+      ? { subheadings }
+      : {}),
+  };
+}
+
+function markdownHeadingText(value) {
+  return stripMarkdown(value.replace(/\s+#+\s*$/, "")).trim();
+}
+
+function markdownHeadingBlocks(source) {
+  return [...source.matchAll(/^ {0,3}(#{1,6})[ \t]+(.+?)\s*$/gm)].map(
+    (match) => ({
+      level: match[1].length,
+      title: markdownHeadingText(match[2]),
+      index: match.index,
+      end: match.index + match[0].length,
+    }),
+  );
+}
+
+function markdownContent(source, inlineHeadingLevel) {
+  let prepared = source;
+  if (inlineHeadingLevel <= 6) {
+    const headingPattern = new RegExp(
+      `^ {0,3}#{${inlineHeadingLevel},}[ \\t]+(.+?)(?:[ \\t]+#+)?[ \\t]*(?:\\r?\\n|$)(?:[ \\t]*\\r?\\n)*`,
+      "gm",
+    );
+    prepared = source.replace(
+      headingPattern,
+      (_, text) => `${markdownHeadingText(text)} `,
+    );
+  }
+  return splitParagraphs(stripMarkdown(prepared));
+}
+
+function nextLineStart(source, index) {
+  if (source.startsWith("\r\n", index)) return index + 2;
+  if (source[index] === "\r" || source[index] === "\n") return index + 1;
+  return index;
+}
+
+export function buildMarkdownChapters(source) {
+  const headings = markdownHeadingBlocks(source);
+  if (!headings.length) return null;
+
+  const chapterLevel = Math.min(...headings.map((heading) => heading.level));
+  const chapterHeadings = headings.filter(
+    (heading) => heading.level === chapterLevel,
+  );
+  const leading = source.slice(0, chapterHeadings[0].index);
+
+  return chapterHeadings
+    .map((heading, index) => {
+      const chapterEnd =
+        chapterHeadings[index + 1]?.index ?? source.length;
+      const bodyStart = nextLineStart(source, heading.end);
+      const body = source.slice(bodyStart, chapterEnd);
+      const bodyHeadings = headings.filter(
+        (candidate) =>
+          candidate.index >= bodyStart && candidate.index < chapterEnd,
+      );
+      const subheadingHeadings = bodyHeadings.filter(
+        (candidate) => candidate.level === chapterLevel + 1,
+      );
+      const chapterPrefix = index === 0 ? leading : "";
+
+      if (!subheadingHeadings.length) {
+        return {
+          title: heading.title,
+          paragraphs: markdownContent(
+            `${chapterPrefix}${body}`,
+            chapterLevel + 2,
+          ),
+        };
+      }
+
+      const sections = [];
+      const firstSubheading = subheadingHeadings[0];
+      const leadingSectionParagraphs = markdownContent(
+        `${chapterPrefix}${source.slice(bodyStart, firstSubheading.index)}`,
+        chapterLevel + 2,
+      );
+      if (leadingSectionParagraphs.length)
+        sections.push({ title: null, paragraphs: leadingSectionParagraphs });
+
+      subheadingHeadings.forEach((subheading, subheadingIndex) => {
+        const sectionEnd =
+          subheadingHeadings[subheadingIndex + 1]?.index ?? chapterEnd;
+        const sectionStart = nextLineStart(source, subheading.end);
+        sections.push({
+          title: subheading.title,
+          paragraphs: markdownContent(
+            source.slice(sectionStart, sectionEnd),
+            chapterLevel + 2,
+          ),
+        });
+      });
+
+      const populatedSections = sections.filter(
+        (section) => section.paragraphs.length,
+      );
+      const paragraphs = populatedSections.flatMap(
+        (section) => section.paragraphs,
+      );
+      return {
+        title: heading.title,
+        paragraphs,
+        subheadings: populatedSections.map((section) => ({
+          title: section.title,
+          paragraphs: section.paragraphs,
+        })),
+      };
+    })
+    .filter(
+      (chapter) =>
+        chapter.paragraphs.length || chapter.subheadings?.length,
+    );
 }
 
 function parseXml(source, type = "application/xml") {
@@ -201,17 +397,29 @@ async function parseEpub(file, onProgress) {
     if (!source) continue;
 
     const chapterDoc = parseXml(source, "application/xhtml+xml");
-    const heading = normalizeText(
-      chapterDoc.querySelector("h1, h2, h3, title")?.textContent,
+    const body = chapterDoc.body ?? chapterDoc.documentElement;
+    const blocks = collectContentBlocks(body);
+    if (
+      !blocks.some((block) => block.type === "content") &&
+      !blocks.some((block) => block.type === "heading")
+    ) {
+      blocks.push(
+        ...splitParagraphs(body.textContent).map((text) => ({
+          type: "content",
+          text,
+        })),
+      );
+    }
+    const structured = buildEpubSections(blocks);
+    const fallbackTitle = normalizeText(
+      chapterDoc.querySelector("title")?.textContent,
     );
-    const paragraphs = paragraphsFromElement(
-      chapterDoc.body ?? chapterDoc.documentElement,
+    const chapter = chapterFromSections(
+      structured.title || fallbackTitle || `Chapter ${chapters.length + 1}`,
+      structured.sections,
     );
-    if (paragraphs.length)
-      chapters.push({
-        title: heading || `Chapter ${chapters.length + 1}`,
-        paragraphs,
-      });
+    if (chapter.paragraphs.length || chapter.subheadings?.length)
+      chapters.push(chapter);
     onProgress?.(
       Math.round(((index + 1) / spine.length) * 100),
       `Opening chapter ${index + 1} of ${spine.length}`,
@@ -227,26 +435,11 @@ function parseTextDocument(file, source) {
   const isMarkdown = ["md", "markdown"].includes(extensionOf(file.name));
   const raw = isMarkdown ? stripMarkdown(source) : source;
   const normalized = normalizeText(raw);
-  const headings = isMarkdown
-    ? [...source.matchAll(/^#{1,3}\s+(.+)$/gm)].map((match) => ({
-        title: stripMarkdown(match[1]),
-        index: match.index,
-      }))
-    : [];
 
   let chapters;
-  if (headings.length) {
-    chapters = headings
-      .map((heading, index) => {
-        const start =
-          heading.index + source.slice(heading.index).indexOf("\n") + 1;
-        const end = headings[index + 1]?.index ?? source.length;
-        return {
-          title: heading.title,
-          paragraphs: splitParagraphs(stripMarkdown(source.slice(start, end))),
-        };
-      })
-      .filter((chapter) => chapter.paragraphs.length);
+  const markdownChapters = isMarkdown ? buildMarkdownChapters(source) : null;
+  if (markdownChapters) {
+    chapters = markdownChapters;
   } else {
     const paragraphs = splitParagraphs(normalized);
     chapters = [];

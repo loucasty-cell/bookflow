@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run Bookflow (Vite)",
+      "type": "pwa-chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}",
+      "preLaunchTask": "Start Bookflow (Vite)",
+      "sourceMaps": true
+    },
+    {
+      "name": "Run current JavaScript file",
+      "type": "node",
+      "request": "launch",
+      "program": "${file}",
+      "skipFiles": ["<node_internals>/**"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Run current Go package",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${fileDirname}"
+    },
+    {
+      "name": "Run current Dart file",
+      "type": "dart",
+      "request": "launch",
+      "program": "${file}"
+    }
+  ]
+}

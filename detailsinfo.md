@@ -4,7 +4,7 @@ This document is the detailed source of truth for Bookflow's present behavior, l
 
 ## Product summary
 
-Bookflow is a local-first browser reader for PDF, EPUB, TXT, and Markdown files. Its main interaction is scroll-driven sentence focus: the complete sentence closest to an upper-page focus rail becomes bold and softly highlighted so the reader can maintain attention without manually selecting text.
+Bookflow is a local-first browser reader for PDF, EPUB, TXT, and Markdown files. Its main interaction is scroll-driven paragraph focus: the eligible paragraph nearest the upper-page focus rail becomes softly highlighted so the reader can maintain attention without manually selecting text.
 
 ## Current user journey
 
@@ -19,28 +19,28 @@ The browser validates the extension and 50 MB size limit. The selected file rema
 ### 3. Parse the document
 
 - PDF: PDF.js extracts selectable text page by page.
-- EPUB: JSZip reads the package, manifest, spine, metadata, and XHTML chapter content.
-- Markdown: headings create sections when available, and Markdown syntax is reduced to readable text.
+- EPUB: JSZip reads the package, manifest, spine, metadata, and XHTML chapter content. Each spine item remains a chapter; internal h2 and h3 blocks create one subheading level, while deeper headings remain readable inline text.
+- Markdown: the minimum heading level becomes the chapter level, the next level becomes subheadings, and deeper headings remain readable inline text. Text before the first heading is retained as leading content.
 - TXT: normalized paragraphs are grouped into sections.
 
 Heavy PDF and EPUB code is loaded only when its format is opened.
 
 ### 4. Prepare the reading model
 
-Bookflow normalizes chapters and paragraphs, segments complete sentences, assigns sentence identifiers, counts words, estimates reading time at 230 words per minute, and determines which sections may participate in automatic focus.
+Bookflow normalizes chapters and paragraphs, keeps a flat paragraph list alongside optional subheading sections, assigns paragraph identifiers across each chapter, counts words, estimates reading time at 230 words per minute, and determines which sections may participate in automatic focus.
 
-### 5. Read with sentence focus
+### 5. Read with paragraph focus
 
-While the reader scrolls, Bookflow selects the eligible sentence nearest 32% from the top of the reading viewport. Hovering does not change focus. The selected sentence uses a pale-blue highlight, red edge, and stronger weight.
+While the reader scrolls, Bookflow selects the eligible paragraph nearest the 42% focus rail. Hovering does not change focus. The selected paragraph uses a pale-blue highlight, red edge, and stronger weight. In Focus Reading Mode, the rail detects static sections such as introductions and end matter; those sections scroll natively without paragraph snapping, show a small reading label, and resume focus when the rail crosses back into eligible content.
 
 ### 6. Control the reading session
 
 The reader can:
 
-- Click or use Enter or Space to hold a sentence in focus.
+- Click or use Enter or Space to hold a paragraph in focus.
 - Resume automatic focus.
-- Bookmark the focused sentence.
-- Copy the focused sentence.
+- Bookmark the focused paragraph.
+- Copy the focused paragraph.
 - Add and delete margin notes.
 - Navigate by current page or section, total count, slider, previous, and next.
 - Change text size, line spacing, column width, focus intensity, and paper or dusk atmosphere.
@@ -56,7 +56,7 @@ When the same file is opened again, Bookflow uses its name, size, and last-modif
 | --- | --- | --- |
 | Main surface | Soft white | Low-fatigue reader background |
 | Primary filler | `#507B9C` | Brand, controls, and blue structure |
-| Focus color | `#C2DCFF` | Sentence highlight and calm supporting surfaces |
+| Focus color | `#C2DCFF` | Paragraph highlight and calm supporting surfaces |
 | Interaction accent | `#E3242B` | Focus edge, progress, and important active details |
 | Typography | DM Sans and Newsreader | Interface clarity and long-form readability |
 
@@ -103,12 +103,12 @@ This behavior is heuristic. It does not fully understand a book's meaning, and a
 ### User responsibility
 
 - Browser storage belongs to the browser profile and can be removed by clearing site data.
-- Anyone with access to the same browser profile may be able to see saved notes and quoted sentences.
+- Anyone with access to the same browser profile may be able to see saved notes and quoted paragraphs.
 - Bookflow does not remove DRM and should be used with files the reader is allowed to access.
 
 ## Accessibility currently covered
 
-- Keyboard activation for selectable sentences.
+- Keyboard activation for selectable paragraphs.
 - Accessible names for settings, notes, page navigation, and panel controls.
 - Responsive layout for desktop and mobile.
 - Visible keyboard focus outlines.
@@ -129,7 +129,11 @@ Accessibility still needs broader screen-reader, zoom, reduced-motion, high-cont
 | Persistence | State is limited to one browser profile and device |
 | Notes | No export, import, search, or jump-to-quote yet |
 | Library | No persistent book library or recent-books screen yet |
-| Testing | Text helpers have automated coverage; parser and reader integration coverage should grow |
+| Testing | Structure helpers and focus eligibility have automated coverage; full parser and reader integration coverage should grow |
+
+### Structure and identifier limitation
+
+Markdown and EPUB structure is intentionally limited to one subheading level. Re-parsing a changed Markdown or EPUB file can reorder the flat paragraph list and shift identifiers, which may orphan existing local notes or bookmarks for that file. The imported text itself is not deleted.
 
 ## Current technology
 

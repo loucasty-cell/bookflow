@@ -1,7 +1,12 @@
-export { DEFAULT_SETTINGS } from './config.js'
+export { DEFAULT_SETTINGS, FONT_SIZE_MAX, FONT_SIZE_MIN } from './config.js'
 export { ReaderPage } from './components/ReaderPage.jsx'
 export { selectClosestParagraph, selectFocusTarget, selectNextParagraph } from './lib/focusRail.js'
 export { isFocusEligibleChapter } from './lib/focusEligibility.js'
+export {
+  ensureSelectedSegmentVisible,
+  getReaderSafeViewport,
+  getSelectedSegmentAlignment,
+} from './lib/readerViewport.js'
 export {
   FOCUS_RAIL_RATIO,
   LINE_COOLDOWN,

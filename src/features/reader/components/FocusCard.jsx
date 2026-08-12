@@ -11,7 +11,11 @@ export function FocusCard({
   if (!focusedParagraph) return null;
 
   return (
-    <section className="focus-card" aria-label="Paragraph in focus">
+    <section
+      className="focus-card"
+      data-reader-bottom-overlay
+      aria-label="Paragraph in focus"
+    >
       <div className="focus-card-label"><Focus size={14} /> In focus</div>
       <p>{focusedParagraph.text}</p>
       <div>
