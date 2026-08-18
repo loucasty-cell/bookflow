@@ -165,7 +165,7 @@ Create folders only when they contain real files required by a requested change.
 - Remove repeated headers, footers, and page numbers only when detection is reliable.
 - Never silently discard large portions of a document.
 - Use native PDF text as the source of truth and OCR only pages without enough selectable text.
-- Reuse one OCR worker per import, terminate it after the import, and keep progress monotonic.
+- Reuse an OCR scheduler with up to 4 parallel workers per import, terminate the scheduler after the import, and keep progress monotonic.
 - Show an explicit message when neither native extraction nor local English OCR finds readable text.
 - Treat document markup, archives, filenames, and metadata as untrusted input.
 - Validate archive paths inside EPUB files.

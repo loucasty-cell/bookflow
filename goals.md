@@ -68,7 +68,7 @@ The library should store metadata and reading state only unless the user explici
 
 ### P2: Format quality
 
-- Add local OCR as an optional workflow for scanned PDFs only after performance, download size, and privacy are evaluated.
+- Add local OCR as an optional workflow for scanned PDFs only after performance, download size, and privacy are evaluated. (Done: Performance vastly improved via concurrent scheduler).
 - Improve EPUB navigation using its table of contents when available.
 - Preserve basic emphasis and block quotations with a safe structured representation.
 - Evaluate additional formats only when a real user need is confirmed.
