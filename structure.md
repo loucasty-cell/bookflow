@@ -10,7 +10,11 @@ bookflow/
 |   |-- features/
 |   |   |-- document-import/
 |   |   |   |-- lib/
-|   |   |   |   `-- documentParsers.js
+|   |   |   |   |-- documentParsers.js
+|   |   |   |   |-- epubParser.js
+|   |   |   |   |-- epubUtils.js
+|   |   |   |   |-- pdfParser.js
+|   |   |   |   `-- textParser.js
 |   |   |   `-- index.js
 |   |   |-- landing/
 |   |   |   |-- components/

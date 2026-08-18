@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildEpubSections,
-  buildMarkdownChapters,
-} from "./documentParsers.js";
+import { buildEpubSections } from "./epubUtils.js";
+import { buildMarkdownChapters } from "./textParser.js";
 
 describe("Markdown structure parsing", () => {
   it("uses the minimum heading level for chapters and the next level for subheadings", () => {

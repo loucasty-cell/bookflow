@@ -39,14 +39,22 @@ function localOcrUrl(path) {
   return new URL(`${import.meta.env.BASE_URL}ocr/${path}`, document.baseURI).href;
 }
 
-export async function createPdfOcrWorker(reportProgress) {
-  const { createWorker } = await import("tesseract.js");
-  return createWorker("eng", 1, {
-    workerPath: localOcrUrl("worker.min.js"),
-    corePath: localOcrUrl("core"),
-    langPath: localOcrUrl("lang"),
-    logger: (message) => reportProgress?.(message),
-  });
+export async function createPdfOcrScheduler(reportProgress) {
+  const { createWorker, createScheduler } = await import("tesseract.js");
+  const scheduler = createScheduler();
+  const workerCount = Math.min(4, navigator.hardwareConcurrency || 2);
+
+  for (let i = 0; i < workerCount; i++) {
+    const worker = await createWorker("eng", 1, {
+      workerPath: localOcrUrl("worker.min.js"),
+      corePath: localOcrUrl("core"),
+      langPath: localOcrUrl("lang"),
+      logger: (message) => reportProgress?.(message),
+    });
+    scheduler.addWorker(worker);
+  }
+
+  return scheduler;
 }
 
 function renderScaleForPage(page) {
@@ -77,10 +85,10 @@ export async function renderPdfPageForOcr(page) {
   return canvas;
 }
 
-export async function recognizePdfPage(worker, page) {
+export async function recognizePdfPage(scheduler, page) {
   const canvas = await renderPdfPageForOcr(page);
   try {
-    const result = await worker.recognize(canvas, {
+    const result = await scheduler.addJob('recognize', canvas, {
       preserve_interword_spaces: "1",
       user_defined_dpi: "180",
     });

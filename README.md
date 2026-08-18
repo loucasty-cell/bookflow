@@ -9,7 +9,7 @@ Bookflow is a private, browser-based reading space for PDFs, EPUB ebooks, text f
 - Import `.pdf`, `.epub`, `.txt`, `.md`, and `.markdown` files up to 50 MB.
 - Verify PDF and EPUB signatures and reject empty, binary, spoofed, or unreadable text files before opening.
 - Show a clear local import status through a visible 100% ready state before entering the reader.
-- Extract selectable PDF text locally with PDF.js and recover image-only English pages with local OCR.
+- Extract selectable PDF text locally with PDF.js and recover image-only English pages with local, multi-threaded OCR.
 - Read EPUB chapters locally with JSZip and the ebook's package/spine metadata.
 - Group Markdown chapters and EPUB chapter content into one subheading level while keeping deeper headings as readable text.
 - Focus Reading Mode keeps a fixed reading rail near 42% of the viewport and moves the book one small whole paragraph at a time behind it.
@@ -28,7 +28,7 @@ Bookflow is a private, browser-based reading space for PDFs, EPUB ebooks, text f
 
 In Focus Reading Mode, use Arrow Down / J for the next paragraph, Arrow Up / K for the previous paragraph, Space for the next paragraph, Shift + Space for the previous paragraph, Page Down / Page Up for small groups, and Escape to pause the focus controller. Click or press Enter on a real-context paragraph to hold it, then use Resume flow to continue. Introductions and front/end matter remain visible as normal book pages, scroll natively, and are not selectable focus targets.
 
-Files are processed in the browser. Bookflow does not upload book contents to an API or require an account. For scanned or image-only PDF pages, Bookflow renders each page locally and uses its bundled English OCR model while preserving the PDF's original page order. OCR accuracy depends on scan clarity, orientation, typography, and language; unclear or non-English scans may need a better source file.
+Files are processed in the browser. Bookflow does not upload book contents to an API or require an account. For scanned or image-only PDF pages, Bookflow renders each page locally and uses its bundled English OCR model, utilizing a concurrent scheduler (up to 4 background workers) to keep processing times well under two minutes, while preserving the PDF's original page order. OCR accuracy depends on scan clarity, orientation, typography, and language; unclear or non-English scans may need a better source file.
 
 ## Lightweight tools used
 
