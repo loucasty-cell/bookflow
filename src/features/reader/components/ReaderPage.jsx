@@ -1,4 +1,11 @@
-import { Menu, MessageSquareText, Settings2, X } from "lucide-react";
+import {
+  Menu,
+  MessageSquareText,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Settings2,
+  X,
+} from "lucide-react";
 import { Brand } from "../../../shared/components/index.js";
 import { ContentsPanel } from "./ContentsPanel.jsx";
 import { FocusCard } from "./FocusCard.jsx";
@@ -19,6 +26,8 @@ export function ReaderPage({
   setNoteDraft,
   sidebarOpen,
   setSidebarOpen,
+  sidebarCollapsed,
+  setSidebarCollapsed,
   notesOpen,
   setNotesOpen,
   settingsOpen,
@@ -40,6 +49,7 @@ export function ReaderPage({
   focusParagraph,
   toggleBookmark,
   copyFocusedParagraph,
+  moveFocus,
   addNote,
   resumeFlow,
 }) {
@@ -52,6 +62,9 @@ export function ReaderPage({
     paused: "Held",
     reading: "Reading",
   }[readerState] ?? "Reading";
+  const navigatorLabel = sidebarCollapsed
+    ? "Show navigator"
+    : "Hide navigator for focused reading";
 
   return (
     <div
@@ -62,10 +75,20 @@ export function ReaderPage({
     >
       <header className="reader-topbar">
         <button
+          className="icon-button navigator-toggle desktop-only"
+          onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+          aria-label={navigatorLabel}
+          aria-expanded={!sidebarCollapsed}
+          aria-controls="book-navigator"
+        >
+          {sidebarCollapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
+        </button>
+        <button
           className="icon-button mobile-only"
           onClick={() => setSidebarOpen(true)}
           aria-label="Open contents"
           aria-expanded={sidebarOpen}
+          aria-controls="book-navigator"
         >
           <Menu size={20} />
         </button>
@@ -132,7 +155,7 @@ export function ReaderPage({
       </header>
 
       <div
-        className={`reader-layout ${settingsOpen || notesOpen ? "has-reader-panel" : ""} ${settingsOpen ? "has-settings-panel" : ""} ${notesOpen ? "has-notes-panel" : ""}`}
+        className={`reader-layout ${sidebarCollapsed ? "is-sidebar-collapsed" : ""} ${settingsOpen || notesOpen ? "has-reader-panel" : ""} ${settingsOpen ? "has-settings-panel" : ""} ${notesOpen ? "has-notes-panel" : ""}`}
       >
         <ContentsPanel
           book={book}
@@ -142,7 +165,9 @@ export function ReaderPage({
           bookmarkCount={bookmarks.length}
           progress={progress}
           sidebarOpen={sidebarOpen}
+          sidebarCollapsed={sidebarCollapsed}
           setSidebarOpen={setSidebarOpen}
+          setSidebarCollapsed={setSidebarCollapsed}
           jumpToChapter={jumpToChapter}
           closeBook={closeBook}
         />
@@ -165,6 +190,7 @@ export function ReaderPage({
           }}
           tabIndex={0}
           aria-label={`${settings.mode === "focus" ? "Paragraph focus reading" : "Normal reading"}: ${book.title}`}
+          aria-keyshortcuts={settings.mode === "focus" ? "ArrowDown ArrowUp Space Escape" : undefined}
         >
           <article className="reading-column">
             <header className="document-header">
@@ -236,6 +262,7 @@ export function ReaderPage({
                             : undefined
                         }
                         aria-current={focusId === paragraph.id ? "true" : undefined}
+                        aria-keyshortcuts={chapter.focusEligible ? "Enter Space" : undefined}
                         aria-pressed={
                           chapter.focusEligible
                             ? pinnedId === paragraph.id
@@ -258,6 +285,9 @@ export function ReaderPage({
             <footer className="end-mark">
               <strong>You reached the end</strong>
               <span>Take the thought that stayed with you.</span>
+              <button className="end-mark-action" onClick={closeBook}>
+                Open another book
+              </button>
             </footer>
           </article>
         </main>
@@ -273,6 +303,7 @@ export function ReaderPage({
             isBookmarked={isBookmarked}
             toggleBookmark={toggleBookmark}
             copyFocusedParagraph={copyFocusedParagraph}
+            moveFocus={moveFocus}
             resumeFlow={resumeFlow}
           />
         )}

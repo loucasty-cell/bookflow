@@ -1,4 +1,12 @@
-import { Bookmark, BookmarkCheck, Check, Copy, Focus } from "lucide-react";
+import {
+  Bookmark,
+  BookmarkCheck,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Focus,
+} from "lucide-react";
 
 export function FocusCard({
   focusedParagraph,
@@ -6,6 +14,7 @@ export function FocusCard({
   isBookmarked,
   toggleBookmark,
   copyFocusedParagraph,
+  moveFocus,
   resumeFlow,
 }) {
   if (!focusedParagraph) return null;
@@ -23,7 +32,27 @@ export function FocusCard({
       </div>
       <p>{focusedParagraph.text}</p>
       <div className="focus-card-actions">
-        <button onClick={toggleBookmark} aria-pressed={isBookmarked}>
+        <button
+          className="focus-card-step"
+          onClick={() => moveFocus(-1)}
+          aria-label="Previous paragraph"
+          title="Previous paragraph"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <button
+          className="focus-card-step"
+          onClick={() => moveFocus(1)}
+          aria-label="Next paragraph"
+          title="Next paragraph"
+        >
+          <ChevronRight size={16} />
+        </button>
+        <button
+          className="focus-card-primary"
+          onClick={toggleBookmark}
+          aria-pressed={isBookmarked}
+        >
           {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
           {isBookmarked ? "Saved" : "Save"}
         </button>

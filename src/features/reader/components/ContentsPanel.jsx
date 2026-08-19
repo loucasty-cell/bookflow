@@ -1,4 +1,4 @@
-import { Library, Plus, X } from "lucide-react";
+import { Library, PanelLeftClose, Plus, X } from "lucide-react";
 import bookflowArtwork from "../../../assets/bookflow-quill.png";
 import { formatReadingTime } from "../lib/readingTime.js";
 
@@ -10,14 +10,17 @@ export function ContentsPanel({
   bookmarkCount,
   progress,
   sidebarOpen,
+  sidebarCollapsed,
   setSidebarOpen,
+  setSidebarCollapsed,
   jumpToChapter,
   closeBook,
 }) {
   return (
     <>
       <aside
-        className={`contents-panel ${sidebarOpen ? "is-open" : ""}`}
+        id="book-navigator"
+        className={`contents-panel ${sidebarOpen ? "is-open" : ""} ${sidebarCollapsed ? "is-collapsed" : ""}`}
         aria-label="Book navigator"
       >
         <div className="contents-shell">
@@ -25,13 +28,22 @@ export function ContentsPanel({
             <span>
               <Library size={16} /> Navigator
             </span>
-            <button
-              className="icon-button mobile-only"
-              onClick={() => setSidebarOpen(false)}
-              aria-label="Close navigator"
-            >
-              <X size={18} />
-            </button>
+            <div className="navigator-heading-actions">
+              <button
+                className="icon-button desktop-only contents-collapse-button"
+                onClick={() => setSidebarCollapsed(true)}
+                aria-label="Hide navigator for focused reading"
+              >
+                <PanelLeftClose size={18} />
+              </button>
+              <button
+                className="icon-button mobile-only"
+                onClick={() => setSidebarOpen(false)}
+                aria-label="Close navigator"
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           <div className="book-miniature">

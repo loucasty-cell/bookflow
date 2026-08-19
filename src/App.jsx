@@ -7,7 +7,10 @@ import {
   useState,
 } from "react";
 import { parseDocument } from "./features/document-import/index.js";
-import { LandingPage } from "./features/landing/index.js";
+import {
+  BookOpeningIntro,
+  LandingPage,
+} from "./features/landing/index.js";
 import {
   DEFAULT_SETTINGS,
   FONT_SIZE_MAX,
@@ -32,6 +35,7 @@ import {
 } from "./shared/lib/index.js";
 
 const IMPORT_COMPLETE_DELAY = 480;
+const ENTRY_INTRO_STORAGE_KEY = "bookflow:entry-intro-seen";
 
 function sectionAtFocusRail(reader) {
   if (!reader) return null;
@@ -109,6 +113,7 @@ function App() {
   const [settings, setSettings] = useState(readSettings);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [activeParagraphId, setActiveParagraphId] = useState("");
   const [pinnedId, setPinnedId] = useState("");
@@ -121,6 +126,7 @@ function App() {
   const [activeParagraphIsLarge, setActiveParagraphIsLarge] = useState(false);
   const [overStaticRegion, setOverStaticRegion] = useState(false);
   const [staticRegionLabel, setStaticRegionLabel] = useState("Reading the intro");
+  const [showEntryIntro, setShowEntryIntro] = useState(false);
   const fileInputRef = useRef(null);
   const readerRef = useRef(null);
   const readerSizeRef = useRef({ width: 0, height: 0 });
@@ -150,6 +156,33 @@ function App() {
   const touchStartRef = useRef(null);
   const navigationRef = useRef(null);
   const alignParagraphRef = useRef(null);
+
+  const completeEntryIntro = useCallback(() => {
+    try {
+      sessionStorage.setItem(ENTRY_INTRO_STORAGE_KEY, "true");
+    } catch {
+      // The intro remains optional when session storage is unavailable.
+    }
+    setShowEntryIntro(false);
+  }, []);
+
+  useEffect(() => {
+    if (book) return undefined;
+
+    const reduceMotion = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    )?.matches;
+    let alreadySeen = false;
+    try {
+      alreadySeen = sessionStorage.getItem(ENTRY_INTRO_STORAGE_KEY) === "true";
+    } catch {
+      alreadySeen = false;
+    }
+    if (reduceMotion || alreadySeen) return undefined;
+
+    setShowEntryIntro(true);
+    return undefined;
+  }, [book]);
 
   const updateStaticRegion = useCallback(() => {
     const reader = readerRef.current;
@@ -402,6 +435,16 @@ function App() {
       setSelectedParagraph(target);
     },
     [setSelectedParagraph],
+  );
+
+  const moveFocus = useCallback(
+    (direction) => {
+      if (!direction) return;
+      pinnedIdRef.current = "";
+      setPinnedId("");
+      navigateBy(direction, { step: 1, rapid: true, source: "focus-card" });
+    },
+    [navigateBy],
   );
 
   useEffect(() => {
@@ -918,6 +961,7 @@ function App() {
       hasMeasuredBookRef.current = false;
       setActiveChapter(0);
       setSidebarOpen(false);
+      setSidebarCollapsed(false);
       setError("");
       document.title = `${nextBook.title} - Bookflow`;
     },
@@ -978,6 +1022,7 @@ function App() {
     setNotesOpen(false);
     setSettingsOpen(false);
     setSidebarOpen(false);
+    setSidebarCollapsed(false);
     setPinnedId("");
     setActiveParagraphIsLarge(false);
     setOverStaticRegion(false);
@@ -1062,22 +1107,25 @@ function App() {
 
   if (!book) {
     return (
-      <LandingPage
-        dragging={dragging}
-        setDragging={setDragging}
-        fileInputRef={fileInputRef}
-        handleFile={handleFile}
-        openBook={openBook}
-        error={error}
-        loading={loading}
-        theme={settings.theme}
-        toggleTheme={() =>
-          setSettings((current) => ({
-            ...current,
-            theme: current.theme === "dusk" ? "paper" : "dusk",
-          }))
-        }
-      />
+      <>
+        {showEntryIntro && <BookOpeningIntro onComplete={completeEntryIntro} />}
+        <LandingPage
+          dragging={dragging}
+          setDragging={setDragging}
+          fileInputRef={fileInputRef}
+          handleFile={handleFile}
+          openBook={openBook}
+          error={error}
+          loading={loading}
+          theme={settings.theme}
+          toggleTheme={() =>
+            setSettings((current) => ({
+              ...current,
+              theme: current.theme === "dusk" ? "paper" : "dusk",
+            }))
+          }
+        />
+      </>
     );
   }
 
@@ -1101,6 +1149,8 @@ function App() {
       setNoteDraft={setNoteDraft}
       sidebarOpen={sidebarOpen}
       setSidebarOpen={setSidebarOpen}
+      sidebarCollapsed={sidebarCollapsed}
+      setSidebarCollapsed={setSidebarCollapsed}
       notesOpen={notesOpen}
       setNotesOpen={setNotesOpen}
       settingsOpen={settingsOpen}
@@ -1117,6 +1167,7 @@ function App() {
       focusParagraph={focusParagraph}
       toggleBookmark={toggleBookmark}
       copyFocusedParagraph={copyFocusedParagraph}
+      moveFocus={moveFocus}
       addNote={addNote}
       resumeFlow={resumeFlow}
     />

@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  ocrDpiForScale,
   ocrTextToParagraphs,
   pageNeedsOcr,
   pdfPageProgress,
+  renderScaleForDimensions,
 } from "./pdfOcr.js";
 
 describe("scanned PDF OCR helpers", () => {
@@ -33,5 +35,16 @@ describe("scanned PDF OCR helpers", () => {
       pdfPageProgress(2, 4, 1),
     );
     expect(pdfPageProgress(4, 4, 1)).toBe(96);
+  });
+
+  it("keeps OCR image rendering inside the configured pixel budget", () => {
+    expect(renderScaleForDimensions(612, 792)).toBe(2.5);
+    expect(renderScaleForDimensions(6000, 8000)).toBeLessThan(0.5);
+  });
+
+  it("matches OCR DPI to the rendered page scale within safe bounds", () => {
+    expect(ocrDpiForScale(1)).toBe(144);
+    expect(ocrDpiForScale(2.5)).toBe(180);
+    expect(ocrDpiForScale(8)).toBe(300);
   });
 });
