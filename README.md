@@ -1,51 +1,46 @@
 # Bookflow
 
-Bookflow is a private, browser-based reading space for PDFs, EPUB ebooks, text files, and Markdown. It follows the small paragraph nearest a quiet upper-page focus rail as the reader scrolls, helping long reading sessions feel calmer and easier to continue.
+Bookflow is a private, paragraph-focused reading space for PDFs, EPUB ebooks, text files, and Markdown with a React frontend and a high-performance FastAPI Python backend for document processing and fast Hugging Face Vision OCR scanning.
 
-![Bookflow paragraph-focused reader](https://img.shields.io/badge/reader-local--first-507B9C) ![React](https://img.shields.io/badge/React-18-61dafb) ![Vite](https://img.shields.io/badge/Vite-6-646cff)
+![Bookflow reader](https://img.shields.io/badge/reader-local--first-507B9C) ![React](https://img.shields.io/badge/React-18-61dafb) ![Vite](https://img.shields.io/badge/Vite-6-646cff) ![FastAPI](https://img.shields.io/badge/FastAPI-Python-009688)
 
-## What works
+---
 
-- Import `.pdf`, `.epub`, `.txt`, `.md`, and `.markdown` files up to 50 MB.
-- Verify PDF and EPUB signatures and reject empty, binary, spoofed, or unreadable text files before opening.
-- Show a clear local import status through a visible 100% ready state before entering the reader.
-- Extract selectable PDF text locally with PDF.js and recover image-only English pages with local, multi-threaded OCR.
-- Read EPUB chapters locally with JSZip and the ebook's package/spine metadata.
-- Group Markdown chapters and EPUB chapter content into one subheading level while keeping deeper headings as readable text.
-- Focus Reading Mode keeps a fixed reading rail near 42% of the viewport and moves the book one small whole paragraph at a time behind it.
-- Wheel, touch, keyboard, and the Previous/Next controls share one scroll-intent controller with speed limiting, controlled acceleration, paragraph skim steps, and snap-after-scroll behavior.
-- Normal Reading Mode keeps native continuous scrolling and a quiet current-paragraph highlight.
-- Skip likely front matter, introductions, and end matter when choosing the automatic focus paragraph.
-- Free-scroll introductions and other static sections natively in Focus Reading Mode; focus resumes when the rail returns to eligible body text.
-- Click or press Enter on a real-context paragraph to hold it in focus, then resume the natural flow.
-- Navigate long PDFs with a compact current-page/total-pages control such as `8 / 283`.
-- Choose Focus or Normal Reading Mode, soft/deep/disabled focus, font size, line spacing, page width, and paragraph cooldown.
-- Use a content-first, Apple-inspired interface with precise spacing, glass materials, safe-area support, and 44px mobile controls.
-- Keep the soft-white `#507B9C`, `#C2DCFF`, and `#E3242B` palette in light mode, or switch to a near-black reading atmosphere with restrained blue and wine accents.
-- Save paragraph bookmarks, margin notes, reading progress, and settings in local browser storage.
-- Use responsive layouts on desktop, tablet, and mobile.
-- Try the full reader with a built-in sample before importing a book.
+## Documentation & Context Files
 
-In Focus Reading Mode, use Arrow Down / J for the next paragraph, Arrow Up / K for the previous paragraph, Space for the next paragraph, Shift + Space for the previous paragraph, Page Down / Page Up for small groups, and Escape to pause the focus controller. Click or press Enter on a real-context paragraph to hold it, then use Resume flow to continue. Introductions and front/end matter remain visible as normal book pages, scroll natively, and are not selectable focus targets.
+- **[features.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/features.md)**: Detailed feature breakdown across the frontend reader, backend processing, and Hugging Face Vision OCR models.
+- **[structure.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/structure.md)**: Complete repository structure, directory tree, layer responsibilities, and architecture guidelines.
+- **[api.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/api.md)**: Full API reference detailing Frontend data contracts, browser storage schemas, and FastAPI REST API endpoints.
+- **[debugging.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/debugging.md)**: Diagnostics, common error resolutions, and step-by-step troubleshooting workflows.
 
-Files are processed in the browser. Bookflow does not upload book contents to an API or require an account. For scanned or image-only PDF pages, Bookflow renders each page locally and uses its bundled English OCR model, utilizing a concurrent scheduler (up to 4 background workers) to keep processing times well under two minutes, while preserving the PDF's original page order. OCR accuracy depends on scan clarity, orientation, typography, and language; unclear or non-English scans may need a better source file.
+---
 
-## Lightweight tools used
+## Core Capabilities
 
-| Tool | Purpose |
+- **Sentence & Paragraph Reading Focus**: A gentle highlight settles on the active sentence or paragraph near the 42% reading rail during scrolling.
+- **Pinned Focus & Fluid Scroll**: Pin any paragraph with `Space`, `Enter`, or a click to hold focus while scrolling nearby context.
+- **Multi-Format Document Processing**: Supports `.pdf`, `.epub`, `.txt`, `.md`, and `.markdown` files up to 50 MB.
+- **Fast Hugging Face Vision OCR**: Accelerated image-to-text scanning powered by Hugging Face models (`microsoft/trocr-base-stage1`, `microsoft/trocr-large-printed`, `stepfun-ai/GOT-OCR2_0`, `facebook/nougat-base`).
+- **Private & Local-First**: Reading content stays on the user's device by default. Backend processing is opt-in for accelerated scanning without persistent document storage.
+- **Margin Notes & Bookmarks**: Save quotes, notes, and bookmarks in browser storage with import/export capabilities.
+- **Dual Atmosphere Themes**: Paper Mode (warm physical book style) and Dusk Mode (near-black night palette).
+
+---
+
+## Tech Stack
+
+| Layer | Technologies |
 | --- | --- |
-| React | Component state and accessible reader interactions |
-| Vite | Fast local development and optimized static builds |
-| PDF.js (`pdfjs-dist`) | Local PDF text extraction |
-| Tesseract.js | Private browser OCR for image-only English PDF pages |
-| JSZip | Local EPUB package and chapter extraction |
-| Lucide React | Small, consistent interface icons |
-| `Intl.Segmenter` | Native sentence boundaries with a regex fallback |
-| Vitest + ESLint | Text-helper tests and code-quality checks |
+| Frontend | React 18, Vite 6, PDF.js, JSZip, Tesseract.js (WASM), Lucide Icons |
+| Backend | Python 3.10+, FastAPI, Uvicorn, Pydantic, HTTPX, Pillow, PyPDF |
+| Vision / OCR | Hugging Face Inference API & Models (TrOCR, Nougat, GOT-OCR 2.0) |
+| Testing & Quality | Vitest, ESLint, Pytest |
 
-PDF.js, JSZip, and Tesseract.js are loaded only when their file type or OCR fallback is needed, keeping the initial experience lighter. OCR worker, WebAssembly, and English language assets are bundled with the production build rather than fetched from a third-party service.
+---
 
-## Run locally
+## Quickstart
+
+### 1. Frontend (React / Vite)
 
 Requires Node.js 18 or newer.
 
@@ -54,14 +49,7 @@ npm install
 npm run dev
 ```
 
-Open the local URL printed by Vite. To create and inspect a production build:
-
-```bash
-npm run build
-npm run preview
-```
-
-## Verify
+Run checks:
 
 ```bash
 npm run lint
@@ -69,12 +57,33 @@ npm run test
 npm run build
 ```
 
-The Vite build uses relative asset paths, so the generated `dist/` folder can be hosted from a repository subpath or any static host.
+### 2. Backend (FastAPI Python)
 
-## Privacy and storage
+Requires Python 3.10 or newer.
 
-- Imported file contents remain in the active browser session.
-- Notes, paragraph bookmarks, progress, and appearance preferences use `localStorage` on the same device.
-- No AI service, analytics service, backend, or account system is connected.
-- Opening the same local file again restores its saved progress from its name, size, and last-modified metadata.
-- Re-parsing a changed Markdown or EPUB structure can shift paragraph IDs, so older notes or bookmarks for that file may no longer match a paragraph.
+```bash
+cd backend
+python -m venv .venv
+
+# On Windows:
+.venv\Scripts\activate
+
+# On macOS/Linux:
+source .venv/bin/activate
+
+pip install -r requirements.txt
+cp .env.example .env
+
+# Set HF_API_KEY in .env if using Hugging Face Vision OCR
+python run.py
+```
+
+Backend interactive API documentation:
+- Swagger UI: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Health check: [http://localhost:8000/api/health](http://localhost:8000/api/health)
+
+Run backend tests:
+
+```bash
+pytest backend/tests
+```

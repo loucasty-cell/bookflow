@@ -6,3 +6,7 @@ dist/
 !.env.example
 *.class
 fullmain.html.before-format-repair
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/

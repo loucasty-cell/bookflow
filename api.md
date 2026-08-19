@@ -1,212 +1,413 @@
 # Bookflow API and Data Contracts
 
-Bookflow currently has no backend, REST API, GraphQL API, account service, analytics service, or AI connection. In this document, API means the internal JavaScript interfaces and browser-storage contracts used by the application.
+This document specifies the internal JavaScript interfaces, browser-storage contracts, and FastAPI backend REST API endpoints used across the Bookflow application.
 
-## Current system boundary
+## 1. System Boundaries and Data Flow
 
 ```text
-Local File
-  -> browser File API
-  -> local parser
-  -> normalized Book object
-  -> React reader state
-  -> localStorage for preferences and reading state
+[Frontend Browser]
+  Local File / Scanned Document
+    |-> Browser File API
+    |-> (Option A: Local Processing) Local JS Parsers (PDF.js / JSZip / Tesseract WASM)
+    |-> (Option B: Backend Fast Processing) FastAPI Backend (/api/documents/parse or /api/ocr/...)
+          |-> Hugging Face Vision Inference API (TrOCR / Nougat / GOT-OCR 2.0)
+    |-> Normalized Book Object
+    |-> React Reader State (Focus Rail, Active Sentence)
+    `-> localStorage (Reading Progress, Bookmarks, Notes)
 ```
 
-Document contents are not sent over the network by Bookflow. PDF.js and JSZip are application dependencies and run in the browser.
+Document contents stay on the user's device by default. When the backend or Hugging Face OCR is utilized for accelerated scanning, requests are transmitted securely to the configured backend API endpoints.
 
-## Document import API
+---
+
+## 2. Frontend Document Import API
 
 Public exports from `src/features/document-import/index.js`:
 
 ```js
-parseDocument(file, onProgress)
-ACCEPTED_FILES
+parseDocument(file, onProgress);
+ACCEPTED_FILES;
 ```
 
 ### `parseDocument(file, onProgress)`
 
-Returns a promise that resolves to a normalized book.
+Returns a promise that resolves to a normalized book object.
 
 | Parameter | Type | Meaning |
 | --- | --- | --- |
 | `file` | Browser `File` | Local document selected by the user |
 | `onProgress` | Optional function | Receives `(percent, label)` parsing updates |
 
-Validation currently accepts:
+#### Supported Extensions & Limits
 
-- `.pdf`
-- `.epub`
-- `.txt`
-- `.md`
-- `.markdown`
+- `.pdf` (Native text + local English OCR fallback)
+- `.epub` (EPUB 2 / EPUB 3 packages)
+- `.txt` (Plain UTF-8 text)
+- `.md`, `.markdown` (CommonMark / GFM)
 - Maximum file size: 50 MB
 
-### Normalized book contract
+---
 
-```js
+## 3. Normalized Book Data Contract
+
+All document parsers (frontend and backend) return data conforming to the **Normalized Book Contract**:
+
+```json
 {
-  title: 'Book title',
-  author: 'Author name',
-  kind: 'MARKDOWN',
-  chapters: [
+  "title": "Document Title",
+  "author": "Author Name (or null)",
+  "kind": "PDF | EPUB | TEXT | MARKDOWN",
+  "chapters": [
     {
-      title: 'Page 1',
-      paragraphs: ['First paragraph.', 'Second paragraph.']
-      // Markdown and EPUB chapters may also expose:
-      // subheadings: [{ title: null, paragraphs: ['Opening context.'] },
-      //   { title: 'A subheading', paragraphs: ['...'] }]
+      "title": "Chapter 1",
+      "focusEligible": true,
+      "paragraphs": [
+        "First complete paragraph text.",
+        "Second complete paragraph text."
+      ],
+      "subheadings": [
+        {
+          "title": "Subheading Title",
+          "paragraphs": [
+            "Paragraph within subheading."
+          ]
+        }
+      ]
     }
   ]
 }
 ```
 
-`paragraphs` is always the flat, document-order list for the chapter. When `subheadings` exists, it contains exactly one level of groups; its first entry may have a null title for leading untitled content. Markdown uses the minimum heading level found as the chapter level and the next level as subheadings; deeper headings remain inline text. EPUB keeps one spine item per chapter and groups internal h2 and h3 blocks.
+### Enriched Reader Paragraph Model
 
-`kind` currently resolves to `PDF`, `EPUB`, `TEXT`, or `MARKDOWN`.
+Inside `App.jsx`, each paragraph is enriched for the reading rail:
 
-### Progress callback contract
-
-```js
-onProgress(45, 'Reading your document')
+```json
+{
+  "id": "paragraph-0-0",
+  "text": "A complete paragraph text.",
+  "chapterIndex": 0,
+  "paragraphIndex": 0
+}
 ```
 
-- `percent` is a number from 0 to 100.
-- `label` is a short user-facing status message.
-- PDF progress is reported per page.
-- EPUB progress is reported per spine item.
+Paragraph identifiers follow `paragraph-{chapterIndex}-{paragraphIndex}` and are indexed in document order.
 
-### Import failure messages
+---
 
-The parser provides actionable errors for:
+## 4. Browser Storage API
 
-- Missing files.
-- Files over 50 MB.
-- Unsupported extensions.
-- Encrypted, damaged, or unreadable PDFs.
-- PDFs without selectable text.
-- Invalid or incomplete EPUB packages.
-- Documents without readable chapters or text.
+### Global Settings
 
-Scanned and image-only PDFs require OCR before the current parser can read them.
+- **Storage Key**: `bookflow:settings`
+- **Schema**:
 
-## Reader data contracts
-
-After import, `App.jsx` enriches each chapter and paragraph for the reader:
-
-```js
+```json
 {
-  title: 'Chapter One',
-  focusEligible: true,
-  paragraphs: [
+  "fontSize": 20,
+  "lineHeight": 1.9,
+  "columnWidth": 720,
+  "focus": "soft",
+  "theme": "paper"
+}
+```
+
+- `focus`: `"off"` | `"soft"` | `"deep"`
+- `theme`: `"paper"` | `"dusk"`
+
+### Per-Document Reading State
+
+- **Identity**: `filename:size:lastModified`
+- **Storage Key**: `bookflow:document:<document-identity>`
+- **Schema**:
+
+```json
+{
+  "notes": [
     {
-      id: 'paragraph-0-0',
-      text: 'A complete paragraph.',
-      chapterIndex: 0,
-      paragraphIndex: 0
+      "id": "uuid-v4",
+      "paragraphId": "paragraph-0-0",
+      "quote": "Selected quote excerpt.",
+      "text": "User margin note."
     }
   ],
-  sections: [
-    { title: null, paragraphs: [/* same enriched paragraph objects */] },
-    { title: 'A subheading', paragraphs: [/* enriched paragraph objects */] }
+  "bookmarks": ["paragraph-0-0"],
+  "progress": 42,
+  "scrollTop": 1850
+}
+```
+
+---
+
+## 5. FastAPI Backend REST API
+
+Base URL: `http://127.0.0.1:8000`
+
+### 5.1 System & Health
+
+#### `GET /api/health`
+Returns system status, service version, and server timestamp.
+
+**Response** (`200 OK`):
+```json
+{
+  "status": "healthy",
+  "app": "Bookflow Backend",
+  "version": "1.0.0",
+  "environment": "development",
+  "timestamp": 1724112000
+}
+```
+
+#### `GET /api/info`
+Returns server capabilities, supported file formats, and OCR model configuration.
+
+**Response** (`200 OK`):
+```json
+{
+  "app": "Bookflow Backend",
+  "version": "1.0.0",
+  "supported_formats": [".pdf", ".epub", ".txt", ".md", ".markdown"],
+  "max_upload_size_mb": 50,
+  "hf_ocr": {
+    "default_model": "microsoft/trocr-base-stage1",
+    "token_configured": true,
+    "available_models_count": 4
+  }
+}
+```
+
+---
+
+### 5.2 Hugging Face OCR & Vision Endpoints
+
+#### `GET /api/ocr/models`
+Lists recommended Hugging Face Image-to-Text vision models.
+
+**Response** (`200 OK`):
+```json
+{
+  "defaultModel": "microsoft/trocr-base-stage1",
+  "hfTokenConfigured": true,
+  "availableModels": [
+    {
+      "id": "microsoft/trocr-base-stage1",
+      "name": "TrOCR Base (Stage 1)",
+      "description": "Fast and lightweight transformer OCR for printed and handwritten text.",
+      "recommendedFor": "General single/multi-line text segments and pages."
+    },
+    {
+      "id": "microsoft/trocr-large-printed",
+      "name": "TrOCR Large (Printed)",
+      "description": "High-accuracy transformer OCR optimized for printed book text.",
+      "recommendedFor": "High-fidelity book pages and dense typography."
+    },
+    {
+      "id": "stepfun-ai/GOT-OCR2_0",
+      "name": "GOT-OCR 2.0",
+      "description": "General OCR Theory 2.0 model handling plain text, formatting, and tables.",
+      "recommendedFor": "Full page scans with complex formatting."
+    },
+    {
+      "id": "facebook/nougat-base",
+      "name": "Nougat Base",
+      "description": "Neural Optical Understanding for Academic Documents.",
+      "recommendedFor": "Academic papers and technical books."
+    }
   ]
 }
 ```
 
-Paragraph identifiers follow `paragraph-{chapterIndex}-{paragraphIndex}` and are indexed across all subheadings in document order. They are stable only while the same parser output and document structure remain unchanged.
+#### `POST /api/ocr/image`
+Performs fast image-to-text OCR extraction on a single uploaded image.
 
-## Focus-selection contract
+- **Content-Type**: `multipart/form-data`
+- **Headers** (Optional): `Authorization: Bearer <hf_token>` or `X-HF-Token: <token>`
+- **Form Fields**:
+  - `file`: Image file binary (JPEG, PNG, WEBP, TIFF, BMP)
+  - `model_id` (Optional): Specific Hugging Face model identifier
 
-- Automatic focus considers only eligible elements with `data-paragraph-id`.
-- The target rail is near 42% from the top of the reader viewport.
-- Focus updates from the reader scroll position and settles on the nearest eligible paragraph.
-- Pointer hover does not select a paragraph.
-- Clicking a selectable paragraph or pressing Enter or Space pins or unpins it.
-- Pinned focus takes priority over automatic scroll focus.
-- While the rail is over `data-focus-eligible="false"`, wheel, touch, arrow, space, and page-key input use native scrolling. The focus card and rail are dimmed or replaced by a static-region label, and progress follows scroll position until eligible content returns.
-
-Likely front matter and end matter are excluded from automatic focus using heading, position, and word-count heuristics. This is not semantic or AI classification and may need a future manual override.
-
-## Browser storage API
-
-### Global settings
-
-Key:
-
-```text
-bookflow:settings
-```
-
-Value:
-
-```js
+**Response** (`200 OK`):
+```json
 {
-  fontSize: 20,
-  lineHeight: 1.9,
-  columnWidth: 720,
-  focus: 'soft',
-  theme: 'paper'
+  "pageNumber": 1,
+  "text": "Extracted text from image.",
+  "paragraphs": [
+    "Extracted text from image."
+  ],
+  "confidence": null,
+  "modelUsed": "microsoft/trocr-base-stage1",
+  "latencyMs": 142.5,
+  "success": true,
+  "error": null
 }
 ```
 
-Supported focus values are `off`, `soft`, and `deep`. Supported themes are `paper` and `dusk`.
+#### `POST /api/ocr/batch`
+Performs concurrent OCR text extraction on multiple image files.
 
-### Per-document state
+- **Content-Type**: `multipart/form-data`
+- **Form Fields**:
+  - `files`: Array of image files (maximum 20 per request)
+  - `model_id` (Optional): Hugging Face model identifier
 
-Document identity:
-
-```text
-filename:size:lastModified
-```
-
-Storage key:
-
-```text
-bookflow:document:<document-identity>
-```
-
-Stored value:
-
-```js
+**Response** (`200 OK`):
+```json
 {
-  notes: [
+  "success": true,
+  "results": [
     {
-      id: 'generated-uuid',
-      paragraphId: 'paragraph-0-0',
-      quote: 'Focused paragraph text.',
-      text: 'Reader note.'
+      "pageNumber": 1,
+      "text": "Page 1 text",
+      "paragraphs": ["Page 1 text"],
+      "modelUsed": "microsoft/trocr-base-stage1",
+      "latencyMs": 120.0,
+      "success": true,
+      "error": null
     }
   ],
-  bookmarks: ['paragraph-0-0'],
-  progress: 42,
-  scrollTop: 1850
+  "totalImages": 1,
+  "modelUsed": "microsoft/trocr-base-stage1",
+  "totalLatencyMs": 125.4
 }
 ```
 
-Book contents are not stored in this object. Notes may contain a user-selected paragraph quote.
+#### `POST /api/ocr/pdf`
+Processes a scanned PDF document: uses native text when available, and automatically dispatches scanned/image pages to Hugging Face Vision OCR models.
 
-## Browser capabilities used
+- **Content-Type**: `multipart/form-data`
+- **Form Fields**:
+  - `file`: PDF document binary
+  - `force_ocr` (Optional, boolean): Force OCR for all pages
+  - `model_id` (Optional): Hugging Face model identifier
 
-| Browser capability | Purpose |
-| --- | --- |
-| File API | Read a user-selected local file |
-| `localStorage` | Persist settings and reading state |
-| `Intl.Segmenter` | Segment paragraph text for reading behavior |
-| Clipboard API | Copy the focused paragraph |
-| `crypto.randomUUID()` | Create note identifiers |
-| `requestAnimationFrame` | Throttle scroll focus calculations |
+**Response** (`200 OK`):
+```json
+{
+  "success": true,
+  "title": "Document Title",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "text": "Page 1 contents...",
+      "paragraphs": ["Paragraph 1", "Paragraph 2"],
+      "modelUsed": "microsoft/trocr-base-stage1",
+      "latencyMs": 210.0,
+      "success": true,
+      "error": null
+    }
+  ],
+  "totalPages": 1,
+  "successfulPages": 1,
+  "failedPages": 0,
+  "totalWordCount": 240,
+  "totalLatencyMs": 215.3,
+  "modelUsed": "microsoft/trocr-base-stage1",
+  "error": null
+}
+```
 
-`Intl.Segmenter` has a regular-expression fallback. Clipboard failures are currently ignored without interrupting reading.
+---
 
-## Future external API rules
+### 5.3 Document Parsing Endpoints
 
-No external endpoint is planned as an implemented contract. If synchronization or AI is approved later, the design must be documented before coding and must include:
+#### `POST /api/documents/validate`
+Validates file extension and size constraints.
 
-- Explicit opt-in and a clear explanation of transmitted data.
-- Authentication and authorization boundaries.
-- Encryption in transit and appropriate encryption at rest.
-- Data retention, export, and deletion behavior.
-- Request and response schemas with versioning.
-- Rate limits and actionable error responses.
-- A mode where local reading remains fully usable without the service.
-- No document text in logs, analytics, URLs, or error traces.
+- **Content-Type**: `application/x-www-form-urlencoded`
+- **Parameters**: `file_name` (string), `file_size_bytes` (integer)
+
+**Response** (`200 OK`):
+```json
+{
+  "valid": true,
+  "kind": "PDF",
+  "fileName": "book.pdf",
+  "fileSizeBytes": 1048576,
+  "error": null
+}
+```
+
+#### `POST /api/documents/parse`
+Parses a document file on the server and returns the Normalized Book structure.
+
+- **Content-Type**: `multipart/form-data`
+- **Form Fields**: `file` (binary)
+
+**Response** (`200 OK`):
+```json
+{
+  "success": true,
+  "book": {
+    "title": "The Art of Reading",
+    "author": "Jane Doe",
+    "kind": "MARKDOWN",
+    "chapters": [
+      {
+        "title": "Chapter 1",
+        "paragraphs": ["First paragraph."],
+        "subheadings": null,
+        "focusEligible": true
+      }
+    ]
+  },
+  "message": "Document parsed successfully",
+  "pageCount": 1,
+  "wordCount": 180
+}
+```
+
+---
+
+### 5.4 Reader Utilities Endpoints
+
+#### `POST /api/reader/segment`
+Segments text into normalized paragraphs and abbreviation-aware sentences.
+
+- **Request Body**:
+```json
+{
+  "text": "Dr. Smith arrived at 3.14 Baker St. The door opened immediately.",
+  "language": "en"
+}
+```
+
+- **Response** (`200 OK`):
+```json
+{
+  "paragraphs": [
+    "Dr. Smith arrived at 3.14 Baker St. The door opened immediately."
+  ],
+  "sentences": [
+    "Dr. Smith arrived at 3.14 Baker St.",
+    "The door opened immediately."
+  ],
+  "wordCount": 11,
+  "estimatedReadingSeconds": 3
+}
+```
+
+#### `POST /api/reader/reading-time`
+Calculates reading time estimation for a given word count or text sample.
+
+- **Request Body**:
+```json
+{
+  "wordCount": 440,
+  "wordsPerMinute": 220
+}
+```
+
+- **Response** (`200 OK`):
+```json
+{
+  "wordCount": 440,
+  "wordsPerMinute": 220,
+  "minutes": 2,
+  "seconds": 0,
+  "formattedLabel": "2 min read"
+}
+```
+
+#### `POST /api/reader/notes/export` & `POST /api/reader/notes/import`
+Validates user notes and bookmark export bundles for cross-device portability.

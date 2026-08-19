@@ -1,0 +1,226 @@
+"""Hugging Face Image-to-Text OCR Service for fast and high-accuracy document scanning."""
+
+import io
+import time
+import asyncio
+import logging
+from typing import List, Optional, Dict, Any, Union
+import httpx
+from PIL import Image, ImageOps
+
+from ..core.config import settings
+from ..models.ocr import OCRPageResult, HFModelInfo
+from .text_service import text_service
+
+logger = logging.getLogger(__name__)
+
+
+class HuggingFaceOCRService:
+    """Client and processor for Hugging Face Vision/OCR image-to-text models."""
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        default_model: Optional[str] = None,
+        timeout: Optional[float] = None,
+        max_retries: Optional[int] = None,
+    ):
+        self.api_key = api_key or settings.hf_api_key
+        self.default_model = default_model or settings.hf_ocr_model
+        self.timeout = timeout if timeout is not None else settings.hf_api_timeout
+        self.max_retries = max_retries if max_retries is not None else settings.hf_max_retries
+        self.base_url_template = settings.hf_inference_url_template
+
+    def get_headers(self, custom_api_key: Optional[str] = None) -> Dict[str, str]:
+        """Build HTTP headers for Hugging Face Inference API."""
+        key = custom_api_key or self.api_key
+        headers = {
+            "Accept": "application/json",
+            "User-Agent": "Bookflow-OCR-Client/1.0",
+        }
+        if key and key.strip():
+            headers["Authorization"] = f"Bearer {key.strip()}"
+        return headers
+
+    def preprocess_image(self, image_bytes: bytes, max_dimension: int = 2048) -> bytes:
+        """
+        Preprocess image to ensure standard RGB format, correct EXIF orientation,
+        and optimal resolution for Hugging Face vision models.
+        """
+        try:
+            with Image.open(io.BytesIO(image_bytes)) as img:
+                # Correct orientation from EXIF
+                img = ImageOps.exif_transpose(img)
+
+                # Convert mode to RGB
+                if img.mode not in ("RGB", "L"):
+                    img = img.convert("RGB")
+
+                # Resize if larger than max_dimension to preserve network bandwidth and speed up OCR
+                width, height = img.size
+                if max(width, height) > max_dimension:
+                    scale = max_dimension / max(width, height)
+                    new_size = (int(width * scale), int(height * scale))
+                    img = img.resize(new_size, Image.Resampling.LANCZOS)
+
+                # Save to optimized JPEG bytes
+                output = io.BytesIO()
+                img.save(output, format="JPEG", quality=90, optimize=True)
+                return output.getvalue()
+        except Exception as e:
+            logger.warning(f"Image preprocessing warning: {e}. Using raw bytes.")
+            return image_bytes
+
+    def parse_hf_response(self, response_data: Any) -> str:
+        """Extract plain text string from diverse Hugging Face model response structures."""
+        if isinstance(response_data, list):
+            if len(response_data) == 0:
+                return ""
+            item = response_data[0]
+            if isinstance(item, dict):
+                return (
+                    item.get("generated_text")
+                    or item.get("text")
+                    or item.get("caption")
+                    or str(item)
+                )
+            return str(item)
+        elif isinstance(response_data, dict):
+            if "error" in response_data:
+                raise ValueError(f"Hugging Face API error: {response_data.get('error')}")
+            return (
+                response_data.get("generated_text")
+                or response_data.get("text")
+                or response_data.get("caption")
+                or str(response_data)
+            )
+        elif isinstance(response_data, str):
+            return response_data
+        return str(response_data)
+
+    async def scan_image_bytes(
+        self,
+        image_bytes: bytes,
+        model_id: Optional[str] = None,
+        custom_api_key: Optional[str] = None,
+        page_number: int = 1,
+    ) -> OCRPageResult:
+        """
+        Send an image to Hugging Face Inference API for OCR text extraction.
+        """
+        active_model = model_id or self.default_model
+        start_time = time.perf_counter()
+
+        processed_bytes = self.preprocess_image(image_bytes)
+        url = self.base_url_template.format(model_id=active_model)
+        headers = self.get_headers(custom_api_key)
+
+        last_error = None
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                async with httpx.AsyncClient(timeout=self.timeout) as client:
+                    response = await client.post(
+                        url,
+                        headers=headers,
+                        content=processed_bytes,
+                    )
+
+                if response.status_code == 200:
+                    raw_result = response.json()
+                    extracted_text = self.parse_hf_response(raw_result).strip()
+                    paragraphs = text_service.extract_paragraphs(extracted_text)
+                    latency = round((time.perf_counter() - start_time) * 1000, 2)
+
+                    return OCRPageResult(
+                        page_number=page_number,
+                        text=extracted_text,
+                        paragraphs=paragraphs,
+                        model_used=active_model,
+                        latency_ms=latency,
+                        success=True,
+                        error=None,
+                    )
+
+                # Handle 503 (model loading on Hugging Face)
+                if response.status_code == 503:
+                    try:
+                        info = response.json()
+                        estimated_wait = min(info.get("estimated_time", 2.0), 10.0)
+                    except Exception:
+                        estimated_wait = 2.0
+                    logger.info(
+                        f"Model {active_model} is loading. Waiting {estimated_wait}s (attempt {attempt}/{self.max_retries})."
+                    )
+                    await asyncio.sleep(estimated_wait)
+                    continue
+
+                if response.status_code == 401:
+                    raise ValueError(
+                        "Hugging Face API returned 401 Unauthorized. Please provide a valid HF_API_KEY."
+                    )
+
+                if response.status_code == 429:
+                    raise ValueError(
+                        "Hugging Face API rate limit reached (HTTP 429). Please retry shortly."
+                    )
+
+                response.raise_for_status()
+
+            except Exception as exc:
+                last_error = str(exc)
+                logger.warning(
+                    f"Attempt {attempt}/{self.max_retries} failed for model {active_model}: {exc}"
+                )
+                if attempt < self.max_retries:
+                    await asyncio.sleep(1.0 * attempt)
+
+        latency = round((time.perf_counter() - start_time) * 1000, 2)
+        return OCRPageResult(
+            page_number=page_number,
+            text="",
+            paragraphs=[],
+            model_used=active_model,
+            latency_ms=latency,
+            success=False,
+            error=last_error or "Unknown OCR failure",
+        )
+
+    async def scan_batch(
+        self,
+        images: List[bytes],
+        model_id: Optional[str] = None,
+        custom_api_key: Optional[str] = None,
+        max_concurrency: int = 4,
+    ) -> List[OCRPageResult]:
+        """
+        Process multiple image bytes concurrently with a bounded semaphore.
+        """
+        semaphore = asyncio.Semaphore(max_concurrency)
+
+        async def _bounded_scan(idx: int, img_bytes: bytes) -> OCRPageResult:
+            async with semaphore:
+                return await self.scan_image_bytes(
+                    image_bytes=img_bytes,
+                    model_id=model_id,
+                    custom_api_key=custom_api_key,
+                    page_number=idx + 1,
+                )
+
+        tasks = [_bounded_scan(i, img) for i, img in enumerate(images)]
+        results = await asyncio.gather(*tasks)
+        return list(results)
+
+    def get_available_models(self) -> List[HFModelInfo]:
+        """Return curated list of high-performance Vision and OCR models on Hugging Face."""
+        return [
+            HFModelInfo(
+                id=m["id"],
+                name=m["name"],
+                description=m["description"],
+                recommended_for=m["recommended_for"],
+            )
+            for m in settings.available_hf_ocr_models
+        ]
+
+
+hf_ocr_service = HuggingFaceOCRService()
