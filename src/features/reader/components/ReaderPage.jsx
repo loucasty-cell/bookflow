@@ -12,6 +12,7 @@ import { FocusCard } from "./FocusCard.jsx";
 import { NotesPanel } from "./NotesPanel.jsx";
 import { SettingsPanel } from "./SettingsPanel.jsx";
 import { formatReadingTime } from "../lib/readingTime.js";
+import { VariableRewardCapsule } from "../../../components/VariableRewardCapsule.jsx";
 
 export function ReaderPage({
   book,
@@ -279,6 +280,10 @@ export function ReaderPage({
                     ))}
                   </div>
                 ))}
+                
+                {chapter.focusEligible && (
+                  <VariableRewardCapsule chapterTitle={chapter.title} />
+                )}
               </section>
             ))}
 

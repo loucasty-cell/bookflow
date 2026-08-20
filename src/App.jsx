@@ -12,7 +12,15 @@ import {
   BookOpeningIntro,
   LandingPage,
 } from "./features/landing/index.js";
-import { OcrUploader } from "./components/OcrUploader.jsx";
+const OcrUploader = lazy(() =>
+  import("./components/OcrUploader.jsx").then((module) => ({
+    default: module.OcrUploader,
+  })),
+);
+import { InterventionModal } from "./components/InterventionModal.jsx";
+import { AnimatePresence } from 'framer-motion';
+import { useReaderStore } from "./store/readerStore.js";
+import { useUIStore } from "./store/uiStore.js";
 import {
   DEFAULT_SETTINGS,
   FONT_SIZE_MAX,
@@ -109,27 +117,34 @@ function readSettings() {
 function App() {
   const [book, setBook] = useState(null);
   const [bookId, setBookId] = useState("");
-  const [loading, setLoading] = useState(null);
-  const [error, setError] = useState("");
-  const [dragging, setDragging] = useState(false);
-  const [settings, setSettings] = useState(readSettings);
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [notesOpen, setNotesOpen] = useState(false);
   const [activeParagraphId, setActiveParagraphId] = useState("");
   const [pinnedId, setPinnedId] = useState("");
   const [activeChapter, setActiveChapter] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [notes, setNotes] = useState([]);
-  const [bookmarks, setBookmarks] = useState([]);
   const [noteDraft, setNoteDraft] = useState("");
   const [readerState, setReaderState] = useState("focused");
   const [activeParagraphIsLarge, setActiveParagraphIsLarge] = useState(false);
   const [overStaticRegion, setOverStaticRegion] = useState(false);
   const [staticRegionLabel, setStaticRegionLabel] = useState("Reading the intro");
-  const [showEntryIntro, setShowEntryIntro] = useState(false);
-  const [ocrOpen, setOcrOpen] = useState(false);
+
+  const {
+    settingsOpen, setSettingsOpen,
+    sidebarOpen, setSidebarOpen,
+    sidebarCollapsed, setSidebarCollapsed,
+    notesOpen, setNotesOpen,
+    ocrOpen, setOcrOpen,
+    showIntervention, setShowIntervention,
+    showEntryIntro, setShowEntryIntro,
+    dragging, setDragging,
+    loading, setLoading,
+    error, setError
+  } = useUIStore();
+
+  const {
+    settings, setSettings,
+    progress, setProgress,
+    bookmarks, setBookmarks,
+    notes, setNotes
+  } = useReaderStore();
   const fileInputRef = useRef(null);
   const readerRef = useRef(null);
   const readerSizeRef = useRef({ width: 0, height: 0 });
@@ -464,6 +479,20 @@ function App() {
       alignParagraphRef.current = null;
     };
   }, [navigateBy, queueParagraphAlignment, setSelectedParagraph]);
+
+
+  useEffect(() => {
+    if (!book) return;
+    const interval = setInterval(() => {
+      if (lastNavigationAtRef.current && performance.now() - lastNavigationAtRef.current > 240000) {
+        if (!showIntervention) {
+           setShowIntervention(true);
+           lastNavigationAtRef.current = performance.now();
+        }
+      }
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [book, showIntervention]);
 
   useEffect(() => {
     localStorage.setItem("bookflow:settings", JSON.stringify(settings));
@@ -1198,7 +1227,8 @@ function App() {
   }
 
   return (
-    <ReaderPage
+    <>
+      <ReaderPage
       book={book}
       settings={settings}
       setSettings={setSettings}
@@ -1239,6 +1269,12 @@ function App() {
       addNote={addNote}
       resumeFlow={resumeFlow}
     />
+      <AnimatePresence>
+        {showIntervention && (
+          <InterventionModal onDismiss={() => setShowIntervention(false)} bookTitle={book?.title} />
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 

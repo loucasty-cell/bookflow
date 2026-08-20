@@ -51,7 +51,7 @@ export function ocrDpiForScale(scale) {
 }
 
 function localOcrUrl(path) {
-  return new URL(`${import.meta.env.BASE_URL}ocr/${path}`, document.baseURI).href;
+  return new URL(`/ocr/${path}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost').href;
 }
 
 export async function createPdfOcrScheduler(reportProgress) {

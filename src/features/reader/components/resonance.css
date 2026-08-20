@@ -1,0 +1,33 @@
+.resonance-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  background: transparent;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.resonance-indicator:hover {
+  background: rgba(80, 123, 156, 0.08);
+  color: var(--bookflow-blue);
+  border-color: rgba(80, 123, 156, 0.2);
+}
+
+.resonance-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--bookflow-blue);
+  box-shadow: 0 0 8px var(--bookflow-blue);
+  animation: pulse 2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0.5; }
+}

@@ -1,0 +1,3 @@
+﻿Europe PMC Search and Retrieval Compliance Notice
+Timestamp: 2026-08-21T00:09:00+06:30
+Notice: Please check the Europe PMC terms of use at https://europepmc.org/ and always check the individual license terms of papers retrieved by this tool for any redistribution or usage restrictions.

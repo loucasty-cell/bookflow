@@ -8,11 +8,11 @@ import {
 } from "./pdfOcr.js";
 
 export async function parsePdf(file, onProgress) {
-  const [pdfjs, workerModule] = await Promise.all([
+  const [pdfjs] = await Promise.all([
     import("pdfjs-dist"),
-    import("pdfjs-dist/build/pdf.worker.min.mjs?url"),
   ]);
-  pdfjs.GlobalWorkerOptions.workerSrc = workerModule.default;
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+
   const data = new Uint8Array(await file.arrayBuffer());
   let pdf;
   try {

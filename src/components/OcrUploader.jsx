@@ -18,12 +18,14 @@ import {
   RefreshCw,
   Eye,
   FileCode,
+  Key,
 } from 'lucide-react';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || 'http://localhost:8000';
 
 export function OcrUploader({ onDocumentLoaded }) {
   const [file, setFile] = useState(null);
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('bookflow:hf_api_key') || '');
   const [isDragging, setIsDragging] = useState(false);
   const [jobId, setJobId] = useState(null);
   const [status, setStatus] = useState('idle'); // 'idle' | 'uploading' | 'processing' | 'completed' | 'failed'
@@ -109,10 +111,19 @@ export function OcrUploader({ onDocumentLoaded }) {
     formData.append('file', file);
     formData.append('model_id', 'deepseek-ai/DeepSeek-OCR-2');
     formData.append('batch_size', '16');
+    if (apiKey && apiKey.trim()) {
+      formData.append('api_key', apiKey.trim());
+    }
 
     try {
+      const headers = {};
+      if (apiKey && apiKey.trim()) {
+        headers['Authorization'] = `Bearer ${apiKey.trim()}`;
+      }
+
       const response = await fetch(`${API_BASE}/api/ocr/scan`, {
         method: 'POST',
+        headers,
         body: formData,
       });
 
@@ -242,6 +253,21 @@ export function OcrUploader({ onDocumentLoaded }) {
         // es will auto-reconnect or fail gracefully
       }
     };
+  };
+
+  const handleCancelScan = async () => {
+    if (jobId) {
+      try {
+        await fetch(`${API_BASE}/api/ocr/cancel/${jobId}`, { method: 'POST' });
+      } catch {
+        // network cleanup
+      }
+    }
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+    }
+    setStatus('idle');
+    setError('Scan was canceled.');
   };
 
   const handleReset = () => {
@@ -376,13 +402,53 @@ export function OcrUploader({ onDocumentLoaded }) {
         </div>
       )}
 
-      {/* Start Button */}
-      {status === 'idle' && file && (
+      {/* Start Button & API Key Input */}
+      {status === 'idle' && (
         <div className="ocr-actions">
-          <button className="btn-primary" onClick={startScan}>
-            <Zap className="w-4 h-4 mr-2" />
-            Start DeepSeek-OCR-2 Scan
-          </button>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              width: '100%',
+              maxWidth: '480px',
+              margin: '0 auto 1rem auto',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              padding: '0.4rem 0.75rem',
+            }}
+          >
+            <Key className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+            <input
+              type="password"
+              placeholder="Hugging Face API Token (optional if set in backend .env)"
+              value={apiKey}
+              onChange={(e) => {
+                const val = e.target.value;
+                setApiKey(val);
+                try {
+                  localStorage.setItem('bookflow:hf_api_key', val);
+                } catch {
+                  // localStorage optional
+                }
+              }}
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: 'inherit',
+                fontSize: '0.85rem',
+              }}
+            />
+          </div>
+          {file && (
+            <button className="btn-primary" onClick={startScan}>
+              <Zap className="w-4 h-4 mr-2" />
+              Start DeepSeek-OCR-2 Scan
+            </button>
+          )}
         </div>
       )}
 
@@ -409,7 +475,23 @@ export function OcrUploader({ onDocumentLoaded }) {
                 {status === 'uploading' ? 'Ingesting PDF in memory...' : `Scanning Page ${progress.currentPage} of ${progress.totalPages || '...'}`}
               </span>
             </div>
-            <span className="progress-percent">{progress.percent}%</span>
+            <div className="flex items-center gap-3">
+              <span className="progress-percent">{progress.percent}%</span>
+              <button
+                type="button"
+                className="btn-ghost"
+                onClick={handleCancelScan}
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '0.2rem 0.5rem',
+                  color: '#f87171',
+                  border: '1px solid rgba(248, 113, 113, 0.3)',
+                  borderRadius: '4px',
+                }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
 
           {/* Progress bar track */}

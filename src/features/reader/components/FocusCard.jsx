@@ -7,6 +7,7 @@ import {
   Copy,
   Focus,
 } from "lucide-react";
+import "./resonance.css";
 
 export function FocusCard({
   focusedParagraph,
@@ -64,6 +65,10 @@ export function FocusCard({
             <Check size={16} /> Resume flow
           </button>
         )}
+        <button className="resonance-indicator" title="2 thoughtful reflections from the community">
+          <span className="resonance-dot"></span>
+          Resonance
+        </button>
       </div>
     </section>
   );

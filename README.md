@@ -1,57 +1,58 @@
-# Bookflow( for best book readers)
+# Bookflow
 
-Bookflow is a private, paragraph-focused reading space for PDFs, EPUB ebooks, text files, and Markdown with a React frontend and a high-performance FastAPI Python backend for document processing and fast Hugging Face Vision OCR scanning.
+Bookflow is a private, calm, and focus-driven document reading application that turns PDFs, EPUB ebooks, Markdown, and text files into a sentence-focused reading experience.
 
-![Bookflow reader](https://img.shields.io/badge/reader-local--first-507B9C) ![React](https://img.shields.io/badge/React-18-61dafb) ![Vite](https://img.shields.io/badge/Vite-6-646cff) ![FastAPI](https://img.shields.io/badge/FastAPI-Python-009688)
-
----
-
-## Documentation & Context Files
-
-- **[docs/frontend-workflow.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/docs/frontend-workflow.md)**: Senior Full-Stack Frontend Engineering & Architecture Guide.
-- **[docs/backend-workflow.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/docs/backend-workflow.md)**: Senior Full-Stack Backend DevOps & High-Throughput Architecture Guide.
-- **[features.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/features.md)**: Detailed feature breakdown across frontend reader, backend processing, and DeepSeek-OCR-2 acceleration.
-- **[structure.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/structure.md)**: Complete repository structure, directory tree, and layer boundaries.
-- **[api.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/api.md)**: Full API contracts and REST / SSE endpoints.
-- **[debugging.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/debugging.md)**: Diagnostics, performance tuning, and troubleshooting workflows.
+Designed with cognitive ergonomics and behavioral product design, Bookflow helps readers sustain deep-work focus and overcome digital distraction.
 
 ---
 
-## Core Capabilities
+## Key Features
 
-- **Sentence & Paragraph Reading Focus**: A gentle highlight settles on the active sentence or paragraph near the 42% reading rail during scrolling.
-- **Pinned Focus & Fluid Scroll**: Pin any paragraph with `Space`, `Enter`, or a click to hold focus while scrolling nearby context.
-- **Multi-Format Document Processing**: Supports `.pdf`, `.epub`, `.txt`, `.md`, and `.markdown` files up to 50 MB.
-- **Fast Hugging Face Vision OCR**: Accelerated image-to-text scanning powered by Hugging Face models (`microsoft/trocr-base-stage1`, `microsoft/trocr-large-printed`, `stepfun-ai/GOT-OCR2_0`, `facebook/nougat-base`).
-- **Private & Local-First**: Reading content stays on the user's device by default. Backend processing is opt-in for accelerated scanning without persistent document storage.
-- **Margin Notes & Bookmarks**: Save quotes, notes, and bookmarks in browser storage with import/export capabilities.
-- **Dual Atmosphere Themes**: Paper Mode (warm physical book style) and Dusk Mode (near-black night palette).
+### 1. Golden-Ratio Sentence Focus Rail
+- **Scroll-Driven Focus**: As you scroll, a gentle highlight settles on the active sentence near the golden-ratio reading line (`0.382`), reducing saccadic regressions and visual fatigue.
+- **Pin & Reflect**: Press `Escape`, `Space`, or tap the active card to freeze scroll and take contextual margin notes.
+- **Calm Atmospheres**: Switch effortlessly between warm **Paper** (`#FFFEFA`) and near-black **Dusk** (`#000000` / `#070708`) dark mode.
 
----
+### 2. High-Throughput Visual OCR Engine
+- **DeepSeek-OCR-2 Backend**: Batch-processes scanned PDFs in memory with dual-router Hugging Face failover.
+- **Real-Time SSE Streaming**: Live page extraction updates, word count tracking, velocity metrics, and heartbeat keepalives.
+- **Native Text Fast Path**: Digital PDF pages with selectable text bypass rasterization in sub-millisecond latency.
+- **Cross-Page Chapter Reconstruction**: Automatically reassembles multi-page documents into coherent markdown chapters.
 
-## Tech Stack
-
-| Layer | Technologies |
-| --- | --- |
-| Frontend | React 18, Vite 6, PDF.js, JSZip, Tesseract.js (WASM), Lucide Icons |
-| Backend | Python 3.10+, FastAPI, Uvicorn, Pydantic, HTTPX, Pillow, PyPDF |
-| Vision / OCR | Hugging Face Inference API & Models (TrOCR, Nougat, GOT-OCR 2.0) |
-| Testing & Quality | Vitest, ESLint, Pytest |
+### 3. Behavioral Design & Retention
+- **Variable Reward Marginalia Capsules**: Unannounced philosophical syntheses and cross-domain insights unlocked at chapter milestones.
+- **Cognitive Flow Metrics**: Visual sparklines tracking deep reading stability without gamified badges.
+- **Asynchronous Margin Social Layer**: Privacy-preserving in-margin thought whispers anchored to cryptographic paragraph hashes.
 
 ---
 
-## Quickstart
+## Technology Stack
 
-### 1. Frontend (React / Vite)
+- **Frontend**: React, Vite, Lucide Icons, PDF.js, JSZip, Tesseract.js (WASM)
+- **Backend**: FastAPI, Uvicorn, PyMuPDF (fitz), HTTPX, Pydantic v2
+- **Testing & Quality**: Vitest (33 tests), ESLint, Pytest, Pyright strict typing
 
-Requires Node.js 18 or newer.
+---
 
+## Quick Start
+
+### Frontend
 ```bash
 npm install
 npm run dev
 ```
 
-Run checks:
+### Backend
+```bash
+python -m venv backend/.venv
+backend/.venv/Scripts/activate  # On Windows
+pip install -r backend/requirements.txt
+python backend/main.py
+```
+
+---
+
+## Verification
 
 ```bash
 npm run lint
@@ -59,33 +60,8 @@ npm run test
 npm run build
 ```
 
-### 2. Backend (FastAPI Python)
+---
 
-Requires Python 3.10 or newer.
+## Privacy Invariant
 
-```bash
-cd backend
-python -m venv .venv
-
-# On Windows:
-.venv\Scripts\activate
-
-# On macOS/Linux:
-source .venv/bin/activate
-
-pip install -r requirements.txt
-cp .env.example .env
-
-# Set HF_API_KEY in .env if using Hugging Face Vision OCR
-python run.py
-```
-
-Backend interactive API documentation:
-- Swagger UI: [http://localhost:8000/docs](http://localhost:8000/docs)
-- Health check: [http://localhost:8000/api/health](http://localhost:8000/api/health)
-
-Run backend tests:
-
-```bash
-pytest backend/tests
-```
+Bookflow processes all documents locally on the user's device by default. No book contents are transmitted to external services or cloud databases without explicit user configuration.

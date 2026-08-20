@@ -1,0 +1,3 @@
+﻿arXiv Search and Retrieval Compliance Notice
+Timestamp: 2026-08-20T23:58:00+06:30
+Notice: Please check the arXiv API terms of use at https://info.arxiv.org/help/api/index.html and always check the individual license terms of papers retrieved by this tool for any redistribution or usage restrictions.
