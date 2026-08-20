@@ -596,3 +596,43 @@ This algorithm is ready to be called implemented only when:
 - Desktop and mobile reader behavior is verified.
 - Lint, tests, and the production build pass.
 - The measured accuracy report is published with its corpus and methodology.
+
+
+## Paragraph Classification Rules
+
+1. DIALOGUE
+   - Condition: Contains spoken communication (typically within quotation marks "...").
+   - Variants:
+     * Pure Dialogue: Speech with or without standard tags ("he said", "she asked").
+     * Dialogue + Action Beat: Speech paired with physical movement in the same paragraph.
+
+2. ACTION
+   - Condition: Focuses on physical movement, real-time events, or dynamic narrative progression.
+   - Key Logic: High density of active verbs; describes what happens moment-to-moment.
+
+3. DESCRIPTIVE
+   - Condition: Focuses on sensory details, visual worldbuilding, environment, or physical appearances.
+   - Key Logic: High density of adjectives/adverbs; static focus on setting the scene or mood.
+
+4. EXPOSITORY
+   - Condition: Delivers background information, historical context, lore, or conceptual explanations.
+   - Key Logic: Summary-style narration; moves outside the immediate scene to explain facts or history.
+
+5. INTERNAL_MONOLOGUE
+   - Condition: Displays a character's direct inner thoughts, mental processing, or deep emotional state.
+   - Key Logic: Stream of consciousness, direct internal questions, or italicized thoughts.
+
+6. QUOTE / EPIGRAPH / DOCUMENT (Variant)
+   - Condition: Written artifacts within the narrative (letters, signs, book excerpts, chapter epigraphs).
+   - Key Logic: Indented blocks, attributed standalone quotes, or text explicitly read by a character.
+
+7. TRANSITIONAL
+   - Condition: Bridges time, location, or scene perspective.
+   - Key Logic: Temporal markers ("Three hours later...", "By morning...") or spatial moves ("Back at the camp...").
+
+8. STRUCTURAL_MARKER
+   - Condition: Non-prose separators.
+   - Key Logic: Chapter headings, scene break symbols (***, ###, ---), or page sub-headers.
+
+9. VERSE / POETRY
+   - Condition: Embedded songs, rhymes, or intentionally line-broken poetic text.

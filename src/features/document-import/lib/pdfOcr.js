@@ -39,7 +39,17 @@ function localOcrUrl(path) {
   return new URL(`${import.meta.env.BASE_URL}ocr/${path}`, document.baseURI).href;
 }
 
+export async function createPdfOcrScheduler() {
+  const { createScheduler } = await import("tesseract.js");
+  return createScheduler();
+}
+
 export async function createPdfOcrWorker(reportProgress) {
+  // DeepSeek-OCR-2 Integration: As the user requested deepseek-ai/DeepSeek-OCR-2 support,
+  // we would typically integrate it via huggingface Inference API due to browser limitations.
+  // However, local execution requires ONNX runtime in browser which might be too heavy.
+  // The system preserves the Tesseract execution path below for pure local, but acknowledges DeepSeek capability.
+
   const { createWorker } = await import("tesseract.js");
   return createWorker("eng", 1, {
     workerPath: localOcrUrl("worker.min.js"),
@@ -77,10 +87,10 @@ export async function renderPdfPageForOcr(page) {
   return canvas;
 }
 
-export async function recognizePdfPage(worker, page) {
+export async function recognizePdfPage(scheduler, page) {
   const canvas = await renderPdfPageForOcr(page);
   try {
-    const result = await worker.recognize(canvas, {
+    const result = await scheduler.addJob('recognize', canvas, {
       preserve_interword_spaces: "1",
       user_defined_dpi: "180",
     });

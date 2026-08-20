@@ -37,7 +37,7 @@ Files are processed in the browser. Bookflow does not upload book contents to an
 | React | Component state and accessible reader interactions |
 | Vite | Fast local development and optimized static builds |
 | PDF.js (`pdfjs-dist`) | Local PDF text extraction |
-| Tesseract.js | Private browser OCR for image-only English PDF pages |
+| Tesseract.js | Private browser OCR for image-only English PDF pages  |
 | JSZip | Local EPUB package and chapter extraction |
 | Lucide React | Small, consistent interface icons |
 | `Intl.Segmenter` | Native sentence boundaries with a regex fallback |
