@@ -1,8 +1,9 @@
 import {
+  Suspense,
+  lazy,
   useCallback,
   useEffect,
   useLayoutEffect,
-  lazy,
   useMemo,
   useRef,
   useState,
@@ -13,11 +14,6 @@ import {
   BookOpeningIntro,
   LandingPage,
 } from "./features/landing/index.js";
-const OcrUploader = lazy(() =>
-  import("./components/OcrUploader.jsx").then((module) => ({
-    default: module.OcrUploader,
-  })),
-);
 import { InterventionModal } from "./components/InterventionModal.jsx";
 import { AnimatePresence } from 'framer-motion';
 import { useReaderStore } from "./store/readerStore.js";
@@ -44,6 +40,12 @@ import {
   safeParse,
   wordCount,
 } from "./shared/lib/index.js";
+
+const OcrUploader = lazy(() =>
+  import("./components/OcrUploader.jsx").then((module) => ({
+    default: module.OcrUploader,
+  })),
+);
 
 const IMPORT_COMPLETE_DELAY = 480;
 const ENTRY_INTRO_STORAGE_KEY = "bookflow:entry-intro-seen";
@@ -1196,7 +1198,9 @@ function App() {
                   <X size={20} />
                 </button>
               </div>
-              <OcrUploader onDocumentLoaded={handleOcrDocumentLoaded} />
+              <Suspense fallback={null}>
+                <OcrUploader onDocumentLoaded={handleOcrDocumentLoaded} />
+              </Suspense>
             </div>
           </div>
         )}

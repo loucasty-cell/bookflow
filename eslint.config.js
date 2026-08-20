@@ -8,8 +8,7 @@ export default [
     ignores: [
       'dist/**',
       '.next/**',
-      'public/ocr/**',
-      'public/pdf.worker.min.mjs',
+      'public/**',
       '**/.venv/**',
       '**/__pycache__/**',
       'backend/build/**',

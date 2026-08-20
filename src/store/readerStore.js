@@ -9,7 +9,6 @@ const DEFAULT_SETTINGS = {
   mode: "focus",
 };
 
-// Allow dependency injection for testing storage
 export const createReaderStore = (storage = undefined) => create(
   persist(
     (set) => ({
