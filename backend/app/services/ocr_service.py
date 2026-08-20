@@ -110,27 +110,46 @@ class OCRService:
         total_pages = min(len(reader.pages), settings.max_pdf_pages_ocr)
         pages_to_process: List[Tuple[int, Optional[str], Optional[bytes]]] = []
 
-        # Analyze pages for native text vs scanned image
-        for idx in range(total_pages):
-            page = reader.pages[idx]
-            page_num = idx + 1
-            native_text = ""
-            if not force_ocr:
-                try:
-                    native_text = (page.extract_text() or "").strip()
-                except Exception:
-                    native_text = ""
+        # Analyze pages for native text vs scanned image using PyMuPDF if available
+        try:
+            import fitz
+            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+            total_pages = min(len(doc), settings.max_pdf_pages_ocr)
+            matrix = fitz.Matrix(96 / 72, 96 / 72)
+            for idx in range(total_pages):
+                page = doc.load_page(idx)
+                page_num = idx + 1
+                raw_text = page.get_text("text") if not force_ocr else ""
+                native_text = str(raw_text).strip() if raw_text else ""
+                word_count = text_service.count_words(native_text)
 
-            # Check if page has sufficient native selectable text (> 15 words)
-            word_count = text_service.count_words(native_text)
-            if word_count >= 15 and not force_ocr:
-                pages_to_process.append((page_num, native_text, None))
-            else:
-                # Extract image for OCR
-                img_data = None
-                if page.images:
-                    img_data = page.images[0].data
-                pages_to_process.append((page_num, None, img_data))
+                if word_count >= 15 and not force_ocr:
+                    pages_to_process.append((page_num, native_text, None))
+                else:
+                    pix = page.get_pixmap(matrix=matrix, alpha=False)
+                    img_data = pix.tobytes("jpeg", jpg_quality=85)
+                    pages_to_process.append((page_num, None, img_data))
+            doc.close()
+        except Exception:
+            # Fallback to pypdf
+            reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
+            total_pages = min(len(reader.pages), settings.max_pdf_pages_ocr)
+            for idx in range(total_pages):
+                page = reader.pages[idx]
+                page_num = idx + 1
+                native_text = ""
+                if not force_ocr:
+                    try:
+                        native_text = (page.extract_text() or "").strip()
+                    except Exception:
+                        native_text = ""
+
+                word_count = text_service.count_words(native_text)
+                if word_count >= 15 and not force_ocr:
+                    pages_to_process.append((page_num, native_text, None))
+                else:
+                    img_data = page.images[0].data if page.images else None
+                    pages_to_process.append((page_num, None, img_data))
 
         # Perform OCR on image pages
         ocr_results: List[OCRPageResult] = []
@@ -189,3 +208,8 @@ class OCRService:
 
 
 ocr_service = OCRService()
+
+
+def get_ocr_service() -> OCRService:
+    """Dependency provider for FastAPI dependency injection."""
+    return ocr_service

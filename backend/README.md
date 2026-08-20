@@ -29,6 +29,12 @@ python -m venv .venv
 source .venv/bin/activate
 
 pip install -r requirements.txt
+
+# Or install as an editable package with development dependencies:
+pip install -e ".[dev]"
+
+# Build distribution wheels and tarballs:
+python -m build
 ```
 
 ### 3. Environment Configuration

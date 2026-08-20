@@ -29,8 +29,8 @@ class DocumentService:
         if file_size_bytes > max_bytes:
             return DocumentValidationResponse(
                 valid=False,
-                fileName=file_name,
-                fileSizeBytes=file_size_bytes,
+                file_name=file_name,
+                file_size_bytes=file_size_bytes,
                 error=f"File exceeds maximum size of {settings.max_upload_size_mb} MB",
             )
 
@@ -46,16 +46,16 @@ class DocumentService:
         else:
             return DocumentValidationResponse(
                 valid=False,
-                fileName=file_name,
-                fileSizeBytes=file_size_bytes,
+                file_name=file_name,
+                file_size_bytes=file_size_bytes,
                 error="Unsupported file format. Please upload a .pdf, .epub, .txt, or .md file.",
             )
 
         return DocumentValidationResponse(
             valid=True,
             kind=kind,
-            fileName=file_name,
-            fileSizeBytes=file_size_bytes,
+            file_name=file_name,
+            file_size_bytes=file_size_bytes,
         )
 
     @staticmethod
@@ -75,7 +75,7 @@ class DocumentService:
                         Chapter(
                             title=f"Section {idx + 1}",
                             paragraphs=sec_paragraphs,
-                            focusEligible=not text_service.is_likely_front_or_end_matter(
+                            focus_eligible=not text_service.is_likely_front_or_end_matter(
                                 f"Section {idx + 1}", sec_paragraphs
                             ),
                         )
@@ -86,7 +86,7 @@ class DocumentService:
                 Chapter(
                     title="Document",
                     paragraphs=paragraphs,
-                    focusEligible=True,
+                    focus_eligible=True,
                 )
             )
 
@@ -143,7 +143,7 @@ class DocumentService:
                         title=current_chapter_title,
                         paragraphs=all_paragraphs,
                         subheadings=current_subheadings if len(current_subheadings) > 1 else None,
-                        focusEligible=not text_service.is_likely_front_or_end_matter(
+                        focus_eligible=not text_service.is_likely_front_or_end_matter(
                             current_chapter_title, all_paragraphs
                         ),
                     )
@@ -171,7 +171,7 @@ class DocumentService:
 
         if not chapters:
             all_p = text_service.extract_paragraphs(content)
-            chapters.append(Chapter(title="Document", paragraphs=all_p, focusEligible=True))
+            chapters.append(Chapter(title="Document", paragraphs=all_p, focus_eligible=True))
 
         return NormalizedBook(
             title=title,
@@ -182,36 +182,80 @@ class DocumentService:
 
     @staticmethod
     def parse_pdf(file_bytes: bytes, file_name: str) -> NormalizedBook:
-        """Parse selectable text from PDF pages."""
-        reader = pypdf.PdfReader(io.BytesIO(file_bytes))
-        meta = reader.metadata or {}
-        title = meta.get("/Title") or file_name.replace(".pdf", "").replace("_", " ").title()
-        author = meta.get("/Author") or None
+        """Parse selectable text from PDF pages with high precision using PyMuPDF and pypdf fallback."""
+        try:
+            import fitz
+            doc = fitz.open(stream=file_bytes, filetype="pdf")
+            meta = doc.metadata or {}
+            title = meta.get("title") or file_name.replace(".pdf", "").replace("_", " ").title()
+            author = meta.get("author") or None
 
-        chapters: List[Chapter] = []
-        for idx, page in enumerate(reader.pages):
-            try:
-                page_text = page.extract_text() or ""
-            except Exception:
-                page_text = ""
-            paragraphs = text_service.extract_paragraphs(page_text)
-            page_title = f"Page {idx + 1}"
-            chapters.append(
-                Chapter(
-                    title=page_title,
-                    paragraphs=paragraphs,
-                    focusEligible=not text_service.is_likely_front_or_end_matter(
-                        page_title, paragraphs
-                    ),
+            chapters: List[Chapter] = []
+            for idx in range(len(doc)):
+                page = doc.load_page(idx)
+                raw_blocks = page.get_text("blocks")
+                blocks = [b for b in raw_blocks if isinstance(b, (tuple, list)) and len(b) >= 5] if isinstance(raw_blocks, list) else []
+                # Sort blocks by vertical and horizontal reading coordinates to prevent multi-column interleaving
+                sorted_blocks = sorted(blocks, key=lambda b: (round(float(b[1]) / 15.0), float(b[0])))
+                paragraphs: List[str] = []
+                for b in sorted_blocks:
+                    text = (str(b[4]) or "").strip()
+                    if text and len(text) > 2:
+                        paragraphs.append(text)
+
+                if not paragraphs:
+                    raw_text_val = page.get_text("text")
+                    raw_text = str(raw_text_val).strip() if raw_text_val else ""
+                    paragraphs = text_service.extract_paragraphs(raw_text)
+
+                page_title = f"Page {idx + 1}"
+                chapters.append(
+                    Chapter(
+                        title=page_title,
+                        paragraphs=paragraphs,
+                        focus_eligible=not text_service.is_likely_front_or_end_matter(
+                            page_title, paragraphs
+                        ),
+                    )
                 )
+            doc.close()
+            return NormalizedBook(
+                title=title,
+                author=author,
+                kind="PDF",
+                chapters=chapters,
             )
+        except Exception:
+            # Fallback to pypdf
+            reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+            meta = reader.metadata or {}
+            title = meta.get("/Title") or file_name.replace(".pdf", "").replace("_", " ").title()
+            author = meta.get("/Author") or None
 
-        return NormalizedBook(
-            title=title,
-            author=author,
-            kind="PDF",
-            chapters=chapters,
-        )
+            chapters = []
+            for idx, page in enumerate(reader.pages):
+                try:
+                    page_text = page.extract_text() or ""
+                except Exception:
+                    page_text = ""
+                paragraphs = text_service.extract_paragraphs(page_text)
+                page_title = f"Page {idx + 1}"
+                chapters.append(
+                    Chapter(
+                        title=page_title,
+                        paragraphs=paragraphs,
+                        focus_eligible=not text_service.is_likely_front_or_end_matter(
+                            page_title, paragraphs
+                        ),
+                    )
+                )
+
+            return NormalizedBook(
+                title=title,
+                author=author,
+                kind="PDF",
+                chapters=chapters,
+            )
 
     @staticmethod
     def parse_epub(file_bytes: bytes, file_name: str) -> NormalizedBook:
@@ -278,7 +322,7 @@ class DocumentService:
                             Chapter(
                                 title=chap_title,
                                 paragraphs=paragraphs,
-                                focusEligible=not text_service.is_likely_front_or_end_matter(
+                                focus_eligible=not text_service.is_likely_front_or_end_matter(
                                     chap_title, paragraphs
                                 ),
                             )
@@ -292,7 +336,7 @@ class DocumentService:
                 Chapter(
                     title="Imported EPUB",
                     paragraphs=["Document processed."],
-                    focusEligible=True,
+                    focus_eligible=True,
                 )
             )
 
@@ -337,8 +381,8 @@ class DocumentService:
             return ParseResponse(
                 success=True,
                 book=book,
-                pageCount=len(book.chapters),
-                wordCount=total_words,
+                page_count=len(book.chapters),
+                word_count=total_words,
                 message="Document parsed successfully",
             )
         except Exception as exc:

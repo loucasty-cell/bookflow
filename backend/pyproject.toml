@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bookflow-backend"
+version = "2.0.0"
+description = "High-throughput visual OCR engine & document parsing backend for Bookflow"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Bookflow Team" }
+]
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.8.0",
+    "pydantic-settings>=2.4.0",
+    "python-multipart>=0.0.9",
+    "httpx>=0.27.0",
+    "Pillow>=10.4.0",
+    "pypdf>=4.3.0",
+    "PyMuPDF>=1.24.0",
+    "openai>=1.40.0",
+    "sse-starlette>=2.1.0",
+    "beautifulsoup4>=4.12.0",
+    "python-dotenv>=1.0.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "build>=1.2.0",
+    "wheel>=0.44.0",
+    "ruff>=0.6.0",
+    "black>=24.8.0",
+    "mypy>=1.11.0",
+]
+
+[project.scripts]
+bookflow-server = "run:main"
+
+[tool.setuptools]
+packages = ["app", "app.core", "app.models", "app.routers", "app.services"]
+py-modules = ["run", "main"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

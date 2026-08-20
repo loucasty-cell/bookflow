@@ -29,11 +29,11 @@ def test_hf_response_parsing():
 @patch.object(HuggingFaceOCRService, "scan_image_bytes", new_callable=AsyncMock)
 def test_ocr_image_endpoint(mock_scan, client, sample_image_bytes):
     mock_scan.return_value = OCRPageResult(
-        pageNumber=1,
+        page_number=1,
         text="Chapter 1. A beginning in the dark.",
         paragraphs=["Chapter 1.", "A beginning in the dark."],
-        modelUsed="microsoft/trocr-base-stage1",
-        latencyMs=120.5,
+        model_used="microsoft/trocr-base-stage1",
+        latency_ms=120.5,
         success=True,
     )
 

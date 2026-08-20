@@ -1,0 +1,18 @@
+{
+  "venvPath": "backend",
+  "venv": ".venv",
+  "extraPaths": [
+    "backend",
+    "backend/app"
+  ],
+  "include": [
+    "backend"
+  ],
+  "exclude": [
+    "**/node_modules",
+    "**/dist",
+    "backend/.venv"
+  ],
+  "typeCheckingMode": "basic",
+  "reportMissingTypeStubs": false
+}

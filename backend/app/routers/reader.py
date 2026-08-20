@@ -28,8 +28,8 @@ async def segment_text(payload: SegmentRequest):
     return SegmentResponse(
         paragraphs=paragraphs,
         sentences=sentences,
-        wordCount=word_count,
-        estimatedReadingSeconds=total_seconds,
+        word_count=word_count,
+        estimated_reading_seconds=total_seconds,
     )
 
 
@@ -51,11 +51,11 @@ async def compute_reading_time(payload: ReadingTimeRequest):
     )
 
     return ReadingTimeResponse(
-        wordCount=word_count,
-        wordsPerMinute=payload.words_per_minute,
+        word_count=word_count,
+        words_per_minute=payload.words_per_minute,
         minutes=minutes,
         seconds=seconds,
-        formattedLabel=label,
+        formatted_label=label,
     )
 
 

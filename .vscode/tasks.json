@@ -3,9 +3,8 @@
   "tasks": [
     {
       "label": "Start Bookflow (Vite)",
-      "type": "process",
-      "command": "npm.cmd",
-      "args": ["run", "dev"],
+      "type": "shell",
+      "command": "npm run dev",
       "isBackground": true,
       "problemMatcher": {
         "owner": "vite",
@@ -23,52 +22,91 @@
       }
     },
     {
-      "label": "Run Bookflow tests",
-      "type": "process",
-      "command": "npm.cmd",
-      "args": ["run", "test"],
+      "label": "Start FastAPI Backend",
+      "type": "shell",
+      "command": "python run.py",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
+      "isBackground": true,
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "focus": false
+      }
+    },
+    {
+      "label": "Start Full Stack",
+      "dependsOn": ["Start FastAPI Backend", "Start Bookflow (Vite)"],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Docker Compose Up (OCR + Backend)",
+      "type": "shell",
+      "command": "docker compose up --build",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Docker Compose Down",
+      "type": "shell",
+      "command": "docker compose down",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Run Bookflow tests",
+      "type": "shell",
+      "command": "npm run test",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     },
     {
       "label": "Lint Bookflow",
-      "type": "process",
-      "command": "npm.cmd",
-      "args": ["run", "lint"],
+      "type": "shell",
+      "command": "npm run lint",
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     },
     {
       "label": "Build Bookflow",
-      "type": "process",
-      "command": "npm.cmd",
-      "args": ["run", "build"],
+      "type": "shell",
+      "command": "npm run build",
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     },
     {
-      "label": "Run current Go file",
-      "type": "process",
-      "command": "go",
-      "args": ["run", "${file}"],
+      "label": "Build Python Backend Package (pip/build)",
+      "type": "shell",
+      "command": "python -m build",
+      "options": {
+        "cwd": "${workspaceFolder}/backend"
+      },
       "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
-    },
-    {
-      "label": "Run current Dart file",
-      "type": "process",
-      "command": "dart",
-      "args": ["run", "${file}"],
-      "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
-    },
-    {
-      "label": "Run current R file",
-      "type": "process",
-      "command": "Rscript",
-      "args": ["${file}"],
-      "problemMatcher": [],
-      "presentation": { "reveal": "always", "panel": "shared" }
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     }
   ]
 }

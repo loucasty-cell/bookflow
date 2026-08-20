@@ -18,8 +18,8 @@ class Paragraph(BaseModel):
 
     id: str
     text: str
-    chapter_index: int = Field(alias="chapterIndex")
-    paragraph_index: int = Field(alias="paragraphIndex")
+    chapter_index: int = Field(serialization_alias="chapterIndex", validation_alias="chapterIndex")
+    paragraph_index: int = Field(serialization_alias="paragraphIndex", validation_alias="paragraphIndex")
 
 
 class Section(BaseModel):
@@ -45,7 +45,8 @@ class Chapter(BaseModel):
     )
     focus_eligible: Optional[bool] = Field(
         default=True,
-        alias="focusEligible",
+        serialization_alias="focusEligible",
+        validation_alias="focusEligible",
         description="Whether this chapter contains body content eligible for automatic reading focus.",
     )
 
@@ -67,8 +68,8 @@ class ParseResponse(BaseModel):
     success: bool
     book: Optional[NormalizedBook] = None
     message: Optional[str] = None
-    page_count: Optional[int] = Field(default=None, alias="pageCount")
-    word_count: Optional[int] = Field(default=None, alias="wordCount")
+    page_count: Optional[int] = Field(default=None, serialization_alias="pageCount", validation_alias="pageCount")
+    word_count: Optional[int] = Field(default=None, serialization_alias="wordCount", validation_alias="wordCount")
 
 
 class DocumentValidationResponse(BaseModel):
@@ -78,6 +79,6 @@ class DocumentValidationResponse(BaseModel):
 
     valid: bool
     kind: Optional[str] = None
-    file_name: str = Field(alias="fileName")
-    file_size_bytes: int = Field(alias="fileSizeBytes")
+    file_name: str = Field(serialization_alias="fileName", validation_alias="fileName")
+    file_size_bytes: int = Field(serialization_alias="fileSizeBytes", validation_alias="fileSizeBytes")
     error: Optional[str] = None

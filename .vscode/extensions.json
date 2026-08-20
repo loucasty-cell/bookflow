@@ -2,12 +2,10 @@
   "recommendations": [
     "esbenp.prettier-vscode",
     "dbaeumer.vscode-eslint",
-    "formulahendry.code-runner",
-    "ritwickdey.liveserver",
-    "redhat.java",
-    "golang.go",
-    "dart-code.dart-code",
-    "reditorsupport.r",
-    "ms-python.python"
+    "ms-python.python",
+    "ms-python.debugpy",
+    "ms-python.black-formatter",
+    "ms-azuretools.vscode-docker",
+    "formulahendry.code-runner"
   ]
 }

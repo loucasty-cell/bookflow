@@ -9,7 +9,7 @@ class OCRPageResult(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    page_number: int = Field(default=1, alias="pageNumber")
+    page_number: int = Field(default=1, serialization_alias="pageNumber", validation_alias="pageNumber")
     text: str = Field(description="Extracted plain text")
     paragraphs: List[str] = Field(
         default_factory=list,
@@ -19,8 +19,8 @@ class OCRPageResult(BaseModel):
         default=None,
         description="Confidence score if provided by model (0.0 - 1.0)",
     )
-    model_used: str = Field(alias="modelUsed", description="Model ID used for inference")
-    latency_ms: Optional[float] = Field(default=None, alias="latencyMs")
+    model_used: str = Field(serialization_alias="modelUsed", validation_alias="modelUsed", description="Model ID used for inference")
+    latency_ms: Optional[float] = Field(default=None, serialization_alias="latencyMs", validation_alias="latencyMs")
     success: bool = True
     error: Optional[str] = None
 
@@ -33,12 +33,12 @@ class OCRDocumentResponse(BaseModel):
     success: bool
     title: Optional[str] = None
     pages: List[OCRPageResult] = Field(default_factory=list)
-    total_pages: int = Field(alias="totalPages")
-    successful_pages: int = Field(alias="successfulPages")
-    failed_pages: int = Field(alias="failedPages")
-    total_word_count: int = Field(alias="totalWordCount")
-    total_latency_ms: float = Field(alias="totalLatencyMs")
-    model_used: str = Field(alias="modelUsed")
+    total_pages: int = Field(serialization_alias="totalPages", validation_alias="totalPages")
+    successful_pages: int = Field(serialization_alias="successfulPages", validation_alias="successfulPages")
+    failed_pages: int = Field(serialization_alias="failedPages", validation_alias="failedPages")
+    total_word_count: int = Field(serialization_alias="totalWordCount", validation_alias="totalWordCount")
+    total_latency_ms: float = Field(serialization_alias="totalLatencyMs", validation_alias="totalLatencyMs")
+    model_used: str = Field(serialization_alias="modelUsed", validation_alias="modelUsed")
     error: Optional[str] = None
 
 
@@ -49,9 +49,9 @@ class OCRBatchResponse(BaseModel):
 
     success: bool
     results: List[OCRPageResult] = Field(default_factory=list)
-    total_images: int = Field(alias="totalImages")
-    model_used: str = Field(alias="modelUsed")
-    total_latency_ms: float = Field(alias="totalLatencyMs")
+    total_images: int = Field(serialization_alias="totalImages", validation_alias="totalImages")
+    model_used: str = Field(serialization_alias="modelUsed", validation_alias="modelUsed")
+    total_latency_ms: float = Field(serialization_alias="totalLatencyMs", validation_alias="totalLatencyMs")
 
 
 class HFModelInfo(BaseModel):
@@ -62,7 +62,7 @@ class HFModelInfo(BaseModel):
     id: str
     name: str
     description: str
-    recommended_for: str = Field(alias="recommendedFor")
+    recommended_for: str = Field(serialization_alias="recommendedFor", validation_alias="recommendedFor")
 
 
 class OCRModelListResponse(BaseModel):
@@ -70,9 +70,9 @@ class OCRModelListResponse(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    default_model: str = Field(alias="defaultModel")
-    hf_token_configured: bool = Field(alias="hfTokenConfigured")
-    available_models: List[HFModelInfo] = Field(alias="availableModels")
+    default_model: str = Field(serialization_alias="defaultModel", validation_alias="defaultModel")
+    hf_token_configured: bool = Field(serialization_alias="hfTokenConfigured", validation_alias="hfTokenConfigured")
+    available_models: List[HFModelInfo] = Field(serialization_alias="availableModels", validation_alias="availableModels")
 
 
 class OCRStatusResponse(BaseModel):
@@ -80,10 +80,10 @@ class OCRStatusResponse(BaseModel):
 
     model_config = ConfigDict(populate_by_name=True)
 
-    task_id: str = Field(alias="taskId")
+    task_id: str = Field(serialization_alias="taskId", validation_alias="taskId")
     status: str = Field(description="pending, processing, completed, or failed")
-    progress_percent: int = Field(default=0, alias="progressPercent")
-    current_page: int = Field(default=0, alias="currentPage")
-    total_pages: int = Field(default=0, alias="totalPages")
+    progress_percent: int = Field(default=0, serialization_alias="progressPercent", validation_alias="progressPercent")
+    current_page: int = Field(default=0, serialization_alias="currentPage", validation_alias="currentPage")
+    total_pages: int = Field(default=0, serialization_alias="totalPages", validation_alias="totalPages")
     result: Optional[OCRDocumentResponse] = None
     error: Optional[str] = None

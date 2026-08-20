@@ -43,15 +43,15 @@ class TextService:
     @staticmethod
     def extract_sentences(text: str) -> List[str]:
         """
-        Segment text into full sentences respecting common English abbreviations
-        and punctuation boundaries.
+        Segment text into full sentences respecting common abbreviations,
+        Latin punctuation (.!?), CJK punctuation (。！？；), and Arabic sentence markers.
         """
         if not text or not text.strip():
             return []
 
         text = " ".join(text.split())
-        # Regex matching sentence ending punctuation followed by space or end of string
-        pattern = r"([.!?]+)(?:\s+|$)"
+        # Regex matching sentence ending punctuation (Latin & Multilingual) followed by space, closing quote, or end of string
+        pattern = r"([.!?。！？؛؟۔]+[\"'\u201d\u00bb]?)(?:\s+|$)"
         tokens = re.split(pattern, text)
         sentences: List[str] = []
         current = ""

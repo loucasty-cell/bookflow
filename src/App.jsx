@@ -6,11 +6,13 @@ import {
   useRef,
   useState,
 } from "react";
+import { X } from "lucide-react";
 import { parseDocument } from "./features/document-import/index.js";
 import {
   BookOpeningIntro,
   LandingPage,
 } from "./features/landing/index.js";
+import { OcrUploader } from "./components/OcrUploader.jsx";
 import {
   DEFAULT_SETTINGS,
   FONT_SIZE_MAX,
@@ -127,6 +129,7 @@ function App() {
   const [overStaticRegion, setOverStaticRegion] = useState(false);
   const [staticRegionLabel, setStaticRegionLabel] = useState("Reading the intro");
   const [showEntryIntro, setShowEntryIntro] = useState(false);
+  const [ocrOpen, setOcrOpen] = useState(false);
   const fileInputRef = useRef(null);
   const readerRef = useRef(null);
   const readerSizeRef = useRef({ width: 0, height: 0 });
@@ -1105,6 +1108,48 @@ function App() {
     setNoteDraft("");
   };
 
+  useEffect(() => {
+    if (!ocrOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setOcrOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [ocrOpen]);
+
+  const handleOcrDocumentLoaded = useCallback(
+    (ocrResult) => {
+      if (!ocrResult || !ocrResult.pages || ocrResult.pages.length === 0) return;
+      const docChapters = ocrResult.pages.map((p) => {
+        const rawText = p.text || "";
+        const lines = rawText
+          .split("\n\n")
+          .map((t) => t.trim())
+          .filter((t) => t.length > 0);
+
+        let title = `Page ${p.page_number}`;
+        if (lines.length > 0 && lines[0].startsWith("# ")) {
+          title = lines[0].replace(/^#+\s*/, "");
+        }
+        return {
+          title,
+          paragraphs: lines.length > 0 ? lines : [rawText || `Page ${p.page_number}`],
+        };
+      });
+      const bookDoc = {
+        title: ocrResult.title || "DeepSeek OCR Book",
+        author: "DeepSeek-OCR-2",
+        kind: "PDF",
+        chapters: docChapters,
+      };
+      setOcrOpen(false);
+      openBook(bookDoc, `ocr-${Date.now()}`);
+    },
+    [openBook],
+  );
+
   if (!book) {
     return (
       <>
@@ -1115,6 +1160,7 @@ function App() {
           fileInputRef={fileInputRef}
           handleFile={handleFile}
           openBook={openBook}
+          onOpenOcr={() => setOcrOpen(true)}
           error={error}
           loading={loading}
           theme={settings.theme}
@@ -1125,6 +1171,28 @@ function App() {
             }))
           }
         />
+        {ocrOpen && (
+          <div
+            className="ocr-modal-overlay"
+            onClick={() => setOcrOpen(false)}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="ocr-modal-card" onClick={(e) => e.stopPropagation()}>
+              <div className="ocr-modal-header">
+                <button
+                  className="ocr-modal-close"
+                  type="button"
+                  onClick={() => setOcrOpen(false)}
+                  aria-label="Close OCR scanner"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <OcrUploader onDocumentLoaded={handleOcrDocumentLoaded} />
+            </div>
+          </div>
+        )}
       </>
     );
   }

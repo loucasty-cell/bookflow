@@ -35,6 +35,13 @@ Bookflow should make long-form reading feel calm and sustainable. It turns a loc
 | Reader customization | Implemented for font size, line height, width, focus level, and atmosphere |
 | Responsive reader | Implemented for desktop and mobile layouts |
 | Private sample experience | Implemented without an account |
+| High-throughput visual OCR scanning | Implemented via DeepSeek-OCR-2 on vLLM with SSE real-time progress streaming |
+| OCR native text fast path | Implemented; pages with 15+ selectable words bypass rasterization in sub-millisecond latency |
+| Frontend OCR upload modal | Implemented with drag-and-drop, real-time SSE progress, page viewer, search, and Markdown export |
+| OCR-to-reader integration | Implemented; OCR Markdown output loads directly into the reader with automatic chapter title extraction |
+| Real-time SSE progress streaming | Implemented with per-page updates, pages-per-second throughput, and heartbeat keepalives |
+| Backend type safety | Implemented; Pyright zero errors with Pydantic v2 `serialization_alias` + `validation_alias` pattern |
+| Automated test suites | Implemented; 16 backend pytest tests and 33 frontend Vitest tests passing |
 
 ## Near-term goals
 
@@ -66,9 +73,16 @@ The library should store metadata and reading state only unless the user explici
 - Add keyboard shortcuts with a discoverable help panel.
 - Test zoom, reflow, and focus order at supported mobile widths.
 
+### P2: OCR improvements
+
+- Add local ONNX Runtime inference for air-gapped, zero-network OCR acceleration.
+- Add layout and reading-order analysis for multi-column PDFs (academic journals, two-column textbooks).
+- Add multilingual sentence segmentation for non-Latin scripts (CJK, Arabic, Cyrillic).
+- Add in-memory SHA-256 OCR cache for deduplicating repeated scans.
+- Improve OCR accuracy feedback with per-page confidence scoring.
+
 ### P2: Format quality
 
-- Add local OCR as an optional workflow for scanned PDFs only after performance, download size, and privacy are evaluated. (Done: Performance vastly improved via concurrent scheduler).
 - Improve EPUB navigation using its table of contents when available.
 - Preserve basic emphasis and block quotations with a safe structured representation.
 - Evaluate additional formats only when a real user need is confirmed.
@@ -80,6 +94,7 @@ The library should store metadata and reading state only unless the user explici
 - Collaborative notes or reading groups.
 - AI-assisted summaries, questions, or explanations.
 - Analytics or product telemetry.
+- Containerized deployment with Docker Compose.
 
 These goals require a separate privacy and security design. Book text must never be uploaded silently, and AI or analytics must remain opt-in with a clear data boundary.
 

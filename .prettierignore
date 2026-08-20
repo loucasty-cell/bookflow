@@ -2,4 +2,11 @@ node_modules/
 dist/
 build/
 *.class
+*.pyc
+__pycache__/
+.pytest_cache/
+.venv/
+.env*
+!.env.example
+*.log
 fullmain.html.before-format-repair

@@ -1,12 +1,21 @@
-"""Hugging Face Image-to-Text OCR Service for fast and high-accuracy document scanning."""
-
 import io
 import time
 import asyncio
+import hashlib
 import logging
+from collections import OrderedDict
 from typing import List, Optional, Dict, Any, Union
-import httpx
-from PIL import Image, ImageOps
+
+try:
+    import httpx
+except ImportError:
+    httpx = None  # type: ignore
+
+try:
+    from PIL import Image, ImageOps
+except ImportError:
+    Image = None  # type: ignore
+    ImageOps = None  # type: ignore
 
 from ..core.config import settings
 from ..models.ocr import OCRPageResult, HFModelInfo
@@ -24,12 +33,15 @@ class HuggingFaceOCRService:
         default_model: Optional[str] = None,
         timeout: Optional[float] = None,
         max_retries: Optional[int] = None,
+        max_cache_size: int = 1000,
     ):
         self.api_key = api_key or settings.hf_api_key
         self.default_model = default_model or settings.hf_ocr_model
         self.timeout = timeout if timeout is not None else settings.hf_api_timeout
         self.max_retries = max_retries if max_retries is not None else settings.hf_max_retries
         self.base_url_template = settings.hf_inference_url_template
+        self._cache: OrderedDict[str, str] = OrderedDict()
+        self._max_cache_size = max_cache_size
 
     def get_headers(self, custom_api_key: Optional[str] = None) -> Dict[str, str]:
         """Build HTTP headers for Hugging Face Inference API."""
@@ -47,6 +59,9 @@ class HuggingFaceOCRService:
         Preprocess image to ensure standard RGB format, correct EXIF orientation,
         and optimal resolution for Hugging Face vision models.
         """
+        if Image is None or ImageOps is None:
+            return image_bytes
+
         try:
             with Image.open(io.BytesIO(image_bytes)) as img:
                 # Correct orientation from EXIF
@@ -112,6 +127,35 @@ class HuggingFaceOCRService:
         start_time = time.perf_counter()
 
         processed_bytes = self.preprocess_image(image_bytes)
+        img_hash = hashlib.sha256(processed_bytes).hexdigest()
+        cache_key = f"{active_model}:{img_hash}"
+
+        # Check in-memory SHA-256 LRU cache
+        if cache_key in self._cache:
+            cached_text = self._cache[cache_key]
+            self._cache.move_to_end(cache_key)
+            paragraphs = text_service.extract_paragraphs(cached_text)
+            return OCRPageResult(
+                page_number=page_number,
+                text=cached_text,
+                paragraphs=paragraphs,
+                model_used=f"{active_model} (cached)",
+                latency_ms=0.0,
+                success=True,
+                error=None,
+            )
+
+        if httpx is None:
+            return OCRPageResult(
+                page_number=page_number,
+                text="",
+                paragraphs=[],
+                model_used=active_model,
+                latency_ms=0.0,
+                success=False,
+                error="httpx library is not installed. Please install with: pip install httpx",
+            )
+
         url = self.base_url_template.format(model_id=active_model)
         headers = self.get_headers(custom_api_key)
 
@@ -130,6 +174,11 @@ class HuggingFaceOCRService:
                     extracted_text = self.parse_hf_response(raw_result).strip()
                     paragraphs = text_service.extract_paragraphs(extracted_text)
                     latency = round((time.perf_counter() - start_time) * 1000, 2)
+
+                    # Store in LRU cache
+                    self._cache[cache_key] = extracted_text
+                    if len(self._cache) > self._max_cache_size:
+                        self._cache.popitem(last=False)
 
                     return OCRPageResult(
                         page_number=page_number,
@@ -224,3 +273,8 @@ class HuggingFaceOCRService:
 
 
 hf_ocr_service = HuggingFaceOCRService()
+
+
+def get_hf_ocr_service() -> HuggingFaceOCRService:
+    """Dependency provider for FastAPI dependency injection."""
+    return hf_ocr_service

@@ -1,14 +1,38 @@
 {
   "version": "0.2.0",
+  "compounds": [
+    {
+      "name": "Full Stack: Frontend + Backend",
+      "configurations": ["Run Bookflow (Vite)", "Run FastAPI Backend"]
+    }
+  ],
   "configurations": [
     {
       "name": "Run Bookflow (Vite)",
-      "type": "pwa-chrome",
+      "type": "chrome",
       "request": "launch",
       "url": "http://localhost:5173",
       "webRoot": "${workspaceFolder}",
       "preLaunchTask": "Start Bookflow (Vite)",
       "sourceMaps": true
+    },
+    {
+      "name": "Run FastAPI Backend",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/run.py",
+      "cwd": "${workspaceFolder}/backend",
+      "console": "integratedTerminal",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/backend"
+      }
+    },
+    {
+      "name": "Run current Python file",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal"
     },
     {
       "name": "Run current JavaScript file",

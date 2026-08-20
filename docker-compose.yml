@@ -1,0 +1,66 @@
+services:
+  bookflow-ocr-engine:
+    image: vllm/vllm-openai:latest
+    container_name: bookflow-ocr-engine
+    command: >
+      --model deepseek-ai/DeepSeek-OCR-2
+      --trust-remote-code
+      --port 8000
+      --max-model-len 4096
+      --gpu-memory-utilization 0.90
+      --tensor-parallel-size 1
+    ipc: host
+    shm_size: "16gb"
+    environment:
+      - HF_TOKEN=${HF_TOKEN}
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    networks:
+      bookflow-net:
+        aliases:
+          - ocr-engine
+    restart: unless-stopped
+
+  bookflow-fastapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bookflow-fastapi
+    ports:
+      - "8000:8000"
+    environment:
+      - OCR_ENGINE_URL=http://ocr-engine:8000/v1
+      - OCR_MODEL=deepseek-ai/DeepSeek-OCR-2
+      - HF_TOKEN=${HF_TOKEN}
+      - HF_API_KEY=${HF_TOKEN}
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000
+    depends_on:
+      bookflow-ocr-engine:
+        condition: service_healthy
+    networks:
+      - bookflow-net
+    restart: unless-stopped
+
+volumes:
+  hf_cache:
+    driver: local
+
+networks:
+  bookflow-net:
+    driver: bridge

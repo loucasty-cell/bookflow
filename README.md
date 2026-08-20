@@ -8,10 +8,12 @@ Bookflow is a private, paragraph-focused reading space for PDFs, EPUB ebooks, te
 
 ## Documentation & Context Files
 
-- **[features.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/features.md)**: Detailed feature breakdown across the frontend reader, backend processing, and Hugging Face Vision OCR models.
-- **[structure.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/structure.md)**: Complete repository structure, directory tree, layer responsibilities, and architecture guidelines.
-- **[api.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/api.md)**: Full API reference detailing Frontend data contracts, browser storage schemas, and FastAPI REST API endpoints.
-- **[debugging.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/debugging.md)**: Diagnostics, common error resolutions, and step-by-step troubleshooting workflows.
+- **[docs/frontend-workflow.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/docs/frontend-workflow.md)**: Senior Full-Stack Frontend Engineering & Architecture Guide.
+- **[docs/backend-workflow.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/docs/backend-workflow.md)**: Senior Full-Stack Backend DevOps & High-Throughput Architecture Guide.
+- **[features.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/features.md)**: Detailed feature breakdown across frontend reader, backend processing, and DeepSeek-OCR-2 acceleration.
+- **[structure.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/structure.md)**: Complete repository structure, directory tree, and layer boundaries.
+- **[api.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/api.md)**: Full API contracts and REST / SSE endpoints.
+- **[debugging.md](file:///C:/Users/ASUS/OneDrive/Documents/GitHub/bookflow/debugging.md)**: Diagnostics, performance tuning, and troubleshooting workflows.
 
 ---
 

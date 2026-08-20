@@ -9,6 +9,7 @@ import {
   Sun,
   UploadCloud,
   X,
+  Zap,
 } from "lucide-react";
 import { ACCEPTED_FILES } from "../../document-import/index.js";
 import { Brand, LoadingOverlay } from "../../../shared/components/index.js";
@@ -21,6 +22,7 @@ export function LandingPage({
   fileInputRef,
   handleFile,
   openBook,
+  onOpenOcr,
   error,
   loading,
   theme,
@@ -102,7 +104,7 @@ export function LandingPage({
           </div>
 
           <p className="import-guidance">
-            PDF, EPUB, plain text, or Markdown up to 50 MB. Scanned English PDFs can be read with on-device OCR.
+            PDF, EPUB, plain text, or Markdown up to 50 MB. Scanned English PDFs can be read with on-device OCR or high-throughput DeepSeek-OCR-2 acceleration.
           </p>
 
           <div className="hero-actions">
@@ -112,6 +114,18 @@ export function LandingPage({
             >
               <BookOpen size={17} /> Read the sample <ChevronRight size={16} />
             </button>
+            {onOpenOcr && (
+              <button
+                className="sample-button"
+                onClick={onOpenOcr}
+                style={{
+                  background: "linear-gradient(135deg, #4169e1, #1e3a8a)",
+                  color: "#ffffff",
+                }}
+              >
+                <Zap size={16} /> DeepSeek OCR <ChevronRight size={16} />
+              </button>
+            )}
             <span><ShieldCheck size={15} /> Nothing leaves your device</span>
           </div>
 

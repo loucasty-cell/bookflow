@@ -3,6 +3,7 @@
   "files.autoGuessEncoding": false,
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
   "prettier.requireConfig": false,
   "prettier.useEditorConfig": true,
   "eslint.format.enable": false,
@@ -52,6 +53,21 @@
   "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true
+  },
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
+  "python.envFile": "${workspaceFolder}/backend/.env",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/backend",
+    "${workspaceFolder}/backend/app"
+  ],
+  "python.analysis.diagnosticMode": "workspace",
+  "python.analysis.typeCheckingMode": "basic",
   "[java]": {
     "editor.defaultFormatter": "redhat.java"
   },
@@ -77,7 +93,7 @@
     "javascriptreact": "npm.cmd run dev",
     "typescript": "npx --yes tsx \"$fullFileName\"",
     "typescriptreact": "npm.cmd run dev",
-    "python": "py -u \"$fullFileName\"",
+    "python": "python -u \"$fullFileName\"",
     "java": "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"& javac '$fullFileName'; if (`$LASTEXITCODE -eq 0) { & java -cp '$dir' '$fileNameWithoutExt' }\"",
     "go": "go run \"$fullFileName\"",
     "dart": "dart run \"$fullFileName\"",
@@ -91,6 +107,8 @@
     "**/node_modules": true,
     "**/dist": true,
     "**/build": true,
-    "**/*.class": true
+    "**/*.class": true,
+    "**/__pycache__": true,
+    "**/.pytest_cache": true
   }
 }
