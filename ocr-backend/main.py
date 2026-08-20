@@ -39,6 +39,8 @@ async def ocr(image: UploadFile = File(...)):
             text = processor.decode(outputs[0], skip_special_tokens=True)
             return {"text": text, "confidence": 0.95}
         else:
-            return {"text": "Model not loaded", "confidence": 0.0}
+            from fastapi import HTTPException
+            raise HTTPException(status_code=503, detail="Model not loaded")
     except Exception as e:
-        return {"error": str(e)}
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))

@@ -4,7 +4,8 @@ COPY package*.json ./
 RUN npm ci
 COPY . .
 # Setting DeepSeek OCR endpoint to localhost proxy mapping for docker-compose networking
-ENV VITE_DEEPSEEK_ENDPOINT=http://localhost:8000/ocr
+ARG VITE_DEEPSEEK_ENDPOINT="http://localhost:8000/ocr"
+ENV VITE_DEEPSEEK_ENDPOINT=$VITE_DEEPSEEK_ENDPOINT
 RUN npm run build
 
 FROM nginx:alpine

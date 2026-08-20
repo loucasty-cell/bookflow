@@ -1,7 +1,10 @@
 version: '3.8'
 services:
   bookflow-frontend:
-    build: .
+    build:
+      context: .
+      args:
+        VITE_DEEPSEEK_ENDPOINT: "http://localhost:8000/ocr"
     ports:
       - "3000:80"
 

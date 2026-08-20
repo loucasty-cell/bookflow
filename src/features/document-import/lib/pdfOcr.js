@@ -87,11 +87,21 @@ export async function renderPdfPageForOcr(page) {
 export async function recognizePdfPage(scheduler, page) {
   // DeepSeek-OCR-2 Docker Integration (Local API Fallback)
   // If the user runs the app via docker-compose, we ping the deepseek endpoint exposed in the local net.
-  const deepseekEndpoint = import.meta.env?.VITE_DEEPSEEK_ENDPOINT;
+  const deepseekEndpoint = typeof process !== "undefined" && process.env.VITE_DEEPSEEK_ENDPOINT
+       ? process.env.VITE_DEEPSEEK_ENDPOINT
+       : (import.meta.env?.VITE_DEEPSEEK_ENDPOINT || (window.location.hostname === "localhost" ? "http://localhost:8000/ocr" : ""));
 
   if (deepseekEndpoint) {
      const canvas = await renderPdfPageForOcr(page);
-     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+     const blob = await new Promise(resolve => {
+        if (canvas.toBlob) {
+            canvas.toBlob(resolve, 'image/jpeg');
+        } else if (canvas.convertToBlob) {
+            canvas.convertToBlob({ type: 'image/jpeg' }).then(resolve);
+        } else {
+            resolve(null);
+        }
+     });
      canvas.width = 1;
      canvas.height = 1;
 
@@ -107,7 +117,7 @@ export async function recognizePdfPage(scheduler, page) {
          const result = await res.json();
          return {
            confidence: result.confidence || 0.9,
-           paragraphs: ocrTextToParagraphs(result.text),
+           paragraphs: splitParagraphs(result.text).filter(p => wordCount(p) >= 3),
          };
        }
      } catch (e) {

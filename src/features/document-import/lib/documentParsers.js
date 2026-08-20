@@ -374,6 +374,7 @@ export async function parsePdf(file, onProgress) {
     try {
       const { createScheduler } = await import("tesseract.js");
       scheduler = createScheduler();
+      // Limit concurrency to 4 max to avoid OOM
       const concurrency = Math.min(
         pagesToOcr.length,
         Math.min(navigator.hardwareConcurrency || 4, 4)
