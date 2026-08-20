@@ -2,6 +2,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  lazy,
   useMemo,
   useRef,
   useState,
@@ -89,29 +90,6 @@ function startsWithStaticRegion(reader) {
     reader?.querySelector(".reading-section")?.dataset.focusEligible ===
     "false"
   );
-}
-
-function readSettings() {
-  const saved = safeParse(localStorage.getItem("bookflow:settings"), {});
-  const savedFontSize = Number(saved.fontSize);
-  const savedPace = Number(saved.focusPace);
-
-  return {
-    ...DEFAULT_SETTINGS,
-    ...saved,
-    fontSize: Number.isFinite(savedFontSize)
-      ? Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, savedFontSize))
-      : DEFAULT_SETTINGS.fontSize,
-    columnWidth:
-      saved.columnWidth === 720
-        ? DEFAULT_SETTINGS.columnWidth
-        : (saved.columnWidth ?? DEFAULT_SETTINGS.columnWidth),
-    focusPace:
-      savedPace >= 180 && savedPace <= 420
-        ? savedPace
-        : DEFAULT_SETTINGS.focusPace,
-    mode: saved.mode === "normal" ? "normal" : DEFAULT_SETTINGS.mode,
-  };
 }
 
 function App() {

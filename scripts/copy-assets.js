@@ -1,4 +1,3 @@
-import { createReadStream } from 'node:fs';
 import { copyFile, mkdir } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 

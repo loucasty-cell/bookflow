@@ -9,19 +9,10 @@ const DEFAULT_SETTINGS = {
   mode: "focus",
 };
 
-// Extracted from shared/lib/index.js (replicated for store simplicity)
-const safeParse = (json, fallback) => {
-  try {
-    return json ? JSON.parse(json) : fallback;
-  } catch {
-    return fallback;
-  }
-};
-
 // Allow dependency injection for testing storage
 export const createReaderStore = (storage = undefined) => create(
   persist(
-    (set, get) => ({
+    (set) => ({
       settings: DEFAULT_SETTINGS,
       progress: 0,
       bookmarks: [],

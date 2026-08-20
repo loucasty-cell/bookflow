@@ -8,7 +8,7 @@
     "build": "node scripts/copy-assets.js && next build",
     "start": "next start",
     "test": "vitest run",
-    "lint": "next lint"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@tesseract.js-data/eng": "^1.0.0",
