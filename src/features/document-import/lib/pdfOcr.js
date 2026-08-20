@@ -45,10 +45,7 @@ export async function createPdfOcrScheduler() {
 }
 
 export async function createPdfOcrWorker(reportProgress) {
-  // DeepSeek-OCR-2 Integration: As the user requested deepseek-ai/DeepSeek-OCR-2 support,
-  // we would typically integrate it via huggingface Inference API due to browser limitations.
-  // However, local execution requires ONNX runtime in browser which might be too heavy.
-  // The system preserves the Tesseract execution path below for pure local, but acknowledges DeepSeek capability.
+
 
   const { createWorker } = await import("tesseract.js");
   return createWorker("eng", 1, {
@@ -88,6 +85,40 @@ export async function renderPdfPageForOcr(page) {
 }
 
 export async function recognizePdfPage(scheduler, page) {
+  // DeepSeek-OCR-2 Docker Integration (Local API Fallback)
+  // If the user runs the app via docker-compose, we ping the deepseek endpoint exposed in the local net.
+  const deepseekEndpoint = import.meta.env?.VITE_DEEPSEEK_ENDPOINT;
+
+  if (deepseekEndpoint) {
+     const canvas = await renderPdfPageForOcr(page);
+     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg'));
+     canvas.width = 1;
+     canvas.height = 1;
+
+     const formData = new FormData();
+     formData.append('image', blob, 'page.jpg');
+
+     try {
+       const res = await fetch(deepseekEndpoint, {
+         method: 'POST',
+         body: formData,
+       });
+       if (res.ok) {
+         const result = await res.json();
+         return {
+           confidence: result.confidence || 0.9,
+           paragraphs: ocrTextToParagraphs(result.text),
+         };
+       }
+     } catch (e) {
+       console.warn('DeepSeek OCR failed, falling back to local Tesseract', e);
+     }
+  }
+
+
+
+
+
   const canvas = await renderPdfPageForOcr(page);
   try {
     const result = await scheduler.addJob('recognize', canvas, {

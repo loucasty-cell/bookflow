@@ -1,3 +1,4 @@
+import { classifyParagraph, formatClassification } from "../../../shared/lib/text.js";
 import {
   normalizeText,
   splitParagraphs,
@@ -289,7 +290,7 @@ export async function parsePdf(file, onProgress) {
   // 1. Process native text and find pages needing OCR
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
     reportProgress(
-      pdfPageProgress(pageNumber, pdf.numPages, 0),
+      pdfPageProgress(pageNumber, pdf.numPages * 2.5, 0),
       `Reading page ${pageNumber} of ${pdf.numPages}`,
     );
     const page = await pdf.getPage(pageNumber);
@@ -364,7 +365,7 @@ export async function parsePdf(file, onProgress) {
   // 2. Process OCR pages concurrently
   if (pagesToOcr.length > 0) {
     reportProgress(
-      pdfPageProgress(1, pdf.numPages, 0.04), // start OCR progress
+      pdfPageProgress(pdf.numPages, pdf.numPages * 2.5, 0), // start OCR progress
       "Starting private on-device OCR",
     );
 
@@ -375,26 +376,15 @@ export async function parsePdf(file, onProgress) {
       scheduler = createScheduler();
       const concurrency = Math.min(
         pagesToOcr.length,
-        navigator.hardwareConcurrency || 4
+        Math.min(navigator.hardwareConcurrency || 4, 4)
       );
 
       let ocrCompleted = 0;
       const totalOcr = pagesToOcr.length;
 
-      const ocrLogger = (message) => {
-        const rawProgress = Number(message?.progress) || 0;
-        const pageProgress =
-          message?.status === "recognizing text"
-            ? 0.18 + rawProgress * 0.78
-            : rawProgress * 0.16;
-        // Approximation of progress relative to all pages
-        const averageOcrProgress = (ocrCompleted + pageProgress) / totalOcr;
-        // Map average OCR progress to the 0..1 range of the overall OCR progress phase
-        reportProgress(
-          pdfPageProgress(1, pdf.numPages, averageOcrProgress),
-          `Recovering scanned pages (${ocrCompleted} of ${totalOcr} complete)`,
-        );
-      };
+      // To avoid erratic UI progress jumps caused by interleaving multi-worker progress events,
+      // we only increment the main progress bar fully when a whole page's OCR has finished.
+      const ocrLogger = () => {};
 
       try {
         for (let i = 0; i < concurrency; i++) {
@@ -408,31 +398,45 @@ export async function parsePdf(file, onProgress) {
         );
       }
 
-      const ocrPromises = pagesToOcr.map(async ({ pageNumber, page, readableLines }) => {
-        const recognized = await recognizePdfPage(scheduler, page);
-        const paragraphs = recognized.paragraphs;
-        if (paragraphs.length) ocrPageCount += 1;
+      // Since recognizePdfPage uses Tesseract scheduler, we can simply queue them all.
+      // But to prevent allocating hundreds of 10MP canvases into memory concurrently before Tesseract processes them,
+      // we process them sequentially here (scheduler will still queue, but canvases won't hold memory).
 
-        const pageTitleCandidate = normalizeText(
-          paragraphs?.[0] ?? readableLines[0] ?? "",
-        );
-        const pageTitle =
-          pageTitleCandidate &&
-          pageTitleCandidate.length <= 62 &&
-          !/[.!?…]["'’”)]?$/.test(pageTitleCandidate) &&
-          /^[A-Z\d]/.test(pageTitleCandidate)
-            ? pageTitleCandidate
-            : `Page ${pageNumber}`;
+      const ocrPromises = [];
+      const queue = [...pagesToOcr];
 
-        if (paragraphs?.length) {
-          nativeChapters[pageNumber - 1] = { title: pageTitle, paragraphs };
+      const workerFn = async () => {
+        while (queue.length > 0) {
+          const { pageNumber, page, readableLines } = queue.shift();
+          const recognized = await recognizePdfPage(scheduler, page);
+          const paragraphs = recognized.paragraphs;
+          if (paragraphs.length) ocrPageCount += 1;
+
+          const pageTitleCandidate = normalizeText(
+            paragraphs?.[0] ?? readableLines[0] ?? "",
+          );
+          const pageTitle =
+            pageTitleCandidate &&
+            pageTitleCandidate.length <= 62 &&
+            !/[.!?…]["'’”)]?$/.test(pageTitleCandidate) &&
+            /^[A-Z\d]/.test(pageTitleCandidate)
+              ? pageTitleCandidate
+              : `Page ${pageNumber}`;
+
+          if (paragraphs?.length) {
+            nativeChapters[pageNumber - 1] = { title: pageTitle, paragraphs };
+          }
+          ocrCompleted++;
+          reportProgress(
+            pdfPageProgress(pdf.numPages + Math.round((ocrCompleted / totalOcr) * pdf.numPages * 1.5), pdf.numPages * 2.5, 0),
+            `Recovering scanned pages (${ocrCompleted} of ${totalOcr} complete)`,
+          );
         }
-        ocrCompleted++;
-        reportProgress(
-          pdfPageProgress(1, pdf.numPages, ocrCompleted / totalOcr),
-          `Recovering scanned pages (${ocrCompleted} of ${totalOcr} complete)`,
-        );
-      });
+      };
+
+      for (let i = 0; i < concurrency; i++) {
+        ocrPromises.push(workerFn());
+      }
 
       await Promise.all(ocrPromises);
 
@@ -590,6 +594,36 @@ export async function parseDocument(file, onProgress) {
   if (!result.chapters.length)
     throw new Error("No readable text was found in this document.");
   onProgress?.(100, "Preparing your reading flow");
+  // Apply paragraph classification and logging output format
+  let paragraphIndex = 1;
+  let formattedOutput = "\n--- CLASSIFICATION OUTPUT ---\n";
+
+  result.chapters.forEach(chapter => {
+    if (chapter.paragraphs) {
+       chapter.classifications = chapter.paragraphs.map(p => {
+          const textContent = typeof p === 'string' ? p : p.text || '';
+          const classification = classifyParagraph(textContent);
+          formattedOutput += formatClassification(paragraphIndex++, textContent, classification) + "\n\n";
+          return classification;
+       });
+    }
+    if (chapter.subheadings) {
+       chapter.subheadings.forEach(sub => {
+          if (sub.paragraphs) {
+             sub.classifications = sub.paragraphs.map(p => {
+                const textContent = typeof p === 'string' ? p : p.text || '';
+                const classification = classifyParagraph(textContent);
+                formattedOutput += formatClassification(paragraphIndex++, textContent, classification) + "\n\n";
+                return classification;
+             });
+          }
+       });
+    }
+  });
+
+  // Output logs to console based on user instructions to match output format
+  console.log(formattedOutput);
+
   return result;
 }
 

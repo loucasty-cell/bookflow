@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  bookflow-frontend:
+    build: .
+    ports:
+      - "3000:80"
+
+  # HuggingFace Inference Endpoints (TEI/TGI alternative)
+  # DeepSeek OCR integration uses custom python wrapper for transformers OCR
+  deepseek-ocr:
+    build:
+      context: ./ocr-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_ID=deepseek-ai/DeepSeek-OCR-2

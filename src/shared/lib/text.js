@@ -54,3 +54,66 @@ export function stripMarkdown(markdown) {
 export function documentId(file) {
   return `${file.name}:${file.size}:${file.lastModified}`
 }
+
+// --- CLASSIFICATION RULES ---
+// 1. DIALOGUE: Contains spoken communication
+// 2. ACTION: Focuses on physical movement/real-time events
+// 3. DESCRIPTIVE: Sensory details, visual worldbuilding
+// 4. EXPOSITORY: Background info, history, lore
+// 5. INTERNAL_MONOLOGUE: Character's inner thoughts
+// 6. QUOTE / EPIGRAPH / DOCUMENT: Written artifacts in narrative
+// 7. TRANSITIONAL: Bridges time, location, or scene
+// 8. STRUCTURAL_MARKER: Chapter headings, scene breaks
+// 9. VERSE / POETRY: Embedded songs, rhymes
+
+export function formatClassification(index, text, classification) {
+  const words = text.split(/\s+/).slice(0, 7).join(' ');
+  return `Paragraph [${index}]: "${words}..."\n- Type: ${classification.type}\n- Variant: ${classification.variant}\n- Logic: ${classification.logic}`;
+}
+
+export function classifyParagraph(text) {
+  const clean = text.trim();
+
+  if (/^(?:\*\*\*|###|---)$/.test(clean) || clean.length < 50 && /^#{1,6}\s/.test(clean)) {
+    return { type: 'STRUCTURAL_MARKER', variant: 'None', logic: 'Non-prose separator or heading.' };
+  }
+
+  const quoteMatch = clean.match(/["'“‘][^"'”’]+["'”’]/g);
+  if (quoteMatch) {
+    const isMainlySpeech = quoteMatch.reduce((sum, match) => sum + match.length, 0) > clean.length * 0.4;
+    if (isMainlySpeech) {
+      if (clean.match(/he said|she asked|they replied/i)) {
+        return { type: 'DIALOGUE', variant: 'Pure Dialogue', logic: 'Contains spoken communication with standard tags.' };
+      }
+      return { type: 'DIALOGUE', variant: 'Dialogue + Action Beat', logic: 'Speech paired with physical movement in the same paragraph.' };
+    }
+  }
+
+  if (/[\r\n]+/.test(clean) && clean.split(/[\r\n]+/).every(line => line.trim().length < 50)) {
+     return { type: 'VERSE / POETRY', variant: 'None', logic: 'Intentionally line-broken poetic text.' };
+  }
+
+  const isTransition = /^(?:Three hours later|By morning|Back at|Later|Meanwhile)/i.test(clean);
+  if (isTransition) {
+    return { type: 'TRANSITIONAL', variant: 'None', logic: 'Bridges time, location, or scene perspective.' };
+  }
+
+  const isInternal = clean.match(/\?(?:\w+\s){2,}\?/g) || clean.includes(" thought ") || clean.includes(" wondered ");
+  if (isInternal && !quoteMatch) {
+    return { type: 'INTERNAL_MONOLOGUE', variant: 'None', logic: 'Displays character inner thoughts or direct questions.' };
+  }
+
+  // Basic heuristic: descriptive sentences often use "was", "were", "had", and adjectives.
+  const isDescriptive = (clean.match(/\b(?:was|were|had|seemed|appeared|looked|felt)\b/gi) || []).length > 3;
+  if (isDescriptive) {
+    return { type: 'DESCRIPTIVE', variant: 'None', logic: 'Focuses on sensory details, setting scene or mood.' };
+  }
+
+  // Expository: frequently uses "Because", "For years", "History", etc.
+  const isExpository = clean.match(/\b(?:because|history|years ago|century|known as)\b/gi);
+  if (isExpository) {
+    return { type: 'EXPOSITORY', variant: 'None', logic: 'Delivers background information or conceptual explanations.' };
+  }
+
+  return { type: 'ACTION', variant: 'None', logic: 'Focuses on physical movement, real-time events, or dynamic narrative progression.' };
+}
