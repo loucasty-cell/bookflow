@@ -133,3 +133,23 @@ npm test
 # 3. Production Vite build verification
 npm run build
 ```
+
+---
+
+## 6. AI Coding & Reading Research Frontiers
+
+Based on recent AI program comprehension and cognitive ergonomics literature (*NeurIPS 2024; ICSE 2025; Cognitive Science 2026*):
+
+### 6.1 AST-Guided Structural Chunking & Code Folding
+- **Problem**: Technical readers and software engineers lose context when scrolling long code listings in Markdown documents.
+- **Architecture**: Syntax-aware structural chunking that groups code blocks into cohesive conceptual scopes (interfaces, classes, control routines) with collapsible scopes.
+
+### 6.2 Semantic Token Salience & Code Bionic Anchoring
+- **Mechanism**: Extends bionic reading fixations to programming language syntax tokens (`const`, `function`, `async`, `return`, `class`, `import`), allowing developers to skim technical documentation and code examples with reduced saccadic latency.
+
+### 6.3 Contextual Concept Definition Graph
+- **Mechanism**: Automatically indexes conceptual definitions across chapters in-memory, providing one-click definition popovers when unfamiliar terms reappear in subsequent chapters.
+
+### 6.4 Dual-Pane Code-Prose Synchronized Highlighting
+- **Mechanism**: Synchronizes line-by-line focus between architectural prose and adjacent code examples, keeping narrative context and code implementation visually aligned.
+

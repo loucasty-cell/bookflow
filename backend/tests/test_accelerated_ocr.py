@@ -95,6 +95,7 @@ async def test_paddleocr_payload_and_response_are_supported(monkeypatch):
     def handler(request):
         body = json.loads(request.content)
         assert body["fileType"] == 1
+        assert body["profile"] == "small"
         assert base64.b64decode(body["file"]) == b"jpeg-bytes"
         return httpx.Response(
             200,
@@ -108,6 +109,41 @@ async def test_paddleocr_payload_and_response_are_supported(monkeypatch):
     assert result.success is True
     assert result.page_number == 3
     assert result.text == "Paddle OCR text"
+
+
+@pytest.mark.asyncio
+async def test_small_paddleocr_profile_retries_medium_when_no_text(monkeypatch):
+    monkeypatch.setattr(accelerated_ocr, "PADDLEOCR_URL", "http://paddle.test/ocr")
+    requested_profiles = []
+
+    def handler(request):
+        body = json.loads(request.content)
+        requested_profiles.append(body["profile"])
+        text = "" if body["profile"] == "small" else "Recovered by medium"
+        return httpx.Response(200, json={"result": {"ocrResults": [{"prunedResult": text}]}})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        result = await accelerated_ocr.call_paddleocr(client, 1, b"jpeg-bytes", "small")
+
+    assert requested_profiles == ["small", "medium"]
+    assert result is not None
+    assert result.text == "Recovered by medium"
+
+
+@pytest.mark.asyncio
+async def test_medium_paddleocr_profile_skips_small(monkeypatch):
+    monkeypatch.setattr(accelerated_ocr, "PADDLEOCR_URL", "http://paddle.test/ocr")
+
+    def handler(request):
+        body = json.loads(request.content)
+        assert body["profile"] == "medium"
+        return httpx.Response(200, json={"result": {"ocrResults": [{"prunedResult": "Quality text"}]}})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        result = await accelerated_ocr.call_paddleocr(client, 1, b"jpeg-bytes", "medium")
+
+    assert result is not None
+    assert result.text == "Quality text"
 
 
 def test_paddleocr_client_parses_official_nested_result():

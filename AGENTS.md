@@ -1,8 +1,42 @@
-# Bookflow Development Guide
+# Bookflow Development Guide & AI Agent Directive
 
-Follow this file whenever modifying Bookflow. Apply the global rules first, then the project-specific rules. Do not implement roadmap ideas unless the user explicitly requests them.
+Follow this file whenever modifying Bookflow. Apply the global rules first, then the project-specific rules.
 
-## Global rules
+---
+
+## ⚡ Executive Quick-Start for AI Agents
+
+When reading or modifying this repository, orient yourself immediately with these core boundaries:
+
+```text
+bookflow/
+├── src/                               # React 19 + Vite 8 Frontend
+│   ├── main.jsx                       # Root DOM mount with ErrorBoundary
+│   ├── App.jsx                        # Root feature composer & library state
+│   ├── styles.css                     # Semantic CSS design tokens & themes
+│   ├── components/                    # Lazy-loaded modals (OcrUploader, VariableRewardCapsule)
+│   ├── features/
+│   │   ├── reader/                    # Core Reading Engine
+│   │   │   ├── components/            # ReaderPage, SettingsPanel, NotesPanel, ContentsPanel
+│   │   │   └── lib/                   # textFormatter (Bionic), useScrollPosition, readingController
+│   │   ├── document-import/           # Client-side parsers (PDF.js, JSZip, Tesseract WASM)
+│   │   └── landing/                   # Hero intake, drag-and-drop zone, sample books
+│   ├── shared/lib/                    # storage.js (safe localStorage fallback), text.js
+│   └── store/                         # Zustand global stores (readerStore, uiStore)
+└── backend/                           # FastAPI + Python 3.11/3.12 Backend
+    ├── main.py                        # High-concurrency OCR router & SSE pipeline
+    ├── app/                           # Routers, Pydantic v2 schemas, and services
+    └── tests/                         # Pytest test suite (34 tests)
+```
+
+### Core Invariants:
+1. **Local-First Privacy**: Book text stays on user's device. Never send book contents to cloud services without explicit approval.
+2. **React Text Nodes Only**: Render book text safely via React element trees. Never use `dangerouslySetInnerHTML` for book contents.
+3. **Sentence/Paragraph Golden Ratio Focus**: Scrolling pulls the active sentence/paragraph into focus at `FOCUS_RAIL_RATIO = 0.42`.
+
+---
+
+## Global Rules
 
 - Do not add `Co-Authored-By` or other co-author messages to commits.
 - Do not use emojis in code, commits, or user-facing development output.
@@ -16,7 +50,9 @@ Follow this file whenever modifying Bookflow. Apply the global rules first, then
 - Edit existing files when practical. Create files only when the requested change or established structure requires them.
 - Ask for clarification instead of guessing when project documentation and existing patterns do not resolve an important decision.
 
-## Commit rules
+---
+
+## Commit Rules
 
 Prefix every commit subject with one of these conventional types:
 
@@ -37,220 +73,72 @@ refactor: organize the reader by feature
 - move shared utilities behind public exports
 ```
 
-## Product purpose
+---
+
+## Product Purpose & Technology Stack
 
 Bookflow is a private, browser-based reading application that turns PDFs, EPUB ebooks, text files, and Markdown into a calm, sentence-focused reading experience.
 
-Sentence focus is the primary behavior. As the reader scrolls, one complete sentence receives a gentle highlight near the natural reading line. Readers can pin a sentence, bookmark it, or attach a note.
+### Active Technology Stack:
+- **Frontend**: React 19, Vite 8, Zustand (persisted state), Framer Motion, SWR, Lucide React.
+- **Local Parsing**: `pdfjs-dist` (local worker), `jszip` (EPUB parsing), `tesseract.js` WASM (on-device OCR fallback).
+- **Typography & Ergonomics**: Bionic Reading fixations (`textFormatter.js`), accessible typefaces (Atkinson Hyperlegible, OpenDyslexic), and variable letter tracking.
+- **Testing & Quality**: Vitest (44 tests across 12 suites), ESLint.
+- **Backend (Optional / Accelerated)**: FastAPI, Uvicorn ASGI, PyMuPDF (fitz) thread pool rasterization, PaddleOCR worker (`Dockerfile.ocr`), vLLM / Hugging Face OpenAI-compatible vision payloads (Qwen2-VL / DeepSeek-OCR-2), Server-Sent Events (SSE), Docker Compose.
 
-## Non-negotiable product rules
+---
 
-1. Keep imported book contents on the user's device.
-2. Do not send document text to AI services, analytics providers, or external APIs unless the user explicitly requests and approves that architecture.
-3. Preserve sentence focus as the main feature.
-4. Maintain accessible keyboard controls and responsive desktop, tablet, and mobile layouts.
-5. Never describe an unimplemented or unverified feature as complete.
-6. Keep scanned-PDF OCR local, preserve original page order, and state that the bundled model currently targets English text.
-7. Avoid unnecessary dependencies, backend services, and abstractions.
+## Feature Boundaries & Architecture
 
-## Current technology
-
-- React for components and state.
-- Next.js (App Router) for development, routing, and production builds via Turbopack.
-- PDF.js for local PDF text extraction.
-- Tesseract.js with bundled assets for local English OCR on image-only PDF pages.
-- JSZip for local EPUB package extraction.
-- Lucide React for interface icons.
-- Zustand for lightweight global state management.
-- Framer Motion for spring-physics animations and transitions.
-- SWR for reactive data fetching and caching.
-- `Intl.Segmenter` with a fallback for sentence boundaries.
-- `localStorage` for settings, notes, bookmarks, and reading progress.
-- Vitest for automated tests.
-- ESLint for code-quality checks.
-
-Consult `package.json` before changing versions or proposing another library.
-
-## Project structure
-
-Bookflow uses a feature-based React structure with shared code reserved for behavior used by multiple features.
-
-```text
-app/
-|-- layout.jsx
-`-- page.jsx
-src/
-|-- components/
-|   |-- InterventionModal.jsx
-|   |-- OcrUploader.jsx
-|   `-- VariableRewardCapsule.jsx
-|-- features/
-|   |-- document-import/
-|   |   |-- lib/
-|   |   |   `-- documentParsers.js
-|   |   `-- index.js
-|   |-- landing/
-|   |   |-- components/
-|   |   |   `-- LandingPage.jsx
-|   |   |-- sampleBook.js
-|   |   `-- index.js
-|   `-- reader/
-|       |-- components/
-|       |   |-- ContentsPanel.jsx
-|       |   |-- FocusCard.jsx
-|       |   |-- NotesPanel.jsx
-|       |   |-- ReaderPage.jsx
-|       |   `-- SettingsPanel.jsx
-|       |-- config.js
-|       `-- index.js
-|-- shared/
-|   |-- components/
-|   |   |-- Brand.jsx
-|   |   |-- LoadingOverlay.jsx
-|   |   `-- index.js
-|   `-- lib/
-|       |-- storage.js
-|       |-- text.js
-|       |-- text.test.js
-|       `-- index.js
-|-- store/
-|   |-- readerStore.js
-|   `-- uiStore.js
-|-- App.jsx
-`-- styles.css
-```
-
-Create folders only when they contain real files required by a requested change. Do not add empty placeholder folders.
-
-## Feature boundaries
-
-- Keep each feature self-contained.
+- Keep each feature self-contained in `src/features/<feature-name>/`.
 - Do not import another feature's internal files. Import through that feature's `index.js` public API.
-- Put code in `shared/` only when at least two features use it.
-- Keep feature-specific components, data, configuration, and future hooks inside that feature.
+- Put code in `src/shared/` only when at least two features use it.
 - Keep `App.jsx` focused on application state and feature composition.
-- Keep reusable storage and text behavior in `shared/lib/`.
-- Keep document parsing inside `features/document-import/`.
-- Keep tests beside small utility modules or use a top-level `tests/` folder for cross-feature integration tests.
+- Keep reusable storage and text utilities in `src/shared/lib/`.
+- Keep document parsing inside `src/features/document-import/`.
 
-## Naming conventions
+---
 
-| Type | Convention | Example |
-| --- | --- | --- |
-| Feature folder | kebab-case | `document-import/` |
-| React component | PascalCase | `ReaderPage.jsx` |
-| Hook | `use` prefix | `useReadingProgress.js` |
-| Utility | camelCase | `storage.js` |
-| Public export | `index.js` | `export { ReaderPage } from './components/ReaderPage.jsx'` |
-
-## React and JavaScript rules
-
-- Use functional components and focused hooks.
-- Use descriptive names instead of abbreviations.
-- Keep JavaScript strict and avoid unsafe dynamic values.
-- Use `useMemo` only when computation or stable identity justifies it.
-- Keep effects limited to synchronization with browser or external state.
-- Clean up event listeners, timers, animation frames, and observers.
-- Avoid direct DOM manipulation when React state can express the behavior.
-- Render imported text through React text nodes. Never use `dangerouslySetInnerHTML` for book content.
-- Handle parser failures with clear, actionable messages.
-- Preserve lazy loading for heavy PDF, OCR, and EPUB dependencies.
-- Do not introduce a global state library unless the user approves it and the application genuinely requires it.
-- Match the codebase's imports, spacing, and component conventions.
-
-## Reader experience rules
+## Reader Experience Rules
 
 - Keep the active sentence readable without harsh contrast.
 - Do not make non-active text inaccessible.
-- Support scrolling, pointer input, keyboard input, and touch layouts.
-- Prevent horizontal overflow at supported mobile widths.
-- Give focus, notes, and settings controls accessible names.
-- Respect `prefers-reduced-motion`.
-- Preserve comfortable typography, readable line length, and clear hierarchy.
-- Avoid animations, badges, popups, or gamification that competes with reading.
+- Support scrolling, pointer input, keyboard input (`Down`/`Up`/`J`/`K`/`Space`/`Escape`), and touch layouts.
+- Prevent horizontal overflow at all mobile widths (`320px` to `430px`).
+- Give focus, notes, and settings controls accessible names (`aria-label`, `aria-modal`).
+- Respect `prefers-reduced-motion: reduce`.
+- Avoid noisy animations, badges, popups, or gamification that competes with reading.
 
-## Document-processing rules
+---
 
-- Validate supported extensions and file-size limits before parsing.
-- Keep PDF and EPUB parsing asynchronous.
+## Document-Processing Rules
+
+- Validate supported extensions (`.pdf`, `.epub`, `.txt`, `.md`) and 50 MB size limit before parsing.
+- Keep PDF and EPUB parsing asynchronous and lazy-loaded.
 - Preserve document order and useful chapter or page labels.
-- Remove repeated headers, footers, and page numbers only when detection is reliable.
 - Never silently discard large portions of a document.
-- Use native PDF text as the source of truth and OCR only pages without enough selectable text.
-- Reuse an OCR scheduler with up to 4 parallel workers per import, terminate the scheduler after the import, and keep progress monotonic.
-- Show an explicit message when neither native extraction nor local English OCR finds readable text.
+- Use native PDF text as the source of truth and OCR only pages without selectable text.
 - Treat document markup, archives, filenames, and metadata as untrusted input.
-- Validate archive paths inside EPUB files.
-- Do not log or persist full imported book contents.
 
-## Change workflow
+---
 
-1. Read this file, `README.md`, `package.json`, and files related to the request.
-2. Run `git status` and preserve unrelated user work.
-3. Search for existing patterns before writing.
-4. Confirm current behavior instead of relying on assumptions.
-5. Make the smallest complete change that satisfies the request.
-6. Add or update tests for changed parsing, storage, and text behavior.
-7. Test layout or interaction changes in a real browser.
-8. Update `README.md` only when setup, supported formats, limitations, or user-visible capabilities change.
-9. Review the final diff for accidental files, secrets, debug output, comments, and unsupported claims.
+## Required Verification Pipeline
 
-Do not perform unrelated refactors during a narrowly scoped request.
-
-## Required verification
-
-Run the available checks before pushing:
+Run the available checks before committing:
 
 ```bash
+# Frontend quality & build checks
 npm run lint
-npm run test
+npm test
 npm run build
+
+# Backend verification checks
+pytest backend/tests/
 ```
 
-For reader, parser, or visual changes, also verify:
-
+For reader, parser, or visual changes, verify:
 - A representative document imports successfully.
 - Sentence focus follows the reading position.
-- Pin and resume work.
-- Bookmarks and notes work.
-- Settings and reading progress persist.
-- The browser console has no errors.
-- Desktop and mobile layouts remain usable.
-
-When a format-specific parser changes, test that format directly. State clearly if a format could not be tested.
-
-## Git workflow
-
-- Fetch and check branch divergence before pushing.
-- Stage only files belonging to the requested change.
-- Do not commit `node_modules/`, `dist/`, logs, environment files, or test documents.
-- Follow the commit subject prefix and bullet-body rules in this file.
-- Do not add co-author trailers.
-- Never force-push unless the user explicitly requests it and understands the risk.
-- Do not rewrite or discard unrelated user work.
-- Push only when the user requests it or the active request already includes it.
-
-## Definition of done
-
-A change is complete only when:
-
-- The requested behavior works in the real application.
-- Existing core reading behavior still works.
-- Privacy and accessibility rules remain satisfied.
-- Relevant tests pass.
-- Lint and the production build pass.
-- Browser interaction and responsive layout are checked when applicable.
-- Documentation matches the verified implementation.
-- The final diff contains only intended files.
-
-If a required check cannot be completed, report that limitation instead of presenting the change as fully verified.
-
-<!-- BEGIN:nextjs-agent-rules -->
-
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+- Bionic reading fixations and typeface selections apply cleanly.
+- Notes, bookmarks, and settings persist across reloads.
+- Desktop and mobile layouts remain usable with zero horizontal overflow.

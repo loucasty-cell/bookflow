@@ -90,3 +90,13 @@ Bookflow is a private, high-focus document reading environment with a React/Vite
 - **Resilient Error Boundaries**: Subtree and root-level `ErrorBoundary` components isolate rendering errors with one-tap reset.
 - **Code-Splitting**: Heavy components (`OcrUploader`, `BookOpeningIntro`) lazy-loaded on demand.
 - **Reduced Motion**: Full compliance with `prefers-reduced-motion: reduce`.
+
+---
+
+## 5. AI Coding & Technical Document Research Frontiers
+
+- **AST-Guided Structural Chunking**: Hierarchical code folding and scoped block navigation for Markdown technical books and programming documentation.
+- **Code Token Bionic Fixation**: Fixation weighting on syntax keywords and control flow branches for high-velocity code scanning.
+- **Contextual Concept Graphs**: In-memory cross-chapter entity definition linking.
+- **Dual-Pane Code-Prose Highlighting**: Synchronized line-level highlighting between architectural explanations and code listings.
+

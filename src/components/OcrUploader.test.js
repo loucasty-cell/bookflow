@@ -7,7 +7,7 @@ describe('OCR request errors', () => {
     expect(
       ocrRequestErrorMessage(new TypeError('Failed to fetch'), 'http://localhost:8000')
     ).toBe(
-      'Cannot reach the OCR backend at http://localhost:8000. Start it from the backend folder with "python run.py", then retry.'
+      'Cannot reach the OCR backend at http://localhost:8000. Start it with "docker compose up --build", then retry.'
     );
   });
 

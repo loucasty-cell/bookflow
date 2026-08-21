@@ -7,7 +7,6 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import Any, Literal
 
-import numpy as np
 from fastapi import FastAPI, HTTPException
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, ConfigDict, Field
@@ -74,7 +73,7 @@ def prediction_texts(value: Any) -> list[str]:
     return []
 
 
-def run_prediction(profile: str, image: np.ndarray) -> str:
+def run_prediction(profile: str, image: Any) -> str:
     output = pipelines[profile].predict(image)
     lines: list[str] = []
     for result in output:
@@ -90,7 +89,7 @@ async def ensure_pipeline(profile: str) -> None:
             pipelines[profile] = await asyncio.to_thread(create_pipeline, profile)
 
 
-async def recognize(profile: str, image: np.ndarray) -> str:
+async def recognize(profile: str, image: Any) -> str:
     await ensure_pipeline(profile)
     async with pipeline_locks[profile]:
         return await asyncio.to_thread(run_prediction, profile, image)
@@ -119,6 +118,8 @@ async def health() -> dict[str, Any]:
 
 @app.post("/ocr")
 async def ocr(request: OCRRequest) -> dict[str, Any]:
+    import numpy as np
+
     if request.file_type != 1:
         raise HTTPException(status_code=400, detail="Only base64-encoded image input is supported.")
     try:
