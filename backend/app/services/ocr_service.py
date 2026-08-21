@@ -38,9 +38,14 @@ class OCRService:
         model_id: Optional[str] = None,
         custom_api_key: Optional[str] = None,
         page_number: int = 1,
+        ocr_profile: str = "small",
     ) -> OCRPageResult:
         """Scan a single image using PaddleOCR first, then Hugging Face OCR."""
-        paddle_result = await self.paddle.scan_image_bytes(image_bytes, page_number=page_number)
+        paddle_result = await self.paddle.scan_image_bytes(
+            image_bytes,
+            page_number=page_number,
+            profile=ocr_profile,
+        )
         if paddle_result and paddle_result.success:
             return paddle_result
         return await self.hf.scan_image_bytes(
@@ -56,6 +61,7 @@ class OCRService:
         model_id: Optional[str] = None,
         custom_api_key: Optional[str] = None,
         max_concurrency: int = 4,
+        ocr_profile: str = "small",
     ) -> OCRBatchResponse:
         """Scan multiple images in parallel."""
         start_time = time.perf_counter()
@@ -69,6 +75,7 @@ class OCRService:
                         model_id=model_id,
                         custom_api_key=custom_api_key,
                         page_number=index + 1,
+                        ocr_profile=ocr_profile,
                     )
 
             results = list(await asyncio.gather(*[
@@ -129,6 +136,7 @@ class OCRService:
         custom_api_key: Optional[str] = None,
         force_ocr: bool = False,
         title: Optional[str] = None,
+        ocr_profile: str = "small",
     ) -> OCRDocumentResponse:
         """
         Extract readable text from a PDF document.
@@ -198,7 +206,11 @@ class OCRService:
                     )
                 )
             elif img_data is not None:
-                ocr_res = await self.paddle.scan_image_bytes(img_data, page_number=page_num)
+                ocr_res = await self.paddle.scan_image_bytes(
+                    img_data,
+                    page_number=page_num,
+                    profile=ocr_profile,
+                )
                 if not ocr_res or not ocr_res.success:
                     ocr_res = await self.hf.scan_image_bytes(
                         image_bytes=img_data,

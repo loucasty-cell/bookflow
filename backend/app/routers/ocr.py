@@ -33,6 +33,7 @@ async def list_ocr_models(
 async def ocr_single_image(
     file: UploadFile = File(..., description="Image file (PNG, JPG, WEBP, TIFF, BMP)"),
     model_id: Optional[str] = Form(None, description="Hugging Face model ID"),
+    ocr_profile: str = Form("small", description="PaddleOCR profile: small or medium"),
     authorization: Optional[str] = Header(None, description="Optional Bearer token for HF API"),
     x_hf_token: Optional[str] = Header(None, description="Optional Hugging Face token"),
     ocr_srv: OCRService = Depends(get_ocr_service),
@@ -53,6 +54,7 @@ async def ocr_single_image(
         image_bytes=contents,
         model_id=model_id,
         custom_api_key=token,
+        ocr_profile=ocr_profile,
     )
     return result
 
@@ -61,6 +63,7 @@ async def ocr_single_image(
 async def ocr_batch_images(
     files: List[UploadFile] = File(..., description="Multiple image files"),
     model_id: Optional[str] = Form(None, description="Hugging Face model ID"),
+    ocr_profile: str = Form("small", description="PaddleOCR profile: small or medium"),
     authorization: Optional[str] = Header(None, description="Optional Bearer token for HF API"),
     x_hf_token: Optional[str] = Header(None, description="Optional Hugging Face token"),
     ocr_srv: OCRService = Depends(get_ocr_service),
@@ -92,6 +95,7 @@ async def ocr_batch_images(
         image_bytes_list=image_bytes_list,
         model_id=model_id,
         custom_api_key=token,
+        ocr_profile=ocr_profile,
     )
     return result
 
@@ -101,6 +105,7 @@ async def ocr_pdf_document(
     file: UploadFile = File(..., description="PDF document file"),
     force_ocr: bool = Form(False, description="Force PaddleOCR/Hugging Face OCR even if native text is present"),
     model_id: Optional[str] = Form(None, description="Hugging Face fallback model ID"),
+    ocr_profile: str = Form("small", description="PaddleOCR profile: small or medium"),
     authorization: Optional[str] = Header(None, description="Optional Bearer token for HF API"),
     x_hf_token: Optional[str] = Header(None, description="Optional Hugging Face token"),
     ocr_srv: OCRService = Depends(get_ocr_service),
@@ -131,6 +136,7 @@ async def ocr_pdf_document(
         custom_api_key=token,
         force_ocr=force_ocr,
         title=filename.replace(".pdf", "").replace("_", " ").title(),
+        ocr_profile=ocr_profile,
     )
     return result
 
@@ -140,6 +146,7 @@ async def stream_pdf_ocr(
     file: UploadFile = File(..., description="PDF document file"),
     force_ocr: bool = Form(False, description="Force OCR on all pages"),
     model_id: Optional[str] = Form(None, description="Hugging Face model ID"),
+    ocr_profile: str = Form("small", description="PaddleOCR profile: small or medium"),
     authorization: Optional[str] = Header(None, description="Optional Bearer token"),
     x_hf_token: Optional[str] = Header(None, description="Optional Hugging Face token"),
     ocr_srv: OCRService = Depends(get_ocr_service),
@@ -173,6 +180,7 @@ async def stream_pdf_ocr(
                 custom_api_key=token,
                 force_ocr=force_ocr,
                 title=filename.replace(".pdf", "").replace("_", " ").title(),
+                ocr_profile=ocr_profile,
             )
             for page in doc_res.pages:
                 payload = {
