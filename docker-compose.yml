@@ -1,38 +1,25 @@
 services:
-  bookflow-ocr-engine:
-    image: vllm/vllm-openai:latest
-    container_name: bookflow-ocr-engine
-    command: >
-      --model ${OCR_MODEL:?Set OCR_MODEL to a compatible self-hosted model before starting the GPU service}
-      --trust-remote-code
-      --port 8000
-      --max-model-len 4096
-      --gpu-memory-utilization 0.90
-      --tensor-parallel-size 1
-    ipc: host
-    shm_size: "16gb"
+  bookflow-paddleocr:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.ocr
+    container_name: bookflow-paddleocr
+    ports:
+      - "${PADDLEOCR_PORT:-8080}:8080"
     environment:
-      - HF_TOKEN=${HF_TOKEN}
-      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
+      - OCR_DEVICE=${PADDLEOCR_DEVICE:-cpu}
+      - OCR_PRELOAD_PROFILES=${PADDLEOCR_PRELOAD_PROFILES:-small}
+      - OCR_MAX_IMAGE_MB=${PADDLEOCR_MAX_IMAGE_MB:-20}
     volumes:
-      - hf_cache:/root/.cache/huggingface
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+      - paddleocr_models:/root/.paddlex
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
-      interval: 10s
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      interval: 15s
       timeout: 5s
-      retries: 20
-      start_period: 60s
+      retries: 10
+      start_period: 120s
     networks:
-      bookflow-net:
-        aliases:
-          - ocr-engine
+      - bookflow-net
     restart: unless-stopped
 
   bookflow-fastapi:
@@ -43,23 +30,23 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - OCR_MODEL=${OCR_MODEL:?Set OCR_MODEL to the same model served by the GPU service}
-      - HF_INFERENCE_URL=http://ocr-engine:8000/v1/chat/completions
-      - PADDLEOCR_URL=
-      - HF_TOKEN=${HF_TOKEN}
-      - HF_API_KEY=${HF_TOKEN}
+      - OCR_MODEL=${OCR_MODEL:-}
+      - HF_INFERENCE_URL=${HF_INFERENCE_URL:-https://router.huggingface.co/v1/chat/completions}
+      - PADDLEOCR_URL=http://bookflow-paddleocr:8080/ocr
+      - HF_TOKEN=${HF_TOKEN:-}
+      - HF_API_KEY=${HF_TOKEN:-}
       - ENVIRONMENT=production
       - DEBUG=false
       - CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000
     depends_on:
-      bookflow-ocr-engine:
+      bookflow-paddleocr:
         condition: service_healthy
     networks:
       - bookflow-net
     restart: unless-stopped
 
 volumes:
-  hf_cache:
+  paddleocr_models:
     driver: local
 
 networks:

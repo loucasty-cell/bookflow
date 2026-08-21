@@ -276,49 +276,62 @@ async def call_paddleocr(
     client: httpx.AsyncClient,
     page_number: int,
     image_bytes: bytes,
+    ocr_profile: str = "small",
 ) -> Optional[PageData]:
     if not PADDLEOCR_URL:
         return None
     started = time.perf_counter()
-    try:
-        response = await client.post(
-            PADDLEOCR_URL,
-            headers={"Accept": "application/json", "Content-Type": "application/json"},
-            json={"file": base64.b64encode(image_bytes).decode("ascii"), "fileType": 1},
-        )
-        if response.status_code != 200:
-            logger.warning("[Page %s] PaddleOCR returned HTTP %s", page_number, response.status_code)
-            return None
-        raw_result = response.json()
-        extracted_text = ""
-        if isinstance(raw_result, dict):
-            result = raw_result.get("result") or {}
-            ocr_results = result.get("ocrResults") if isinstance(result, dict) else None
-            if isinstance(ocr_results, list):
+    profiles = ["medium"] if ocr_profile == "medium" else ["small", "medium"]
+    encoded_image = base64.b64encode(image_bytes).decode("ascii")
+    for profile in profiles:
+        try:
+            response = await client.post(
+                PADDLEOCR_URL,
+                headers={"Accept": "application/json", "Content-Type": "application/json"},
+                json={"file": encoded_image, "fileType": 1, "profile": profile},
+            )
+            if response.status_code != 200:
+                logger.warning(
+                    "[Page %s] PaddleOCR %s profile returned HTTP %s",
+                    page_number,
+                    profile,
+                    response.status_code,
+                )
+                continue
+            raw_result = response.json()
+            extracted_text = ""
+            if isinstance(raw_result, dict):
+                result = raw_result.get("result") or {}
+                ocr_results = result.get("ocrResults") if isinstance(result, dict) else None
+                if isinstance(ocr_results, list):
+                    extracted_text = "\n".join(
+                        str(item.get("prunedResult") or item.get("markdownText") or "")
+                        for item in ocr_results
+                        if isinstance(item, dict)
+                    ).strip()
+                else:
+                    extracted_text = str(raw_result.get("markdown") or raw_result.get("text") or "").strip()
+            elif isinstance(raw_result, list):
                 extracted_text = "\n".join(
-                    str(item.get("prunedResult") or item.get("markdownText") or "")
-                    for item in ocr_results
-                    if isinstance(item, dict)
+                    str(item.get("text", "") if isinstance(item, dict) else item)
+                    for item in raw_result
                 ).strip()
-            else:
-                extracted_text = str(raw_result.get("markdown") or raw_result.get("text") or "").strip()
-        elif isinstance(raw_result, list):
-            extracted_text = "\n".join(
-                str(item.get("text", "") if isinstance(item, dict) else item)
-                for item in raw_result
-            ).strip()
-        if not extracted_text:
-            return None
-        return PageData(
-            page_number=page_number,
-            text=extracted_text,
-            word_count=len(extracted_text.split()),
-            latency_ms=round((time.perf_counter() - started) * 1000, 2),
-            success=True,
-        )
-    except Exception as exc:
-        logger.warning("[Page %s] PaddleOCR request failed: %s", page_number, exc)
-        return None
+            if extracted_text:
+                return PageData(
+                    page_number=page_number,
+                    text=extracted_text,
+                    word_count=len(extracted_text.split()),
+                    latency_ms=round((time.perf_counter() - started) * 1000, 2),
+                    success=True,
+                )
+        except Exception as exc:
+            logger.warning(
+                "[Page %s] PaddleOCR %s profile request failed: %s",
+                page_number,
+                profile,
+                exc,
+            )
+    return None
 
 
 async def call_ocr_with_retry(
@@ -329,6 +342,7 @@ async def call_ocr_with_retry(
     is_native: bool,
     model_id: str,
     api_key: Optional[str] = None,
+    ocr_profile: str = "small",
 ) -> PageData:
     """
     High-throughput visual OCR worker using Hugging Face Inference API.
@@ -369,7 +383,7 @@ async def call_ocr_with_retry(
     if token and token != "EMPTY":
         headers["Authorization"] = f"Bearer {token}"
 
-    paddle_result = await call_paddleocr(client, page_number, image_bytes)
+    paddle_result = await call_paddleocr(client, page_number, image_bytes, ocr_profile)
     if paddle_result:
         return paddle_result
 
@@ -502,6 +516,7 @@ async def process_ocr_pipeline(
     model_id: str,
     batch_size: int,
     api_key: Optional[str] = None,
+    ocr_profile: str = "small",
 ):
     """
     Main background OCR execution pipeline.
@@ -545,6 +560,7 @@ async def process_ocr_pipeline(
                         is_native=p.get("is_native", False),
                         model_id=model_id,
                         api_key=api_key,
+                        ocr_profile=ocr_profile,
                     )
                     for p in batch
                 ]
@@ -644,6 +660,7 @@ async def scan_pdf_endpoint(
     model_id: Optional[str] = Form(None),
     batch_size: Optional[int] = Form(DEFAULT_BATCH_SIZE),
     force_ocr: Optional[bool] = Form(False),
+    ocr_profile: str = Form("small"),
     api_key: Optional[str] = Form(None),
     authorization: Optional[str] = Header(None),
     x_hf_token: Optional[str] = Header(None),
@@ -681,6 +698,12 @@ async def scan_pdf_endpoint(
     job_id = str(uuid.uuid4())
     active_model = (model_id or OCR_MODEL).strip()
     effective_batch_size = max(1, min(batch_size or DEFAULT_BATCH_SIZE, 32))
+    effective_ocr_profile = ocr_profile.strip().lower()
+    if effective_ocr_profile not in {"small", "medium"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="OCR profile must be 'small' or 'medium'.",
+        )
     token = api_key or x_hf_token or (authorization.replace("Bearer ", "") if authorization else None)
 
     new_job = OCRJob(
@@ -700,6 +723,7 @@ async def scan_pdf_endpoint(
         model_id=active_model,
         batch_size=effective_batch_size,
         api_key=token,
+        ocr_profile=effective_ocr_profile,
     )
 
     return {
@@ -708,6 +732,7 @@ async def scan_pdf_endpoint(
         "filename": filename,
         "total_pages": page_count,
         "model": active_model,
+        "ocr_profile": effective_ocr_profile,
         "batch_size": effective_batch_size,
         "status": "processing",
         "stream_url": f"/api/ocr/progress/{job_id}",
@@ -908,6 +933,7 @@ async def health_check():
         "model": OCR_MODEL or None,
         "remote_ocr_configured": bool(OCR_MODEL),
         "paddleocr_configured": bool(PADDLEOCR_URL),
+        "paddleocr_profiles": ["small", "medium"],
         "inference_url": HF_INFERENCE_URL,
         "token_configured": bool(HF_TOKEN and HF_TOKEN.strip() and HF_TOKEN.strip() != "EMPTY"),
         "thread_workers": THREAD_POOL_WORKERS,
