@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { getSafeStorage } from '../shared/lib/storage.js';
 
 const DEFAULT_SETTINGS = {
   fontSize: 16,
@@ -43,7 +44,7 @@ export const createReaderStore = (storage = undefined) => create(
     }),
     {
       name: 'bookflow-reader-storage',
-      storage, // Dependency injection point
+      storage: storage ?? createJSONStorage(getSafeStorage),
       partialize: (state) => ({ 
         settings: state.settings 
       }),
@@ -52,3 +53,4 @@ export const createReaderStore = (storage = undefined) => create(
 );
 
 export const useReaderStore = createReaderStore();
+

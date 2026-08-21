@@ -2,6 +2,43 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script id="window-protection-init">
+      (() => {
+        try {
+          if (typeof window !== 'undefined') {
+            let currentFetch = window.fetch ? window.fetch.bind(window) : undefined;
+            const desc = Object.getOwnPropertyDescriptor(window, 'fetch');
+            if (!desc || !desc.set || !desc.writable) {
+              try {
+                Object.defineProperty(window, 'fetch', {
+                  get() {
+                    return currentFetch;
+                  },
+                  set(newFetch) {
+                    currentFetch = newFetch;
+                  },
+                  configurable: true,
+                  enumerable: true,
+                });
+              } catch {
+                try {
+                  Object.defineProperty(Window.prototype, 'fetch', {
+                    get() {
+                      return currentFetch;
+                    },
+                    set(newFetch) {
+                      currentFetch = newFetch;
+                    },
+                    configurable: true,
+                    enumerable: true,
+                  });
+                } catch {}
+              }
+            }
+          }
+        } catch {}
+      })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />

@@ -37,7 +37,9 @@ import {
 import {
   documentId,
   documentStorageKey,
+  getStorageItem,
   safeParse,
+  setStorageItem,
   wordCount,
 } from "./shared/lib/index.js";
 
@@ -475,13 +477,13 @@ function App() {
   }, [book, setShowIntervention, showIntervention]);
 
   useEffect(() => {
-    localStorage.setItem("bookflow:settings", JSON.stringify(settings));
+    setStorageItem("bookflow:settings", settings);
   }, [settings]);
 
   useEffect(() => {
     if (!bookId) return;
 
-    localStorage.setItem(
+    setStorageItem(
       documentStorageKey(bookId),
       JSON.stringify({
         notes,
@@ -943,7 +945,7 @@ function App() {
 
   const openBook = useCallback(
     (nextBook, id) => {
-      const saved = safeParse(localStorage.getItem(documentStorageKey(id)), {});
+      const saved = safeParse(getStorageItem(documentStorageKey(id)), {});
       clearTimers();
       const fallbackParagraph = String(saved.activeId ?? "").match(
         /^(\d+)-(\d+)-\d+$/,
