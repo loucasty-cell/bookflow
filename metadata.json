@@ -1,0 +1,6 @@
+{
+  "name": "Bookflow",
+  "description": "A private, sentence-focused reading application that turns PDFs, EPUB ebooks, text files, and Markdown into a calm reading experience.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
