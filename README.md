@@ -36,7 +36,7 @@ Designed with cognitive ergonomics and behavioral product design, Bookflow helps
 Bookflow is engineered as a decoupled Full-Stack application, utilizing modern frameworks for high performance, physics-based UI, and async processing.
 
 ### Frontend
-- **[Next.js (App Router)](https://nextjs.org/)**: Replaced Vite for robust application routing, un-opinionated server components, and superior production builds via Turbopack.
+- **[React 19 + Vite](https://vitejs.dev/)**: Fast, lightning-quick HMR, optimized ES modules bundler, and clean single-page application architecture.
 - **[Zustand](https://docs.pmnd.rs/zustand)**: Powers global state management (UI toggles, reading progress, hooks) with minimal boilerplate, completely decoupling heavy state from `App.jsx` and enabling pure component testing.
 - **[Framer Motion](https://www.framer.com/motion/)**: Drives the `AnimatePresence` and spring-physics orchestrations for the ambient intervention toasts and variable reward capsules, providing Apple-tier UI fluidity.
 - **[SWR](https://swr.vercel.app/)**: Used for lightweight, reactive data fetching and caching for the social resonance endpoints.
@@ -68,7 +68,7 @@ The standard importer and local English OCR do not require the backend. For back
 
 ### 2. Launch the Frontend Application
 
-In a separate terminal, install the Node modules and start the Next.js development server:
+In a separate terminal, install the Node modules and start the Vite development server:
 
 ```bash
 npm install
@@ -83,9 +83,9 @@ npm run dev
 Ensure code quality before contributing:
 
 ```bash
-npm run lint    # Next.js ESLint checks
+npm run lint    # ESLint checks
 npm run test    # Vitest suite
-npm run build   # Production Turbopack build
+npm run build   # Production Vite build
 ```
 
 ---

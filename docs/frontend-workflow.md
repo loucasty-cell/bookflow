@@ -1,6 +1,6 @@
 # Bookflow Frontend Architecture & Engineering Workflow
 
-Production-grade engineering documentation for the Bookflow React 18 / Next.js 16 client application.
+Production-grade engineering documentation for the Bookflow React 19 / Vite client application.
 
 ---
 
@@ -16,10 +16,10 @@ Production-grade engineering documentation for the Bookflow React 18 / Next.js 1
 ## 2. Directory Structure & Architecture Boundaries
 
 ```text
-app/
-|-- layout.jsx                   # Next.js root layout and metadata
-`-- page.jsx                     # Client-side App shell (use client)
+index.html                       # SPA HTML entrypoint
+vite.config.js                   # Vite config with OCR assets & backend proxy
 src/
+|-- main.jsx                     # React root mount (StrictMode)
 |-- components/
 |   `-- OcrUploader.jsx          # Configured Hugging Face OCR SSE client & lazy reader
 |-- features/

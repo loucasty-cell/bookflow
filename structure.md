@@ -50,10 +50,10 @@ bookflow/
 |   |-- requirements.txt           # Python dependency manifest
 |   |-- run.py                     # Entrypoint launcher script
 |   `-- README.md                  # Backend guide
-|-- app/                            # Next.js App Router entry
-|   |-- layout.jsx                  # Root HTML layout and metadata
-|   `-- page.jsx                    # Client-side App shell
+|-- index.html                     # Root SPA HTML template
+|-- vite.config.js                 # Vite build & proxy configuration
 |-- src/                           # Frontend React application
+|   |-- main.jsx                   # React application root entrypoint
 |   |-- assets/                    # Static brand assets (quill logo, intro video)
 |   |-- components/
 |   |   |-- InterventionModal.jsx
