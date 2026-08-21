@@ -3,17 +3,17 @@
   "compounds": [
     {
       "name": "Full Stack: Frontend + Backend",
-      "configurations": ["Run Bookflow (Vite)", "Run FastAPI Backend"]
+      "configurations": ["Run Bookflow (Next.js)", "Run FastAPI Backend"]
     }
   ],
   "configurations": [
     {
-      "name": "Run Bookflow (Vite)",
+      "name": "Run Bookflow (Next.js)",
       "type": "chrome",
       "request": "launch",
-      "url": "http://localhost:5173",
+      "url": "http://localhost:3000",
       "webRoot": "${workspaceFolder}",
-      "preLaunchTask": "Start Bookflow (Vite)",
+      "preLaunchTask": "Start Bookflow (Next.js)",
       "sourceMaps": true
     },
     {

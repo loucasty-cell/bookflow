@@ -56,11 +56,14 @@ Sentence focus is the primary behavior. As the reader scrolls, one complete sent
 ## Current technology
 
 - React for components and state.
-- Vite for development and production builds.
+- Next.js (App Router) for development, routing, and production builds via Turbopack.
 - PDF.js for local PDF text extraction.
 - Tesseract.js with bundled assets for local English OCR on image-only PDF pages.
 - JSZip for local EPUB package extraction.
 - Lucide React for interface icons.
+- Zustand for lightweight global state management.
+- Framer Motion for spring-physics animations and transitions.
+- SWR for reactive data fetching and caching.
 - `Intl.Segmenter` with a fallback for sentence boundaries.
 - `localStorage` for settings, notes, bookmarks, and reading progress.
 - Vitest for automated tests.
@@ -73,7 +76,14 @@ Consult `package.json` before changing versions or proposing another library.
 Bookflow uses a feature-based React structure with shared code reserved for behavior used by multiple features.
 
 ```text
+app/
+|-- layout.jsx
+`-- page.jsx
 src/
+|-- components/
+|   |-- InterventionModal.jsx
+|   |-- OcrUploader.jsx
+|   `-- VariableRewardCapsule.jsx
 |-- features/
 |   |-- document-import/
 |   |   |-- lib/
@@ -103,8 +113,10 @@ src/
 |       |-- text.js
 |       |-- text.test.js
 |       `-- index.js
+|-- store/
+|   |-- readerStore.js
+|   `-- uiStore.js
 |-- App.jsx
-|-- main.jsx
 `-- styles.css
 ```
 
@@ -232,3 +244,13 @@ A change is complete only when:
 - The final diff contains only intended files.
 
 If a required check cannot be completed, report that limitation instead of presenting the change as fully verified.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

@@ -469,7 +469,7 @@ Do not store full book text in feedback. Do not upload feedback unless a future 
 6. Increment `algorithmVersion` when rules or weights change.
 7. Keep old overrides compatible or migrate them explicitly.
 
-## React/Vite integration plan
+## React/Next.js integration plan
 
 Suggested future files:
 

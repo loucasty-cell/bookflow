@@ -9,7 +9,7 @@ This runbook demonstrates how Jules tackles a real-world coding task from proble
 ### 1. Task Diagnostics
 - **User Prompt**: "Fix 35 Python errors and ensure frontend OCR modal works cleanly."
 - **Stack Discovery**:
-  - React + Vite frontend (`package.json`)
+  - React + Next.js frontend (`package.json`)
   - FastAPI backend (`backend/requirements.txt`, `backend/main.py`)
   - Python 3.12 virtual environment at `backend/.venv`
   - ESLint, Vitest, Pyright, Pytest configured
@@ -30,7 +30,7 @@ This runbook demonstrates how Jules tackles a real-world coding task from proble
 - Pytest: `16 passed in 1.37s`
 - ESLint: `0 errors`
 - Vitest: `33 passed in 7.07s`
-- Vite Build: `Clean production build`
+- Next.js Build: `Clean production build`
 
 ### 5. Delivery Report
 Provided structured summary with clickable file links and exact test outputs.

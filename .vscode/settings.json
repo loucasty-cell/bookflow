@@ -99,7 +99,7 @@
     "dart": "dart run \"$fullFileName\"",
     "r": "Rscript \"$fullFileName\"",
     "html": "npm.cmd run dev",
-    "css": "powershell.exe -NoProfile -Command \"Write-Host 'CSS is not standalone. Run Bookflow (Vite) to preview it.'\""
+    "css": "powershell.exe -NoProfile -Command \"Write-Host 'CSS is not standalone. Run Bookflow (Next.js) to preview it.'\""
   },
   "files.exclude": {
     "**/.git": true,

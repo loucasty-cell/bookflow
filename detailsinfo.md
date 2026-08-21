@@ -92,7 +92,7 @@ This behavior is heuristic. It does not fully understand a book's meaning, and a
 ### Current guarantees
 
 - No account is required.
-- No backend is connected.
+- The FastAPI backend is optional and only used for server-accelerated OCR.
 - No analytics or advertising service is connected.
 - No AI service receives book text.
 - Imported document contents stay in browser memory during the reading session.
@@ -140,10 +140,13 @@ Markdown and EPUB structure is intentionally limited to one subheading level. Re
 | Technology | Current responsibility |
 | --- | --- |
 | React 18 | Components and application state |
-| Vite 6 | Development and production build |
+| Next.js 16 (App Router) | Development, routing, and production builds via Turbopack |
 | PDF.js | Local PDF text extraction |
 | JSZip | Local EPUB archive reading |
 | Lucide React | Interface icons |
+| Zustand | Lightweight global state management |
+| Framer Motion | Spring-physics animations and transitions |
+| SWR | Reactive data fetching and caching |
 | `Intl.Segmenter` | Sentence segmentation with fallback |
 | `localStorage` | Local settings and reading state |
 | Vitest | Automated unit tests |

@@ -2,17 +2,17 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Start Bookflow (Vite)",
+      "label": "Start Bookflow (Next.js)",
       "type": "shell",
       "command": "npm run dev",
       "isBackground": true,
       "problemMatcher": {
-        "owner": "vite",
+        "owner": "next",
         "pattern": { "regexp": "^$" },
         "background": {
           "activeOnStart": true,
           "beginsPattern": ".*",
-          "endsPattern": "Local:.*http://localhost:5173"
+          "endsPattern": "Local:.*http://localhost:3000"
         }
       },
       "presentation": {
@@ -38,7 +38,7 @@
     },
     {
       "label": "Start Full Stack",
-      "dependsOn": ["Start FastAPI Backend", "Start Bookflow (Vite)"],
+      "dependsOn": ["Start FastAPI Backend", "Start Bookflow (Next.js)"],
       "problemMatcher": [],
       "presentation": {
         "reveal": "always",

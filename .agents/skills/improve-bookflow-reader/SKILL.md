@@ -1,6 +1,6 @@
 ---
 name: improve-bookflow-reader
-description: Audit, diagnose, design, implement, and verify improvements to this Bookflow React/Vite repository. Use for Bookflow reader focus or navigation changes, private local PDF OCR, PDF/EPUB/TXT/Markdown imports, file validation, loading progress, privacy, accessibility, responsive layouts, long-title overflow, reading-time consistency, logo usage, Apple-inspired content-first design, near-black dark mode, theme and color-palette work, five-star web polish, regression testing, documentation alignment, or an explicitly requested commit and push. Do not use to claim native App Store or Google Play readiness, universal ebook or language support, AI processing, analytics, cloud sync, or perfect book classification unless those capabilities are explicitly implemented and verified.
+description: Audit, diagnose, design, implement, and verify improvements to this Bookflow React/Next.js repository. Use for Bookflow reader focus or navigation changes, private local PDF OCR, PDF/EPUB/TXT/Markdown imports, file validation, loading progress, privacy, accessibility, responsive layouts, long-title overflow, reading-time consistency, logo usage, Apple-inspired content-first design, near-black dark mode, theme and color-palette work, five-star web polish, regression testing, documentation alignment, or an explicitly requested commit and push. Do not use to claim native App Store or Google Play readiness, universal ebook or language support, AI processing, analytics, cloud sync, or perfect book classification unless those capabilities are explicitly implemented and verified.
 ---
 
 # Improve Bookflow Reader
@@ -103,7 +103,7 @@ For theme or logo work:
 ## Apply Apple-inspired design without copying a scaffold
 
 1. Favor simplicity, content-first hierarchy, semantic tokens, restrained chrome, and motion that explains state or space.
-2. Preserve Bookflow's current React/Vite architecture. Do not add Router, Query, Zustand, Framer Motion, gesture libraries, PWA tooling, or other guide dependencies without explicit approval and a real product need.
+2. Preserve Bookflow's current React/Next.js architecture. Zustand, Framer Motion, and SWR are configured for global state, spring-physics UI, and caching; do not add extra unapproved dependencies or router libraries without explicit approval and a real product need.
 3. Use the system UI stack for interface chrome and a proven local serif stack for long-form reading. Do not fetch fonts that weaken local-first privacy.
 4. Use a consistent spacing scale, layered soft shadows, purposeful glass materials, and safe-area insets instead of scattered one-off values.
 5. Make mobile buttons and interactive controls at least `44 x 44` CSS pixels. Verify actual rendered rectangles, not just declared styles.
@@ -153,7 +153,7 @@ Use computed styles, dimensions, active identifiers, and progress samples when s
 
 ## Use store language accurately
 
-- `Web-ready`: responsive React/Vite app verified in browsers.
+- `Web-ready`: responsive React/Next.js app verified in browsers.
 - `PWA-ready`: manifest, icons, service worker, offline behavior, and installation flow implemented and tested.
 - `Native-store-ready`: iOS or Android packaging, platform permissions, signing, policies, store assets, and device testing completed.
 - `Published`: accepted and publicly available in the named store.

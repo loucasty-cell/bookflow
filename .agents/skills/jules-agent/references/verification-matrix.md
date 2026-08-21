@@ -19,7 +19,7 @@ Tier 4: Production Build       -->  Verify bundling, tree-shaking, packaging, an
 
 ## 2. Common Stack Verification Commands
 
-### 2.1 Node.js / TypeScript / React / Vite
+### 2.1 Node.js / TypeScript / React / Next.js / Vite
 - **Lint**: `npx eslint .` or `npm run lint`
 - **Type Check**: `npx tsc --noEmit`
 - **Tests**: `npx vitest run` or `npm run test`

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Document Parser Specialist"
+  short_description: "PDF, EPUB, Markdown, and TXT parsing and validation"
+  default_prompt: "Use $document-parser-specialist to audit, debug, or extend Bookflow file parsers, signature validation, and NormalizedBook data contracts."
+  brand_color: "#507B9C"
