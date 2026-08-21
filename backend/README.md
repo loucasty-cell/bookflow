@@ -1,10 +1,10 @@
 # Bookflow FastAPI Backend
 
-Python backend for Bookflow providing document parsing, text segmentation, reading metrics, and optional remote OCR integration.
+Python backend for Bookflow providing document parsing, text segmentation, reading metrics, and optional OCR integration.
 
 ## Features
 
-- **Optional Remote OCR**: Sends scanned pages only when explicitly requested and verifies provider support before processing.
+- **OCR routing**: Uses a self-hosted PaddleOCR-compatible service first when `PADDLEOCR_URL` is configured, then can fall back to the Hugging Face OpenAI-compatible vision route.
 - **Document Processing**: Parses PDF, EPUB, Markdown, and TXT documents into normalized Bookflow book structures.
 - **Text & Reading Metrics**: Abbreviation-aware sentence segmentation, paragraph normalization, and reading time estimation.
 - **Notes & Bookmarks Exchange**: Validated import and export pipelines for reader notes and reading states.
@@ -45,15 +45,19 @@ Copy the sample environment file:
 cp .env.example .env
 ```
 
-To enable optional remote OCR, set a serverless-supported model and API key in `.env`:
+To enable the optional OCR providers, copy `.env.example` to `.env`. PaddleOCR is the preferred backend path:
 
 ```ini
+PADDLEOCR_URL=http://127.0.0.1:8080/ocr
+PADDLEOCR_TIMEOUT=60.0
 HF_TOKEN=your_huggingface_token_here
-OCR_MODEL=your-org/your-serverless-image-to-text-model
-HF_INFERENCE_URL=https://router.huggingface.co/hf-inference/models/{model_id}
+OCR_MODEL=Qwen/Qwen2-VL-7B-Instruct
+HF_INFERENCE_URL=https://router.huggingface.co/v1/chat/completions
 ```
 
-Confirm the model page lists the Hugging Face Inference Provider and supports image-to-text requests. For a dedicated endpoint, set `HF_INFERENCE_URL` to its exact URL. Leave `OCR_MODEL` blank when you only want the private browser-based OCR path; standard imports do not need this backend.
+Start PaddleX's OCR serving process with `paddlex --serve --pipeline OCR` and point `PADDLEOCR_URL` at its `/ocr` endpoint. The adapter sends the official JSON shape (`file` as base64 and `fileType: 1`).
+
+The Hugging Face fallback uses the official OpenAI-compatible route and a `messages` payload containing a text prompt plus a base64 image data URL. The configured model must be available through an enabled Inference Provider; the backend preflights the model and returns an actionable error when it is not. Qwen2-VL is kept as the requested default, but availability is provider/account dependent. Leave both OCR provider settings blank when you only want the private browser-based OCR path; standard imports do not need this backend.
 
 ### 4. Running the Development Server
 
@@ -84,9 +88,9 @@ pytest
 | `GET` | `/api/health` | Health check endpoint |
 | `GET` | `/api/info` | Backend configuration and model capabilities |
 | `GET` | `/api/ocr/models` | Show the configured Hugging Face OCR model |
-| `POST` | `/api/ocr/image` | Scan a single image via Hugging Face OCR |
+| `POST` | `/api/ocr/image` | Scan a single image through PaddleOCR, then Hugging Face fallback |
 | `POST` | `/api/ocr/batch` | Scan multiple images concurrently |
-| `POST` | `/api/ocr/pdf` | Scan a PDF document with native + HF OCR |
+| `POST` | `/api/ocr/pdf` | Scan a PDF document with native text, PaddleOCR, and HF fallback |
 | `POST` | `/api/documents/parse` | Parse a PDF, EPUB, TXT, or MD into normalized book JSON |
 | `POST` | `/api/documents/validate` | Validate document type and file size |
 | `POST` | `/api/reader/segment` | Segment text into sentences and paragraphs |
@@ -115,7 +119,8 @@ backend/
 |   |   `-- reader.py            # /api/reader/segment, /api/reader/reading-time, notes export/import
 |   |-- services/
 |   |   |-- __init__.py
-|   |   |-- huggingface_ocr.py   # Dedicated Hugging Face Vision OCR client
+|   |   |-- huggingface_ocr.py   # Hugging Face OpenAI-compatible Qwen vision client
+|   |   |-- paddle_ocr.py        # PaddleOCR-compatible HTTP adapter
 |   |   |-- ocr_service.py       # Multi-page PDF and batch image OCR orchestration
 |   |   |-- document_service.py  # PDF, EPUB, TXT, MD document parser
 |   |   `-- text_service.py      # Sentence segmentation, abbreviations, reading time

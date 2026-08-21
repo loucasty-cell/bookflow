@@ -43,8 +43,9 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - OCR_ENGINE_URL=http://ocr-engine:8000/v1
       - OCR_MODEL=${OCR_MODEL:?Set OCR_MODEL to the same model served by the GPU service}
+      - HF_INFERENCE_URL=http://ocr-engine:8000/v1/chat/completions
+      - PADDLEOCR_URL=
       - HF_TOKEN=${HF_TOKEN}
       - HF_API_KEY=${HF_TOKEN}
       - ENVIRONMENT=production

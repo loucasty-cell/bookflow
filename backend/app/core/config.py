@@ -47,13 +47,20 @@ class Settings(BaseSettings):
     # Hugging Face Settings for OCR
     hf_token: str = Field(default_factory=lambda: os.getenv("HF_TOKEN", os.getenv("HF_API_KEY", "")))
     hf_api_key: str = Field(default_factory=lambda: os.getenv("HF_TOKEN", os.getenv("HF_API_KEY", "")))
-    ocr_model: str = Field(default="", validation_alias="OCR_MODEL")
+    ocr_model: str = Field(default="Qwen/Qwen2-VL-7B-Instruct", validation_alias="OCR_MODEL")
     ocr_engine_url: str = Field(default_factory=lambda: os.getenv("OCR_ENGINE_URL", "http://ocr-engine:8000/v1"))
+    paddleocr_url: str = Field(default="", validation_alias="PADDLEOCR_URL")
+    paddleocr_timeout: float = Field(default=60.0, validation_alias="PADDLEOCR_TIMEOUT")
     hf_api_timeout: float = 60.0
     hf_max_retries: int = 3
     hf_inference_url_template: str = Field(
-        default="https://router.huggingface.co/hf-inference/models/{model_id}",
+        default="https://router.huggingface.co/v1/chat/completions",
         validation_alias="HF_INFERENCE_URL",
+    )
+    hf_max_tokens: int = Field(default=2048, validation_alias="HF_MAX_TOKENS")
+    ocr_prompt: str = Field(
+        default="Extract all text from this page exactly as written. Return only the extracted text in Markdown, preserving reading order, headings, tables, and line breaks.",
+        validation_alias="OCR_PROMPT",
     )
 
     # Processing Limits

@@ -10,13 +10,14 @@ This document specifies the internal JavaScript interfaces, browser-storage cont
     |-> Browser File API
     |-> (Option A: Local Processing) Local JS Parsers (PDF.js / JSZip / Tesseract WASM)
     |-> (Option B: Backend Fast Processing) FastAPI Backend (/api/documents/parse or /api/ocr/...)
-          |-> Hugging Face Inference Provider (model selected by OCR_MODEL)
+          |-> PaddleOCR-compatible service (when PADDLEOCR_URL is configured)
+          `-> Hugging Face OpenAI-compatible vision route (Qwen fallback)
     |-> Normalized Book Object
     |-> React Reader State (Focus Rail, Active Sentence)
     `-> localStorage (Reading Progress, Bookmarks, Notes)
 ```
 
-Document contents stay on the user's device by default. When the backend or Hugging Face OCR is utilized for accelerated scanning, requests are transmitted securely to the configured backend API endpoints.
+Document contents stay on the user's device by default. When accelerated scanning is explicitly requested, page images are sent to the configured backend; the backend routes them to self-hosted PaddleOCR first and can then use the configured Hugging Face vision provider.
 
 ---
 
@@ -179,7 +180,7 @@ Returns server capabilities, supported file formats, and OCR model configuration
 
 ---
 
-### 5.2 Hugging Face OCR & Vision Endpoints
+### 5.2 OCR & Vision Endpoints
 
 #### `GET /api/ocr/models`
 Returns the single model configured through `OCR_MODEL`, or an empty list when remote OCR is disabled.
@@ -194,7 +195,7 @@ Returns the single model configured through `OCR_MODEL`, or an empty list when r
 ```
 
 #### `POST /api/ocr/image`
-Performs fast image-to-text OCR extraction on a single uploaded image.
+Performs fast OCR extraction on a single uploaded image. The backend calls PaddleOCR when configured, then falls back to the configured Hugging Face chat-completions model.
 
 - **Content-Type**: `multipart/form-data`
 - **Headers** (Optional): `Authorization: Bearer <hf_token>` or `X-HF-Token: <token>`
@@ -248,7 +249,7 @@ Performs concurrent OCR text extraction on multiple image files.
 ```
 
 #### `POST /api/ocr/pdf`
-Processes a scanned PDF document: uses native text when available, and dispatches scanned/image pages to the model configured in `OCR_MODEL`.
+Processes a scanned PDF document: uses native text when available, and dispatches scanned/image pages to PaddleOCR or the model configured in `OCR_MODEL`.
 
 - **Content-Type**: `multipart/form-data`
 - **Form Fields**:

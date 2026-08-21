@@ -92,7 +92,7 @@ graph TD
     I --> J[ReaderPage: Sentence Focus Engine]
 ```
 
-### 3.2 Configured Hugging Face OCR Pipeline Flow
+### 3.2 Configured OCR Pipeline Flow
 
 ```mermaid
 sequenceDiagram
@@ -100,7 +100,8 @@ sequenceDiagram
     actor User
     participant React as OcrUploader (Client)
     participant FastAPI as FastAPI Backend (0.0.0.0:8000)
-    participant Engine as Configured Hugging Face OCR endpoint
+    participant Paddle as PaddleOCR /ocr service (optional)
+    participant Engine as Hugging Face /v1/chat/completions fallback
     participant Reader as ReaderPage Focus Mode
 
     User->>React: Drop 400-600 Page Scanned PDF
@@ -108,8 +109,13 @@ sequenceDiagram
     FastAPI-->>React: 202 Accepted { job_id, total_pages }
     React->>FastAPI: GET /api/ocr/progress/{job_id} (SSE EventSource)
     loop Parallel Batch OCR
-        FastAPI->>Engine: 16-Page Async Batch
-        Engine-->>FastAPI: Structured Markdown Pages
+        FastAPI->>Paddle: 16-Page Async Batch (when configured)
+        alt PaddleOCR returns text
+            Paddle-->>FastAPI: Structured OCR text
+        else PaddleOCR unavailable or empty
+            FastAPI->>Engine: OpenAI-compatible vision request
+            Engine-->>FastAPI: Structured Markdown text
+        end
         FastAPI-->>React: SSE data: { current_page, percent, pps, page }
         React->>React: Update Live Progress Bar & Memory Store
     end

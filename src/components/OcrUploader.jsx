@@ -354,11 +354,11 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
       <div className="ocr-header">
         <div className="ocr-title-badge">
           <Zap className="w-4 h-4 text-amber-500" />
-          <span>Optional Hugging Face OCR Endpoint</span>
+          <span>Optional PaddleOCR + Hugging Face OCR</span>
         </div>
         <h2 className="ocr-title">Accelerated Book Digitizer</h2>
         <p className="ocr-subtitle">
-          Uses the compatible OCR endpoint configured on your backend. If it is unavailable, switch to private on-device English OCR.
+          Uses PaddleOCR on your backend first, then the configured Hugging Face vision model. If both are unavailable, switch to private on-device English OCR.
         </p>
       </div>
 

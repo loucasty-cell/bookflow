@@ -11,7 +11,7 @@ backend/
 |-- app/
 |   |-- core/
 |   |   |-- __init__.py
-|   |   `-- config.py            # Pydantic BaseSettings, env vars, HF OCR presets, limits
+|   |   `-- config.py            # Pydantic BaseSettings, env vars, Paddle/HF OCR presets, limits
 |   |-- models/
 |   |   |-- __init__.py
 |   |   |-- document.py          # NormalizedBook, Chapter, Paragraph, Section schemas
@@ -25,7 +25,8 @@ backend/
 |   |   `-- reader.py            # POST /api/reader/segment, /reading-time, notes export/import
 |   |-- services/
 |   |   |-- __init__.py
-|   |   |-- huggingface_ocr.py   # Hugging Face Vision OCR client (Inference API + retry logic)
+|   |   |-- huggingface_ocr.py   # Hugging Face OpenAI-compatible Qwen vision client
+|   |   |-- paddle_ocr.py        # PaddleOCR-compatible HTTP adapter
 |   |   |-- ocr_service.py       # Multi-page PDF & concurrent batch OCR orchestrator
 |   |   |-- document_service.py  # PDF (PyMuPDF + pypdf), EPUB, TXT, MD document parser
 |   |   `-- text_service.py      # Sentence segmentation, abbreviations, reading time
@@ -46,7 +47,7 @@ backend/
 |   `-- test_reader.py           # Reader utilities tests
 |-- .env.example                 # Configuration template
 |-- .venv/                       # Python 3.12 virtual environment (gitignored)
-|-- main.py                      # Optional configured Hugging Face OCR engine + SSE
+|-- main.py                      # Optional PaddleOCR-first engine with HF fallback + SSE
 |-- requirements.txt             # Python dependency manifest
 |-- run.py                       # CLI application launcher
 `-- README.md                    # Backend setup and documentation
@@ -59,7 +60,7 @@ backend/
 ### `backend/main.py` (Optional Remote OCR Engine)
 The standalone FastAPI application for explicitly requested remote visual scanning:
 - Renders PDF pages to 96 DPI JPEG in-memory via PyMuPDF with thread pool executor.
-- Verifies Hugging Face provider support or uses an explicitly configured compatible dedicated endpoint.
+- Uses the explicitly configured PaddleOCR endpoint first, then verifies Hugging Face provider support for fallback requests.
 - Streams real-time progress to the frontend via Server-Sent Events (SSE) with heartbeat keepalives.
 - Manages background OCR jobs with in-memory thread-safe storage and subscriber queues.
 - Mounts the legacy `app/routers/` when available via conditional import.
@@ -87,8 +88,9 @@ The original modular FastAPI application with router-based architecture:
 - Never contains business logic or direct I/O manipulation.
 
 ### Services (`app/services/`)
-- **`HuggingFaceOCRService`**: Manages HTTP sessions, image optimization, token authentication, and model response parsing via Hugging Face Inference API.
-- **`OCRService`**: Orchestrates document-level and batch image OCR tasks with concurrent page processing.
+- **`HuggingFaceOCRService`**: Manages HTTP sessions, image optimization, token authentication, OpenAI-compatible chat payloads, and model response parsing.
+- **`PaddleOCRClient`**: Sends the official base64 `file`/`fileType` request to a PaddleX `/ocr` service and parses nested OCR results.
+- **`OCRService`**: Orchestrates document-level and batch image OCR tasks with concurrent page processing and Paddle/HF fallback.
 - **`DocumentService`**: Encapsulates multi-format document extraction (PDF via PyMuPDF + pypdf fallback, EPUB, TXT, Markdown).
 - **`TextService`**: Stateless algorithms for sentence boundary extraction and reading duration metrics.
 

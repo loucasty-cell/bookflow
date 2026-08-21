@@ -1,6 +1,7 @@
 import io
 import time
 import asyncio
+import base64
 import hashlib
 import logging
 from collections import OrderedDict
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class HuggingFaceOCRService:
-    """Client and processor for Hugging Face Vision/OCR image-to-text models."""
+    """Client and processor for Hugging Face OpenAI-compatible vision models."""
 
     def __init__(
         self,
@@ -39,7 +40,7 @@ class HuggingFaceOCRService:
         self.default_model = (settings.ocr_model if default_model is None else default_model).strip()
         self.timeout = timeout if timeout is not None else settings.hf_api_timeout
         self.max_retries = max_retries if max_retries is not None else settings.hf_max_retries
-        self.base_url_template = settings.hf_inference_url_template
+        self.base_url = settings.hf_inference_url_template.rstrip("/")
         self._cache: OrderedDict[str, str] = OrderedDict()
         self._max_cache_size = max_cache_size
 
@@ -88,6 +89,20 @@ class HuggingFaceOCRService:
 
     def parse_hf_response(self, response_data: Any) -> str:
         """Extract plain text string from diverse Hugging Face model response structures."""
+        if isinstance(response_data, dict) and isinstance(response_data.get("choices"), list):
+            choices = response_data["choices"]
+            if choices and isinstance(choices[0], dict):
+                message = choices[0].get("message") or {}
+                content = message.get("content") if isinstance(message, dict) else None
+                if isinstance(content, str):
+                    return content
+                if isinstance(content, list):
+                    return "\n".join(
+                        part.get("text", "")
+                        for part in content
+                        if isinstance(part, dict) and part.get("type") == "text"
+                    )
+                return str(content or "")
         if isinstance(response_data, list):
             if len(response_data) == 0:
                 return ""
@@ -113,6 +128,26 @@ class HuggingFaceOCRService:
             return response_data
         return str(response_data)
 
+    def build_chat_payload(self, model_id: str, image_bytes: bytes) -> Dict[str, Any]:
+        image_b64 = base64.b64encode(image_bytes).decode("ascii")
+        return {
+            "model": model_id,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": settings.ocr_prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"},
+                        },
+                    ],
+                }
+            ],
+            "max_tokens": settings.hf_max_tokens,
+            "temperature": 0.0,
+        }
+
     async def scan_image_bytes(
         self,
         image_bytes: bytes,
@@ -136,7 +171,7 @@ class HuggingFaceOCRService:
                 success=False,
                 error=(
                     "No remote OCR model is configured. Set OCR_MODEL in backend/.env "
-                    "to a Hugging Face serverless image-to-text model."
+                    "to a Hugging Face serverless image-text-to-text model."
                 ),
             )
 
@@ -170,8 +205,10 @@ class HuggingFaceOCRService:
                 error="httpx library is not installed. Please install with: pip install httpx",
             )
 
-        url = self.base_url_template.format(model_id=active_model)
+        url = self.base_url.format(model_id=active_model)
         headers = self.get_headers(custom_api_key)
+        headers["Content-Type"] = "application/json"
+        payload = self.build_chat_payload(active_model, processed_bytes)
 
         last_error = None
         for attempt in range(1, self.max_retries + 1):
@@ -180,12 +217,14 @@ class HuggingFaceOCRService:
                     response = await client.post(
                         url,
                         headers=headers,
-                        content=processed_bytes,
+                        json=payload,
                     )
 
                 if response.status_code == 200:
                     raw_result = response.json()
                     extracted_text = self.parse_hf_response(raw_result).strip()
+                    if not extracted_text:
+                        raise ValueError("Hugging Face returned no OCR text.")
                     paragraphs = text_service.extract_paragraphs(extracted_text)
                     latency = round((time.perf_counter() - start_time) * 1000, 2)
 
@@ -292,8 +331,8 @@ class HuggingFaceOCRService:
             HFModelInfo(
                 id=self.default_model,
                 name=self.default_model,
-                description="Configured Hugging Face serverless image-to-text model.",
-                recommended_for="Use a model whose Inference Provider mapping supports image-to-text requests.",
+                description="Configured Hugging Face serverless image-text-to-text model.",
+                recommended_for="Use a provider-enabled vision model, such as the configured Qwen model when available.",
             )
         ]
 

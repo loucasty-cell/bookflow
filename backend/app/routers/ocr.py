@@ -1,4 +1,4 @@
-"""Hugging Face Image-to-Text OCR Endpoints with Dependency Injection."""
+"""PaddleOCR-first vision OCR endpoints with Hugging Face fallback."""
 
 import json
 from typing import List, Optional
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/api/ocr", tags=["OCR & Vision"])
 async def list_ocr_models(
     hf_service: HuggingFaceOCRService = Depends(get_hf_ocr_service),
 ):
-    """List recommended Hugging Face Image-to-Text OCR models and default configuration."""
+    """List the configured Hugging Face image-text-to-text model."""
     return OCRModelListResponse(
         default_model=settings.ocr_model,
         hf_token_configured=bool(settings.hf_api_key and settings.hf_api_key.strip()),
@@ -99,15 +99,15 @@ async def ocr_batch_images(
 @router.post("/pdf", response_model=OCRDocumentResponse)
 async def ocr_pdf_document(
     file: UploadFile = File(..., description="PDF document file"),
-    force_ocr: bool = Form(False, description="Force Hugging Face OCR even if native text is present"),
-    model_id: Optional[str] = Form(None, description="Hugging Face model ID"),
+    force_ocr: bool = Form(False, description="Force PaddleOCR/Hugging Face OCR even if native text is present"),
+    model_id: Optional[str] = Form(None, description="Hugging Face fallback model ID"),
     authorization: Optional[str] = Header(None, description="Optional Bearer token for HF API"),
     x_hf_token: Optional[str] = Header(None, description="Optional Hugging Face token"),
     ocr_srv: OCRService = Depends(get_ocr_service),
 ):
     """
     Extract text from a PDF document, using native extraction for text pages
-    and Hugging Face OCR scanning for scanned/image pages.
+    and PaddleOCR-first scanning with Hugging Face fallback for scanned/image pages.
     """
     filename = file.filename or "scanned_document.pdf"
     if not filename.lower().endswith(".pdf"):

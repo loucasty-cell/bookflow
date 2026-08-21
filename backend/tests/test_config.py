@@ -21,7 +21,13 @@ def test_hf_inference_url_configures_modular_service(monkeypatch):
     assert Settings().hf_inference_url_template == endpoint_url
 
 
-def test_remote_ocr_model_slot_is_empty_until_configured(monkeypatch):
+def test_qwen_is_the_default_remote_ocr_model(monkeypatch):
     monkeypatch.delenv("OCR_MODEL", raising=False)
+
+    assert Settings().ocr_model == "Qwen/Qwen2-VL-7B-Instruct"
+
+
+def test_remote_ocr_model_can_be_disabled(monkeypatch):
+    monkeypatch.setenv("OCR_MODEL", "")
 
     assert Settings().ocr_model == ""

@@ -1,8 +1,8 @@
 """
-Bookflow optional remote OCR backend.
+Bookflow optional OCR backend.
 
 Orchestrates PDF page extraction at 96 DPI in memory using PyMuPDF,
-provider-aware remote OCR requests, bounded retries, and real-time SSE streaming.
+PaddleOCR-first/provider-aware OCR requests, bounded retries, and real-time SSE streaming.
 """
 
 import os
@@ -37,12 +37,18 @@ load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 load_dotenv(os.path.join(os.path.dirname(__file__), "../.env"))
 
 # Environment configuration
-OCR_MODEL = os.getenv("OCR_MODEL", "").strip()
+OCR_MODEL = os.getenv("OCR_MODEL", "Qwen/Qwen2-VL-7B-Instruct").strip()
 HF_TOKEN = os.getenv("HF_TOKEN", os.getenv("HF_API_KEY", ""))
 HF_INFERENCE_URL = os.getenv(
     "HF_INFERENCE_URL",
-    "https://router.huggingface.co/hf-inference/models/{model_id}",
+    "https://router.huggingface.co/v1/chat/completions",
 ).rstrip("/")
+PADDLEOCR_URL = os.getenv("PADDLEOCR_URL", "").strip().rstrip("/")
+HF_MAX_TOKENS = int(os.getenv("HF_MAX_TOKENS", "2048"))
+OCR_PROMPT = os.getenv(
+    "OCR_PROMPT",
+    "Extract all text from this page exactly as written. Return only the extracted text in Markdown, preserving reading order, headings, tables, and line breaks.",
+)
 CORS_ORIGINS = os.getenv(
     "CORS_ORIGINS",
     "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000",
@@ -177,6 +183,26 @@ async def ensure_hf_inference_support(
             "Hugging Face model deployed by the Inference Provider, or use private on-device OCR."
         )
 
+    if HF_INFERENCE_URL.startswith("https://router.huggingface.co/v1"):
+        token = (api_key or HF_TOKEN or "").strip()
+        headers = {"Authorization": f"Bearer {token}"} if token and token != "EMPTY" else {}
+        response = await client.get(
+            f"https://router.huggingface.co/v1/models/{model_id}",
+            headers=headers,
+        )
+        if response.status_code == 401:
+            raise ValueError("Hugging Face rejected the configured API token.")
+        if response.status_code == 404:
+            raise ValueError(
+                f"{model_id} is not currently available through the Hugging Face OpenAI-compatible provider route. "
+                "Use a provider-enabled vision model or configure PaddleOCR/dedicated OCR service."
+            )
+        response.raise_for_status()
+        providers = response.json().get("providers") or []
+        if providers and not any(provider.get("status") == "live" for provider in providers):
+            raise ValueError(f"{model_id} has no live Hugging Face provider at this time.")
+        return
+
     if not HF_INFERENCE_URL.startswith("https://router.huggingface.co/hf-inference/models"):
         return
 
@@ -203,7 +229,96 @@ def hf_inference_url_for_model(model_id: str) -> str:
         return HF_INFERENCE_URL.format(model_id=model_id)
     if ".endpoints.huggingface.cloud" in HF_INFERENCE_URL:
         return HF_INFERENCE_URL
-    return f"{HF_INFERENCE_URL}/{model_id}"
+    if HF_INFERENCE_URL.endswith("/models"):
+        return f"{HF_INFERENCE_URL}/{model_id}"
+    return HF_INFERENCE_URL
+
+
+def build_hf_chat_payload(model_id: str, image_bytes: bytes) -> Dict[str, Any]:
+    image_data = base64.b64encode(image_bytes).decode("ascii")
+    return {
+        "model": model_id,
+        "messages": [{
+            "role": "user",
+            "content": [
+                {"type": "text", "text": OCR_PROMPT},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image_data}"},
+                },
+            ],
+        }],
+        "max_tokens": HF_MAX_TOKENS,
+        "temperature": 0.0,
+    }
+
+
+def parse_hf_chat_response(response_data: Any) -> str:
+    if isinstance(response_data, dict) and isinstance(response_data.get("choices"), list):
+        choices = response_data["choices"]
+        if choices and isinstance(choices[0], dict):
+            message = choices[0].get("message") or {}
+            content = message.get("content") if isinstance(message, dict) else None
+            if isinstance(content, str):
+                return content.strip()
+            if isinstance(content, list):
+                return "\n".join(
+                    part.get("text", "")
+                    for part in content
+                    if isinstance(part, dict) and part.get("type") == "text"
+                ).strip()
+    if isinstance(response_data, dict):
+        return str(response_data.get("generated_text") or response_data.get("text") or "").strip()
+    return ""
+
+
+async def call_paddleocr(
+    client: httpx.AsyncClient,
+    page_number: int,
+    image_bytes: bytes,
+) -> Optional[PageData]:
+    if not PADDLEOCR_URL:
+        return None
+    started = time.perf_counter()
+    try:
+        response = await client.post(
+            PADDLEOCR_URL,
+            headers={"Accept": "application/json", "Content-Type": "application/json"},
+            json={"file": base64.b64encode(image_bytes).decode("ascii"), "fileType": 1},
+        )
+        if response.status_code != 200:
+            logger.warning("[Page %s] PaddleOCR returned HTTP %s", page_number, response.status_code)
+            return None
+        raw_result = response.json()
+        extracted_text = ""
+        if isinstance(raw_result, dict):
+            result = raw_result.get("result") or {}
+            ocr_results = result.get("ocrResults") if isinstance(result, dict) else None
+            if isinstance(ocr_results, list):
+                extracted_text = "\n".join(
+                    str(item.get("prunedResult") or item.get("markdownText") or "")
+                    for item in ocr_results
+                    if isinstance(item, dict)
+                ).strip()
+            else:
+                extracted_text = str(raw_result.get("markdown") or raw_result.get("text") or "").strip()
+        elif isinstance(raw_result, list):
+            extracted_text = "\n".join(
+                str(item.get("text", "") if isinstance(item, dict) else item)
+                for item in raw_result
+            ).strip()
+        if not extracted_text:
+            return None
+        return PageData(
+            page_number=page_number,
+            text=extracted_text,
+            word_count=len(extracted_text.split()),
+            latency_ms=round((time.perf_counter() - started) * 1000, 2),
+            success=True,
+        )
+    except Exception as exc:
+        logger.warning("[Page %s] PaddleOCR request failed: %s", page_number, exc)
+        return None
 
 
 async def call_ocr_with_retry(
@@ -248,43 +363,42 @@ async def call_ocr_with_retry(
 
     headers = {
         "Accept": "application/json",
+        "Content-Type": "application/json",
         "User-Agent": "Bookflow-OCR-Client/1.0",
     }
     if token and token != "EMPTY":
         headers["Authorization"] = f"Bearer {token}"
 
+    paddle_result = await call_paddleocr(client, page_number, image_bytes)
+    if paddle_result:
+        return paddle_result
+
+    if not model_id.strip():
+        return PageData(
+            page_number=page_number,
+            text="",
+            word_count=0,
+            latency_ms=round((time.perf_counter() - start_time) * 1000, 2),
+            success=False,
+            error="PaddleOCR returned no text and no Hugging Face OCR model is configured.",
+        )
+
     target_url = hf_inference_url_for_model(model_id)
+    payload = build_hf_chat_payload(model_id, image_bytes)
 
     for attempt in range(1, MAX_RETRIES + 1):
         try:
             response = await client.post(
                 target_url,
                 headers=headers,
-                content=image_bytes,
+                json=payload,
             )
 
             if response.status_code == 200:
                 raw_result = response.json()
-                if isinstance(raw_result, list) and len(raw_result) > 0:
-                    item = raw_result[0]
-                    if isinstance(item, dict):
-                        extracted_text = (
-                            item.get("generated_text")
-                            or item.get("text")
-                            or item.get("caption")
-                            or str(item)
-                        ).strip()
-                    else:
-                        extracted_text = str(item).strip()
-                elif isinstance(raw_result, dict):
-                    extracted_text = (
-                        raw_result.get("generated_text")
-                        or raw_result.get("text")
-                        or raw_result.get("caption")
-                        or str(raw_result)
-                    ).strip()
-                else:
-                    extracted_text = str(raw_result).strip()
+                extracted_text = parse_hf_chat_response(raw_result)
+                if not extracted_text:
+                    raise ValueError("Hugging Face returned no OCR text.")
 
                 latency = round((time.perf_counter() - start_time) * 1000, 2)
                 return PageData(
@@ -410,7 +524,7 @@ async def process_ocr_pipeline(
 
         limits = httpx.Limits(max_keepalive_connections=batch_size, max_connections=batch_size * 2)
         async with httpx.AsyncClient(timeout=60.0, limits=limits) as http_client:
-            if any(not page.get("is_native", False) for page in rendered_pages):
+            if any(not page.get("is_native", False) for page in rendered_pages) and not PADDLEOCR_URL:
                 await ensure_hf_inference_support(http_client, model_id, api_key)
 
             for batch_start in range(0, len(rendered_pages), batch_size):
@@ -521,7 +635,7 @@ async def scan_pdf_endpoint(
     x_hf_token: Optional[str] = Header(None),
 ):
     """
-    Initiates asynchronous visual OCR scan of an uploaded PDF using Hugging Face Inference API.
+    Initiates asynchronous visual OCR scan of an uploaded PDF using PaddleOCR first and Hugging Face fallback.
     Returns a job_id to stream progress via SSE at /api/ocr/progress/{job_id}.
     """
     filename = file.filename or "uploaded_document.pdf"
@@ -787,6 +901,7 @@ async def health_check():
         "service": "bookflow-ocr-fastapi",
         "model": OCR_MODEL or None,
         "remote_ocr_configured": bool(OCR_MODEL),
+        "paddleocr_configured": bool(PADDLEOCR_URL),
         "inference_url": HF_INFERENCE_URL,
         "token_configured": bool(HF_TOKEN and HF_TOKEN.strip() and HF_TOKEN.strip() != "EMPTY"),
         "thread_workers": THREAD_POOL_WORKERS,

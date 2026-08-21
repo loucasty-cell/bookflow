@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    description="High-performance backend for Bookflow: document parsing, sentence analytics, and fast Hugging Face Vision OCR scanning.",
+    description="High-performance backend for Bookflow: document parsing, sentence analytics, and PaddleOCR-first vision scanning with Hugging Face fallback.",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",

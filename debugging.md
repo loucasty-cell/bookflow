@@ -41,7 +41,22 @@ curl -s http://127.0.0.1:8000/api/health
 
 ---
 
-## 2. Hugging Face OCR Debugging
+## 2. OCR Backend Debugging
+
+### Symptom: `Failed to fetch` from the OCR uploader
+- **Root Cause**: The frontend cannot reach the FastAPI server, or the server rejected the upload before creating an OCR job.
+- **Resolution**:
+  1. Start the backend from `backend` with `python run.py` and confirm `http://localhost:8000/api/health` responds.
+  2. Confirm the frontend `NEXT_PUBLIC_API_URL` points to that same origin and that the browser origin is listed in `CORS_ORIGINS`.
+  3. Check the backend terminal for the first HTTP error. A provider/model error should be shown as a failed job instead of a network error.
+
+### Symptom: PaddleOCR returns no text
+- **Root Cause**: `PADDLEOCR_URL` is empty, the PaddleX serving process is not running, or the service response does not contain `result.ocrResults[].prunedResult`/`markdownText`.
+- **Resolution**:
+  1. Start PaddleX with `paddlex --serve --pipeline OCR`.
+  2. Set `PADDLEOCR_URL=http://127.0.0.1:8080/ocr` and restart the backend.
+  3. Check `GET /api/health` or `GET /api/info` for `paddleocr_configured: true`.
+  4. The backend will attempt the Hugging Face fallback when PaddleOCR is unavailable or returns no text.
 
 ### Symptom: `401 Unauthorized` on OCR Endpoints
 - **Root Cause**: Missing or invalid Hugging Face API key.
@@ -53,7 +68,7 @@ curl -s http://127.0.0.1:8000/api/health
 ### Symptom: `503 Model is Loading`
 - **Root Cause**: Serverless Hugging Face Inference models cold start when called after idle periods.
 - **Resolution**: The `HuggingFaceOCRService` automatically reads the `estimated_time` header/payload and retries up to 3 times with exponential backoff.
-- **Tip**: For high-volume production, configure a dedicated Inference Endpoint on Hugging Face and set `HF_INFERENCE_URL` to its exact URL.
+- **Tip**: For high-volume production, keep PaddleOCR self-hosted or configure a dedicated Inference Endpoint and set `HF_INFERENCE_URL` to its exact URL.
 
 ### Symptom: `429 Rate Limit Exceeded`
 - **Root Cause**: Exceeded free-tier inference request quotas.
@@ -66,8 +81,8 @@ curl -s http://127.0.0.1:8000/api/health
 - **Root Cause**: Poor image contrast, low resolution, or complex multi-column layout.
 - **Resolution**:
   1. Ensure the image is right-side up; `HuggingFaceOCRService.preprocess_image()` automatically applies EXIF transpose.
-  2. Confirm the model in `OCR_MODEL` is deployed by the selected Inference Provider and supports image-to-text input.
-  3. If the provider does not support the model, use private on-device OCR or configure a compatible dedicated endpoint.
+  2. Confirm the model in `OCR_MODEL` is exposed by an enabled Hugging Face provider and supports image-text-to-text input. The backend uses `https://router.huggingface.co/v1/chat/completions` by default.
+  3. If the provider does not support the model, use PaddleOCR, private on-device OCR, or configure a compatible dedicated endpoint. Qwen2-VL availability is not guaranteed for every account/provider.
 
 ---
 
@@ -77,7 +92,7 @@ curl -s http://127.0.0.1:8000/api/health
 - **Root Cause**: The PDF consists of scanned raster images without an embedded text layer.
 - **Resolution**:
   1. If running locally, Bookflow triggers bundled Tesseract.js English OCR.
-  2. If using the backend, use `POST /api/ocr/pdf` with `force_ocr=true` to process the pages via Hugging Face OCR.
+  2. If using the backend, use `POST /api/ocr/scan` to process pages through PaddleOCR and the configured Hugging Face fallback.
 
 ### Symptom: PDF.js Worker Fails to Load
 - **Root Cause**: Path mismatch for `pdf.worker.min.mjs` in Next.js build.

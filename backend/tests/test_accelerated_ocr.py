@@ -1,5 +1,6 @@
 import json
 import time
+import base64
 
 import fitz
 import httpx
@@ -28,6 +29,100 @@ async def test_hf_provider_preflight_rejects_unhosted_model(monkeypatch):
                 "org/serverless-ocr",
                 "test-token",
             )
+
+
+@pytest.mark.asyncio
+async def test_hf_chat_provider_preflight_uses_openai_model_route(monkeypatch):
+    monkeypatch.setattr(
+        accelerated_ocr,
+        "HF_INFERENCE_URL",
+        "https://router.huggingface.co/v1/chat/completions",
+    )
+
+    def handler(request):
+        assert request.url.path == "/v1/models/Qwen/Qwen2-VL-7B-Instruct"
+        return httpx.Response(200, json={"id": "Qwen/Qwen2-VL-7B-Instruct", "providers": [{"status": "live"}]})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        await accelerated_ocr.ensure_hf_inference_support(
+            client,
+            "Qwen/Qwen2-VL-7B-Instruct",
+            "test-token",
+        )
+
+
+def test_qwen_chat_payload_contains_data_url_and_ocr_prompt(monkeypatch):
+    monkeypatch.setattr(accelerated_ocr, "OCR_PROMPT", "Extract this page")
+    image = b"jpeg-bytes"
+
+    payload = accelerated_ocr.build_hf_chat_payload("Qwen/Qwen2-VL-7B-Instruct", image)
+
+    assert payload["model"] == "Qwen/Qwen2-VL-7B-Instruct"
+    assert payload["messages"][0]["content"][0]["text"] == "Extract this page"
+    assert base64.b64encode(image).decode("ascii") in payload["messages"][0]["content"][1]["image_url"]["url"]
+
+
+@pytest.mark.asyncio
+async def test_qwen_chat_response_is_parsed(monkeypatch):
+    monkeypatch.setattr(accelerated_ocr, "HF_INFERENCE_URL", "https://router.huggingface.co/v1/chat/completions")
+    monkeypatch.setattr(accelerated_ocr, "PADDLEOCR_URL", "")
+
+    def handler(request):
+        body = json.loads(request.content)
+        assert body["model"] == "Qwen/Qwen2-VL-7B-Instruct"
+        assert body["messages"][0]["content"][1]["image_url"]["url"].startswith("data:image/jpeg;base64,")
+        return httpx.Response(200, json={"choices": [{"message": {"content": "Qwen OCR text"}}]})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        result = await accelerated_ocr.call_ocr_with_retry(
+            client,
+            page_number=1,
+            image_b64=base64.b64encode(b"jpeg-bytes").decode("ascii"),
+            native_text="",
+            is_native=False,
+            model_id="Qwen/Qwen2-VL-7B-Instruct",
+            api_key="test-token",
+        )
+
+    assert result.success is True
+    assert result.text == "Qwen OCR text"
+
+
+@pytest.mark.asyncio
+async def test_paddleocr_payload_and_response_are_supported(monkeypatch):
+    monkeypatch.setattr(accelerated_ocr, "PADDLEOCR_URL", "http://paddle.test/ocr")
+
+    def handler(request):
+        body = json.loads(request.content)
+        assert body["fileType"] == 1
+        assert base64.b64decode(body["file"]) == b"jpeg-bytes"
+        return httpx.Response(
+            200,
+            json={"result": {"ocrResults": [{"prunedResult": "Paddle OCR text"}]}},
+        )
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+        result = await accelerated_ocr.call_paddleocr(client, 3, b"jpeg-bytes")
+
+    assert result is not None
+    assert result.success is True
+    assert result.page_number == 3
+    assert result.text == "Paddle OCR text"
+
+
+def test_paddleocr_client_parses_official_nested_result():
+    from app.services.paddle_ocr import PaddleOCRClient
+
+    response = {
+        "result": {
+            "ocrResults": [
+                {"prunedResult": "First line"},
+                {"prunedResult": "Second line"},
+            ]
+        }
+    }
+
+    assert PaddleOCRClient.parse_response(response) == "First line\nSecond line"
 
 
 def test_dedicated_hf_endpoint_is_used_without_appending_model(monkeypatch):

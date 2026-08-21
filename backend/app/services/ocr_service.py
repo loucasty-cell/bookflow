@@ -2,6 +2,7 @@
 
 import io
 import time
+import asyncio
 import logging
 from typing import List, Optional, Dict, Any, Tuple
 import pypdf
@@ -14,6 +15,7 @@ from ..models.ocr import (
 )
 from ..core.config import settings
 from .huggingface_ocr import HuggingFaceOCRService, hf_ocr_service
+from .paddle_ocr import PaddleOCRClient, paddle_ocr_client
 from .text_service import text_service
 
 logger = logging.getLogger(__name__)
@@ -22,21 +24,30 @@ logger = logging.getLogger(__name__)
 class OCRService:
     """Orchestrates document OCR across images, PDFs, and batch files."""
 
-    def __init__(self, hf_service: Optional[HuggingFaceOCRService] = None):
+    def __init__(
+        self,
+        hf_service: Optional[HuggingFaceOCRService] = None,
+        paddle_service: Optional[PaddleOCRClient] = None,
+    ):
         self.hf = hf_service or hf_ocr_service
+        self.paddle = paddle_service or paddle_ocr_client
 
     async def scan_single_image(
         self,
         image_bytes: bytes,
         model_id: Optional[str] = None,
         custom_api_key: Optional[str] = None,
+        page_number: int = 1,
     ) -> OCRPageResult:
-        """Scan a single image using Hugging Face OCR."""
+        """Scan a single image using PaddleOCR first, then Hugging Face OCR."""
+        paddle_result = await self.paddle.scan_image_bytes(image_bytes, page_number=page_number)
+        if paddle_result and paddle_result.success:
+            return paddle_result
         return await self.hf.scan_image_bytes(
             image_bytes=image_bytes,
             model_id=model_id,
             custom_api_key=custom_api_key,
-            page_number=1,
+            page_number=page_number,
         )
 
     async def scan_batch_images(
@@ -48,14 +59,34 @@ class OCRService:
     ) -> OCRBatchResponse:
         """Scan multiple images in parallel."""
         start_time = time.perf_counter()
-        results = await self.hf.scan_batch(
-            images=image_bytes_list,
-            model_id=model_id,
-            custom_api_key=custom_api_key,
-            max_concurrency=max_concurrency,
-        )
+        if self.paddle.enabled:
+            semaphore = asyncio.Semaphore(max_concurrency)
+
+            async def scan_one(index: int, image_bytes: bytes) -> OCRPageResult:
+                async with semaphore:
+                    return await self.scan_single_image(
+                        image_bytes=image_bytes,
+                        model_id=model_id,
+                        custom_api_key=custom_api_key,
+                        page_number=index + 1,
+                    )
+
+            results = list(await asyncio.gather(*[
+                scan_one(index, image_bytes)
+                for index, image_bytes in enumerate(image_bytes_list)
+            ]))
+        else:
+            results = await self.hf.scan_batch(
+                images=image_bytes_list,
+                model_id=model_id,
+                custom_api_key=custom_api_key,
+                max_concurrency=max_concurrency,
+            )
         total_latency = round((time.perf_counter() - start_time) * 1000, 2)
-        model_used = model_id or self.hf.default_model
+        successful_models = list(dict.fromkeys(
+            result.model_used for result in results if result.success and result.model_used
+        ))
+        model_used = ", ".join(successful_models) or model_id or self.hf.default_model
 
         return OCRBatchResponse(
             success=any(r.success for r in results),
@@ -101,7 +132,7 @@ class OCRService:
     ) -> OCRDocumentResponse:
         """
         Extract readable text from a PDF document.
-        Uses native text extraction first, and triggers Hugging Face OCR for scanned/image pages.
+        Uses native text extraction first, then PaddleOCR and Hugging Face OCR for scanned/image pages.
         """
         start_time = time.perf_counter()
         active_model = model_id or self.hf.default_model
@@ -167,12 +198,14 @@ class OCRService:
                     )
                 )
             elif img_data is not None:
-                ocr_res = await self.hf.scan_image_bytes(
-                    image_bytes=img_data,
-                    model_id=active_model,
-                    custom_api_key=custom_api_key,
-                    page_number=page_num,
-                )
+                ocr_res = await self.paddle.scan_image_bytes(img_data, page_number=page_num)
+                if not ocr_res or not ocr_res.success:
+                    ocr_res = await self.hf.scan_image_bytes(
+                        image_bytes=img_data,
+                        model_id=active_model,
+                        custom_api_key=custom_api_key,
+                        page_number=page_num,
+                    )
                 ocr_results.append(ocr_res)
             else:
                 # Page has neither sufficient text nor extractable images

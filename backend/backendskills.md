@@ -12,9 +12,11 @@ Comprehensive technical reference, architectural patterns, and production engine
 - **Thread Pool CPU Offloading**: CPU-intensive PyMuPDF page rasterization and text extraction offloaded to `concurrent.futures.ThreadPoolExecutor(max_workers=min(32, cpu_count * 4))` to ensure zero event loop lag.
 - **Persistent HTTP Client**: Connection-pooled `httpx.AsyncClient` with custom timeouts, header customization, and exponential backoff retry mechanics.
 
-### 1.2 Optional Remote Vision OCR
-- **Provider Preflight**: Checks current Hugging Face provider mappings before uploading scanned page images.
-- **Endpoint Flexibility**: Uses the configured serverless provider URL or accepts an exact compatible dedicated Hugging Face endpoint URL without appending a model path.
+### 1.2 Optional OCR Routing
+- **PaddleOCR First**: Sends scanned page images to the configured PaddleX `/ocr` service when `PADDLEOCR_URL` is set.
+- **Provider Preflight**: Checks current Hugging Face provider availability before fallback requests.
+- **OpenAI-Compatible Payload**: Uses `/v1/chat/completions` with a text prompt and base64 image data URL for Qwen vision models.
+- **Endpoint Flexibility**: Accepts an exact compatible dedicated Hugging Face endpoint URL without appending a model path.
 - **Cold-Start & Rate Limit Recovery**: Handles HTTP 503 (model loading) by reading `estimated_time` with adaptive sleep, and backs off gracefully on HTTP 429 rate limits.
 - **Native Text Microsecond Fast-Path**: Selectable PDF pages with >= 15 words bypass visual rasterization, returning native text in < 1ms to process 500+ page books rapidly.
 - **Token Ingestion Flexibility**: Supports API tokens from environment variables (`HF_TOKEN` / `HF_API_KEY`), request forms (`api_key`), or headers (`Authorization: Bearer`, `X-HF-Token`).

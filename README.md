@@ -20,7 +20,7 @@ Designed with cognitive ergonomics and behavioral product design, Bookflow helps
 
 ### 2. Visual OCR
 - **Private Local OCR**: Scanned English PDF pages use bundled Tesseract.js assets in the browser by default.
-- **Optional Hugging Face OCR Backend**: Batch-processes scanned PDFs through a configured serverless Inference Provider model or a compatible dedicated/self-hosted endpoint.
+- **Optional OCR Backend**: Routes scanned pages to a self-hosted PaddleOCR service first, with a provider-checked Hugging Face Qwen vision fallback.
 - **Real-Time SSE Streaming**: Live page extraction updates, word count tracking, and heartbeat keepalives.
 - **Intelligent Fast-Path**: Digital PDF pages with selectable text automatically bypass rasterization for sub-millisecond extraction.
 
@@ -62,7 +62,9 @@ start_backend.bat
 ```
 *(The backend will run on `http://localhost:8000`)*
 
-The standard importer and local English OCR do not require the backend. Optional remote scanning is disabled until you set `OCR_MODEL` to a currently supported Hugging Face serverless image-to-text model. Keep the default `HF_INFERENCE_URL` for the public Inference Provider, or replace it with the exact URL of a compatible dedicated endpoint.
+The standard importer and local English OCR do not require the backend. For backend scanning, start PaddleX's OCR serving process (`paddlex --serve --pipeline OCR`) and set `PADDLEOCR_URL=http://127.0.0.1:8080/ocr`. Pages are sent to PaddleOCR first; if it is unavailable or returns no text, the backend uses the configured Hugging Face model through `https://router.huggingface.co/v1/chat/completions`.
+
+`OCR_MODEL=Qwen/Qwen2-VL-7B-Instruct` is the requested default. Hugging Face provider availability is account/model dependent, so the backend checks the model before sending a remote request and reports a clear configuration error when no provider is enabled. Keep `HF_TOKEN` server-side and never commit it.
 
 ### 2. Launch the Frontend Application
 
@@ -90,4 +92,4 @@ npm run build   # Production Turbopack build
 
 ## 🛡 Privacy Invariant
 
-Bookflow processes standard text extraction and local English OCR on-device by default. The optional remote OCR flow sends scanned page images to the configured backend only when the user explicitly starts an accelerated scan. A Hugging Face token alone is not enough: `OCR_MODEL` must identify a model currently exposed by the selected endpoint.
+Bookflow processes standard text extraction and local English OCR on-device by default. The optional remote OCR flow sends scanned page images to the configured backend only when the user explicitly starts an accelerated scan. PaddleOCR can remain self-hosted; Hugging Face fallback requires a token and an `OCR_MODEL` currently exposed by the selected provider route.

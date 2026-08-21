@@ -31,5 +31,6 @@ async def get_info():
             "default_model": settings.ocr_model,
             "token_configured": bool(settings.hf_api_key and settings.hf_api_key.strip()),
             "available_models_count": 1 if settings.ocr_model else 0,
+            "paddleocr_configured": bool(settings.paddleocr_url),
         },
     }

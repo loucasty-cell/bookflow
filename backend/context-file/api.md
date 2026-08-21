@@ -24,7 +24,7 @@ Returns service health, version, and server timestamp.
 ```
 
 ### `GET /api/info`
-Returns server capabilities, supported file formats, and Hugging Face OCR config.
+Returns server capabilities, supported file formats, and OCR provider config.
 
 **Response (`200 OK`)**:
 ```json
@@ -33,17 +33,18 @@ Returns server capabilities, supported file formats, and Hugging Face OCR config
   "version": "1.0.0",
   "supported_formats": [".pdf", ".epub", ".txt", ".md", ".markdown"],
   "max_upload_size_mb": 50,
-  "hf_ocr": {
-    "default_model": "<configured-model-or-empty>",
-    "token_configured": true,
-    "available_models_count": 0
+    "hf_ocr": {
+      "default_model": "<configured-model-or-empty>",
+      "token_configured": true,
+      "available_models_count": 0,
+      "paddleocr_configured": true
   }
 }
 ```
 
 ---
 
-## 2. Hugging Face OCR & Vision Endpoints
+## 2. OCR & Vision Endpoints
 
 ### `GET /api/ocr/models`
 Returns the model configured through `OCR_MODEL`, or an empty list when remote OCR is disabled.
@@ -58,7 +59,7 @@ Returns the model configured through `OCR_MODEL`, or an empty list when remote O
 ```
 
 ### `POST /api/ocr/image`
-Single-image OCR extraction via Hugging Face Inference API.
+Single-image OCR extraction via PaddleOCR when configured, with Hugging Face vision fallback.
 
 - **Content-Type**: `multipart/form-data`
 - **Headers (Optional)**: `Authorization: Bearer <token>` or `X-HF-Token: <token>`
@@ -110,7 +111,7 @@ Concurrent OCR extraction over multiple image files (bounded by semaphore).
 ```
 
 ### `POST /api/ocr/pdf`
-Processes a PDF document: uses native text stream first, falling back to Hugging Face Vision OCR for scanned pages.
+Processes a PDF document: uses native text stream first, then PaddleOCR and Hugging Face vision fallback for scanned pages.
 
 - **Content-Type**: `multipart/form-data`
 - **Form Fields**:

@@ -24,7 +24,8 @@ bookflow/
 |   |   |   `-- reader.py          # /api/reader/segment, /api/reader/reading-time, notes export/import
 |   |   |-- services/
 |   |   |   |-- __init__.py
-|   |   |   |-- huggingface_ocr.py # Hugging Face Vision OCR client (Inference API + retry logic)
+|   |   |   |-- huggingface_ocr.py # Hugging Face OpenAI-compatible Qwen vision client
+|   |   |   |-- paddle_ocr.py # PaddleOCR-compatible HTTP adapter
 |   |   |   |-- ocr_service.py     # PDF extraction & batch OCR orchestrator
 |   |   |   |-- document_service.py# Multi-format document parser (PDF, EPUB, TXT, MD)
 |   |   |   `-- text_service.py    # Sentence segmentation, abbreviations, reading time
@@ -133,7 +134,7 @@ bookflow/
 
 ### Backend Layer (`backend/`)
 
-- **`main.py` (root)**: Optional remote OCR engine using the model configured in `OCR_MODEL`. Handles PDF page rendering via PyMuPDF thread pool, concurrent batch inference, SSE progress streaming, and background job management.
+- **`main.py` (root)**: Optional remote OCR engine using PaddleOCR first and the model configured in `OCR_MODEL` as fallback. Handles PDF page rendering via PyMuPDF thread pool, concurrent batch inference, SSE progress streaming, and background job management.
 - **`app/core/`**: Configuration management via Pydantic `BaseSettings`, environment variables, CORS configuration, and the selected OCR model.
 - **`app/models/`**: Pydantic v2 schemas with `serialization_alias` + `validation_alias` for snake_case Python / camelCase JSON interop. Validates Normalized Books, OCR requests/responses, and reader export bundles.
 - **`app/services/`**:
@@ -151,10 +152,10 @@ bookflow/
    Document parsing runs entirely inside the browser using JavaScript libraries (PDF.js, JSZip) to guarantee private, zero-network reading.
 
 2. **High-Throughput Visual Scanning (Opt-in)**:
-   Frontend uploads a PDF to `POST /api/ocr/scan`, then subscribes to `GET /api/ocr/progress/{job_id}` via SSE. The backend renders pages at 96 DPI, dispatches concurrent batches to the configured Hugging Face model, and streams per-page results in real time.
+   Frontend uploads a PDF to `POST /api/ocr/scan`, then subscribes to `GET /api/ocr/progress/{job_id}` via SSE. The backend renders pages at 96 DPI, dispatches concurrent batches to PaddleOCR first and the configured Hugging Face model as fallback, and streams per-page results in real time.
 
 3. **Legacy Server-Accelerated OCR (Opt-in)**:
-   When Hugging Face OCR is requested, frontend sends image bytes or PDF slices to `POST /api/ocr/image` or `POST /api/ocr/pdf`, which leverages Hugging Face Vision models.
+   When accelerated OCR is requested, the frontend sends PDF slices to `POST /api/ocr/scan`; the backend uses PaddleOCR first and the Hugging Face Qwen vision route as fallback.
 
 4. **Data Normalization Consistency**:
    Both client and server parsers emit the identical `NormalizedBook` schema, ensuring reader components operate transparently regardless of source.

@@ -1,15 +1,15 @@
 # Bookflow Backend Architecture & DevOps Workflow
 
-Production-grade engineering and DevOps documentation for the Bookflow FastAPI optional Hugging Face OCR backend.
+Production-grade engineering and DevOps documentation for the Bookflow FastAPI OCR backend.
 
 ---
 
 ## 1. System Architecture & Performance Target
 
-- **Processing SLA**: Process full **400–600 page book files in under 2 minutes (<120s)** with 0 memory leaks and zero runtime exceptions.
+- **Processing target**: Keep page-level progress, bounded concurrency, cancellation, and cleanup predictable. Runtime varies with page size, OCR engine, hardware, and provider limits; do not promise a fixed time for 400–600 page books.
 - **Microsecond Native Fast-Path**: Selectable text pages are extracted via PyMuPDF (`fitz`) in under 0.5 seconds for a 600-page book.
 - **In-Memory 96 DPI Rasterization**: Scanned pages are rendered to JPEG base64 directly in RAM using CPU thread pools without touching the physical disk.
-- **Asynchronous Batching**: Parallel non-blocking worker pools dispatch page batches to the model configured in `OCR_MODEL`.
+- **Asynchronous Batching**: Parallel non-blocking worker pools dispatch page batches through PaddleOCR first and the model configured in `OCR_MODEL` as fallback.
 - **Zero Disk Persistence**: Document binaries and OCR buffers exist purely in volatile RAM during the request lifecycle.
 
 ---
@@ -35,7 +35,8 @@ backend/
 |   |   `-- reader.py            # POST /api/reader/segment, /reading-time, notes export/import
 |   |-- services/
 |   |   |-- __init__.py
-|   |   |-- huggingface_ocr.py   # Hugging Face Vision OCR client (with exponential backoff)
+|   |   |-- huggingface_ocr.py   # Hugging Face OpenAI-compatible Qwen vision client
+|   |   |-- paddle_ocr.py        # PaddleOCR-compatible HTTP adapter
 |   |   |-- ocr_service.py       # High-throughput batch & hybrid PDF orchestrator
 |   |   |-- document_service.py  # Multi-format document parsing (PDF, EPUB, TXT, MD)
 |   |   `-- text_service.py      # Sentence boundary segmentation & reading metrics
@@ -63,8 +64,11 @@ graph TD
     D -->|Scanned / Image Page| F[96 DPI In-Memory Rasterizer]
     E --> G[Normalized Chapter Page]
     F --> H[16-Page Async Batch Queue]
-    H --> I[Configured Hugging Face OCR endpoint]
-    I -->|Markdown Result| G
+    H --> I{OCR provider routing}
+    I -->|PADDLEOCR_URL| P[PaddleOCR /ocr endpoint]
+    I -->|fallback| Q[HF /v1/chat/completions]
+    P -->|Text result| G
+    Q -->|Text result| G
     G --> J[Instant In-Memory Deallocation of Image Buffer]
     G --> K[SSE Stream: GET /api/ocr/progress/job_id]
     K --> L[Client UI Live Progress Update]
@@ -104,7 +108,7 @@ python run.py
 
 ### 5.2 GPU OCR Engine Containerization (Docker Compose)
 ```bash
-# Start the optional self-hosted GPU OCR engine + FastAPI backend
+# Start the optional self-hosted services + FastAPI backend
 docker compose up -d
 
 # Check live logs

@@ -31,8 +31,8 @@ Bookflow transforms long-form reading into a calm, sustainable, and habit-formin
 | **Scroll Intent Accumulator** | Complete | Trackpad dampening to eliminate jitter |
 | **Pinned Reading State** | Complete | Lock focus with `Escape`, `Space`, or tap |
 | **Notes & Bookmarks** | Complete | Local browser storage with chapter anchors |
-| **Fast Visual OCR** | Opt-in | Configured Hugging Face serverless model via FastAPI with SSE progress streaming |
-| **Hugging Face Provider Check** | Complete | Rejects models that are not exposed by the selected Inference Provider |
+| **Fast Visual OCR** | Opt-in | PaddleOCR-first FastAPI pipeline with Hugging Face Qwen fallback and SSE progress streaming |
+| **Hugging Face Provider Check** | Complete | Rejects models that are not exposed by the selected Inference Provider before fallback requests |
 | **Instant Intro Skip** | Complete | Click, keydown, and Skip button on opening video |
 | **Cross-Page Hierarchy** | Complete | Dynamic chapter hierarchy reconstruction from `# Headings` |
 | **Type Safety & Testing** | Complete | Pyright strict typing, Pydantic v2 aliases, 33 Vitest tests |
