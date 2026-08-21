@@ -1,8 +1,8 @@
 """Reader utility endpoints for text segmentation, reading metrics, and notes export/import."""
 
 import time
-from fastapi import APIRouter, HTTPException, status
-from ..services.text_service import text_service
+from fastapi import APIRouter, Depends, HTTPException, status
+from ..services.text_service import TextService, get_text_service
 from ..models.reader import (
     SegmentRequest,
     SegmentResponse,
@@ -15,14 +15,17 @@ router = APIRouter(prefix="/api/reader", tags=["Reader Utilities"])
 
 
 @router.post("/segment", response_model=SegmentResponse)
-async def segment_text(payload: SegmentRequest):
+async def segment_text(
+    payload: SegmentRequest,
+    txt_service: TextService = Depends(get_text_service),
+):
     """
     Segment input text into clean paragraphs and sentence boundaries.
     """
-    paragraphs = text_service.extract_paragraphs(payload.text)
-    sentences = text_service.extract_sentences(payload.text)
-    word_count = text_service.count_words(payload.text)
-    _, _, est_label = text_service.calculate_reading_time(word_count)
+    paragraphs = txt_service.extract_paragraphs(payload.text)
+    sentences = txt_service.extract_sentences(payload.text)
+    word_count = txt_service.count_words(payload.text)
+    _, _, est_label = txt_service.calculate_reading_time(word_count)
     total_seconds = int((word_count / 220) * 60)
 
     return SegmentResponse(
@@ -34,18 +37,21 @@ async def segment_text(payload: SegmentRequest):
 
 
 @router.post("/reading-time", response_model=ReadingTimeResponse)
-async def compute_reading_time(payload: ReadingTimeRequest):
+async def compute_reading_time(
+    payload: ReadingTimeRequest,
+    txt_service: TextService = Depends(get_text_service),
+):
     """
     Compute estimated reading time for a word count or raw text block.
     """
     word_count = payload.word_count
     if word_count is None:
         if payload.text is not None:
-            word_count = text_service.count_words(payload.text)
+            word_count = txt_service.count_words(payload.text)
         else:
             word_count = 0
 
-    minutes, seconds, label = text_service.calculate_reading_time(
+    minutes, seconds, label = txt_service.calculate_reading_time(
         word_count=word_count,
         words_per_minute=payload.words_per_minute,
     )

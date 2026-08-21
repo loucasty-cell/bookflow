@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 from typing import List, Optional, Dict, Any, Tuple
 from bs4 import BeautifulSoup
 import pypdf
+from fastapi import Depends
 
 from ..models.document import (
     NormalizedBook,
@@ -15,17 +16,24 @@ from ..models.document import (
     ParseResponse,
     DocumentValidationResponse,
 )
-from .text_service import text_service
-from ..core.config import settings
+from .text_service import TextService, get_text_service, text_service
+from ..core.config import Settings, get_settings, settings
 
 
 class DocumentService:
     """Parses local document bytes into normalized Bookflow book structures."""
 
-    @staticmethod
-    def validate_file(file_name: str, file_size_bytes: int) -> DocumentValidationResponse:
+    def __init__(
+        self,
+        text_srv: Optional[TextService] = None,
+        app_settings: Optional[Settings] = None,
+    ):
+        self.text_service = text_srv or text_service
+        self.settings = app_settings or settings
+
+    def validate_file(self, file_name: str, file_size_bytes: int) -> DocumentValidationResponse:
         """Validate file size and supported extensions."""
-        max_bytes = settings.max_upload_size_mb * 1024 * 1024
+        max_bytes = self.settings.max_upload_size_mb * 1024 * 1024
         if file_size_bytes > max_bytes:
             return DocumentValidationResponse(
                 valid=False,
@@ -393,3 +401,11 @@ class DocumentService:
 
 
 document_service = DocumentService()
+
+
+def get_document_service(
+    text_srv: TextService = Depends(get_text_service),
+    app_settings: Settings = Depends(get_settings),
+) -> DocumentService:
+    """Dependency provider returning a configured DocumentService instance."""
+    return DocumentService(text_srv=text_srv, app_settings=app_settings)

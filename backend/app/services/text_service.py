@@ -145,3 +145,8 @@ class TextService:
 
 
 text_service = TextService()
+
+
+def get_text_service() -> TextService:
+    """Dependency provider returning the default TextService instance."""
+    return text_service

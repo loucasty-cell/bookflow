@@ -63,6 +63,7 @@ class Settings(BaseSettings):
         validation_alias="OCR_PROMPT",
     )
 
+
     # Processing Limits
     max_upload_size_mb: int = 500
     max_batch_images: int = 32
@@ -70,3 +71,8 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def get_settings() -> Settings:
+    """Dependency provider returning the active application settings instance."""
+    return settings

@@ -5,6 +5,7 @@ import io
 import os
 import uuid
 from contextlib import asynccontextmanager
+from importlib import import_module
 from typing import Any, Literal
 
 from fastapi import FastAPI, HTTPException
@@ -43,8 +44,7 @@ class OCRRequest(BaseModel):
 
 
 def create_pipeline(profile: str) -> Any:
-    from paddleocr import PaddleOCR
-
+    PaddleOCR = import_module("paddleocr").PaddleOCR
     models = OCR_PROFILES[profile]
     return PaddleOCR(
         text_detection_model_name=models["detector"],
@@ -118,8 +118,7 @@ async def health() -> dict[str, Any]:
 
 @app.post("/ocr")
 async def ocr(request: OCRRequest) -> dict[str, Any]:
-    import numpy as np
-
+    np = import_module("numpy")
     if request.file_type != 1:
         raise HTTPException(status_code=400, detail="Only base64-encoded image input is supported.")
     try:

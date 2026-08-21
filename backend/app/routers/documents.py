@@ -1,9 +1,7 @@
-"""Document parsing and validation endpoints."""
-
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status
-from ..services.document_service import document_service
+from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, status
+from ..services.document_service import DocumentService, get_document_service
 from ..models.document import ParseResponse, DocumentValidationResponse
-from ..core.config import settings
+from ..core.config import Settings, get_settings
 
 router = APIRouter(prefix="/api/documents", tags=["Documents"])
 
@@ -12,14 +10,16 @@ router = APIRouter(prefix="/api/documents", tags=["Documents"])
 async def validate_document(
     file_name: str = Form(..., description="Name of the file"),
     file_size_bytes: int = Form(..., description="Size of file in bytes"),
+    doc_service: DocumentService = Depends(get_document_service),
 ):
     """Validate document format and file size against application constraints."""
-    return document_service.validate_file(file_name=file_name, file_size_bytes=file_size_bytes)
+    return doc_service.validate_file(file_name=file_name, file_size_bytes=file_size_bytes)
 
 
 @router.post("/parse", response_model=ParseResponse)
 async def parse_document(
     file: UploadFile = File(..., description="Document file (PDF, EPUB, TXT, MD)"),
+    doc_service: DocumentService = Depends(get_document_service),
 ):
     """
     Parse a document into the normalized Bookflow Book JSON structure
@@ -30,7 +30,7 @@ async def parse_document(
     file_size = len(contents)
 
     # Validate
-    validation = document_service.validate_file(file_name, file_size)
+    validation = doc_service.validate_file(file_name, file_size)
     if not validation.valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -38,7 +38,7 @@ async def parse_document(
         )
 
     # Parse
-    response = document_service.parse_document_file(
+    response = doc_service.parse_document_file(
         file_bytes=contents,
         file_name=file_name,
         file_kind=validation.kind,
