@@ -45,14 +45,19 @@ bookflow/
 |   |   `-- test_reader.py         # Reader utility tests
 |   |-- .env.example               # Backend configuration template
 |   |-- .venv/                     # Python 3.12 virtual environment (gitignored)
-|   |-- main.py                    # High-throughput vLLM OCR engine (DeepSeek-OCR-2 + SSE)
+|   |-- main.py                    # Optional configured Hugging Face OCR engine + SSE
 |   |-- requirements.txt           # Python dependency manifest
 |   |-- run.py                     # Entrypoint launcher script
 |   `-- README.md                  # Backend guide
+|-- app/                            # Next.js App Router entry
+|   |-- layout.jsx                  # Root HTML layout and metadata
+|   `-- page.jsx                    # Client-side App shell
 |-- src/                           # Frontend React application
 |   |-- assets/                    # Static brand assets (quill logo, intro video)
 |   |-- components/
-|   |   `-- OcrUploader.jsx        # Frontend OCR upload modal with SSE progress streaming
+|   |   |-- InterventionModal.jsx
+|   |   |-- OcrUploader.jsx        # Frontend OCR upload modal with SSE progress streaming
+|   |   `-- VariableRewardCapsule.jsx
 |   |-- features/
 |   |   |-- document-import/       # Client-side document parsers and OCR fallback
 |   |   |   |-- lib/
@@ -94,8 +99,10 @@ bookflow/
 |   |       |-- storage.js         # Browser localStorage wrappers
 |   |       |-- text.js            # Frontend text metrics and segmentation
 |   |       `-- index.js
+|   |-- store/
+|   |   |-- readerStore.js          # Zustand reader state (settings, progress, bookmarks, notes)
+|   |   `-- uiStore.js             # Zustand UI state (panels, modals, loading)
 |   |-- App.jsx                    # Root state composition & reading lifecycle
-|   |-- main.jsx                   # React root mount
 |   `-- styles.css                 # Responsive typography, atmosphere themes, layout
 |-- AGENTS.md                      # Agent rules and repository conventions
 |-- README.md                      # Project overview and quickstart
@@ -107,9 +114,8 @@ bookflow/
 |-- goals.md                       # Product roadmap and goal verification
 |-- pyrightconfig.json             # Pyright type checking config targeting backend/.venv
 |-- eslint.config.js               # Frontend linting rules (ignores .venv, __pycache__)
-|-- index.html                     # HTML template
-|-- package.json                   # Frontend dependencies and scripts
-`-- vite.config.js                 # Vite build configuration
+|-- package.json                   # Frontend dependencies and Next.js scripts
+`-- next.config.mjs                # Next.js build configuration
 ```
 
 ---
@@ -127,8 +133,8 @@ bookflow/
 
 ### Backend Layer (`backend/`)
 
-- **`main.py` (root)**: High-throughput OCR engine using DeepSeek-OCR-2 on vLLM. Handles PDF page rendering via PyMuPDF thread pool, concurrent batch OCR inference, SSE progress streaming, and background job management.
-- **`app/core/`**: Configuration management via Pydantic `BaseSettings`, environment variables, CORS configuration, and OCR model presets.
+- **`main.py` (root)**: Optional remote OCR engine using the model configured in `OCR_MODEL`. Handles PDF page rendering via PyMuPDF thread pool, concurrent batch inference, SSE progress streaming, and background job management.
+- **`app/core/`**: Configuration management via Pydantic `BaseSettings`, environment variables, CORS configuration, and the selected OCR model.
 - **`app/models/`**: Pydantic v2 schemas with `serialization_alias` + `validation_alias` for snake_case Python / camelCase JSON interop. Validates Normalized Books, OCR requests/responses, and reader export bundles.
 - **`app/services/`**:
   - `huggingface_ocr.py`: Connects to Hugging Face Vision/OCR models via Inference API, applies image preprocessing, handles retry logic, and parses model outputs.
@@ -145,7 +151,7 @@ bookflow/
    Document parsing runs entirely inside the browser using JavaScript libraries (PDF.js, JSZip) to guarantee private, zero-network reading.
 
 2. **High-Throughput Visual Scanning (Opt-in)**:
-   Frontend uploads a PDF to `POST /api/ocr/scan`, then subscribes to `GET /api/ocr/progress/{job_id}` via SSE. The backend renders pages at 96 DPI, dispatches concurrent batches to DeepSeek-OCR-2 on vLLM, and streams per-page results in real time.
+   Frontend uploads a PDF to `POST /api/ocr/scan`, then subscribes to `GET /api/ocr/progress/{job_id}` via SSE. The backend renders pages at 96 DPI, dispatches concurrent batches to the configured Hugging Face model, and streams per-page results in real time.
 
 3. **Legacy Server-Accelerated OCR (Opt-in)**:
    When Hugging Face OCR is requested, frontend sends image bytes or PDF slices to `POST /api/ocr/image` or `POST /api/ocr/pdf`, which leverages Hugging Face Vision models.
@@ -161,7 +167,7 @@ bookflow/
 | --- | --- |
 | New client-side file parser | `src/features/document-import/lib/` |
 | New server-side file parser | `backend/app/services/document_service.py` |
-| New vLLM OCR model integration | `backend/main.py` |
+| Change remote OCR model or endpoint | `.env` (`OCR_MODEL`, `HF_INFERENCE_URL`) |
 | New Hugging Face Vision/OCR model integration | `backend/app/services/huggingface_ocr.py` |
 | New backend API route | `backend/app/routers/` |
 | Reader visual theme or CSS variable | `src/styles.css` |

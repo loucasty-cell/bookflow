@@ -22,7 +22,9 @@ npm run build
 ### Backend Diagnostics
 
 ```bash
-# Run backend pytest suite
+# Run backend pytest suite (using uv or local venv)
+uv run --with-requirements backend/requirements.txt pytest backend/tests/ -v
+# Or with active virtual environment:
 pytest backend/tests
 
 # Run backend with detailed logging
@@ -51,7 +53,7 @@ curl -s http://127.0.0.1:8000/api/health
 ### Symptom: `503 Model is Loading`
 - **Root Cause**: Serverless Hugging Face Inference models cold start when called after idle periods.
 - **Resolution**: The `HuggingFaceOCRService` automatically reads the `estimated_time` header/payload and retries up to 3 times with exponential backoff.
-- **Tip**: For high-volume production, configure a dedicated Inference Endpoint on Hugging Face or use fast-loading models like `microsoft/trocr-base-stage1`.
+- **Tip**: For high-volume production, configure a dedicated Inference Endpoint on Hugging Face and set `HF_INFERENCE_URL` to its exact URL.
 
 ### Symptom: `429 Rate Limit Exceeded`
 - **Root Cause**: Exceeded free-tier inference request quotas.
@@ -64,8 +66,8 @@ curl -s http://127.0.0.1:8000/api/health
 - **Root Cause**: Poor image contrast, low resolution, or complex multi-column layout.
 - **Resolution**:
   1. Ensure the image is right-side up; `HuggingFaceOCRService.preprocess_image()` automatically applies EXIF transpose.
-  2. For dense book text, switch to `microsoft/trocr-large-printed` or `stepfun-ai/GOT-OCR2_0`.
-  3. For academic papers with equations, switch to `facebook/nougat-base`.
+  2. Confirm the model in `OCR_MODEL` is deployed by the selected Inference Provider and supports image-to-text input.
+  3. If the provider does not support the model, use private on-device OCR or configure a compatible dedicated endpoint.
 
 ---
 
@@ -78,8 +80,8 @@ curl -s http://127.0.0.1:8000/api/health
   2. If using the backend, use `POST /api/ocr/pdf` with `force_ocr=true` to process the pages via Hugging Face OCR.
 
 ### Symptom: PDF.js Worker Fails to Load
-- **Root Cause**: Path mismatch for `pdf.worker.min.mjs` in Vite build.
-- **Resolution**: Verify `pdfjs-dist` worker configuration in `src/features/document-import/lib/pdfParser.js`. Ensure dynamic import uses `@pdfjs-dist/build/pdf.worker.min.mjs` or bundled asset paths.
+- **Root Cause**: Path mismatch for `pdf.worker.min.mjs` in Next.js build.
+- **Resolution**: Verify `pdfjs-dist` worker configuration in `src/features/document-import/lib/pdfParser.js`. The `scripts/copy-assets.js` script copies the worker to `public/` at build time.
 
 ### Symptom: EPUB Parsing Errors
 - **Root Cause**: Non-standard EPUB structure or missing `META-INF/container.xml`.
@@ -117,7 +119,7 @@ curl -s http://127.0.0.1:8000/api/health
 
 - [ ] `npm run lint` passes with 0 warnings/errors.
 - [ ] `npm run test` passes all unit tests.
-- [ ] `npm run build` generates clean production assets in `dist/`.
+- [ ] `npm run build` generates a clean Next.js production build in `.next/`.
 - [ ] `pytest backend/tests` passes all backend test suites.
 - [ ] No API keys, credentials, or private documents in source code or `.env`.
 - [ ] No emojis in code or commit messages.

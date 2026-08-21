@@ -18,14 +18,22 @@ import {
   RefreshCw,
   Eye,
   FileCode,
-  Key,
 } from 'lucide-react';
 
-const API_BASE = (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_API_URL) || 'http://localhost:8000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-export function OcrUploader({ onDocumentLoaded }) {
+export function ocrRequestErrorMessage(error, apiBase = API_BASE) {
+  if (error instanceof TypeError) {
+    return `Cannot reach the OCR backend at ${apiBase}. Start it from the backend folder with "python run.py", then retry.`;
+  }
+
+  return error instanceof Error && error.message
+    ? error.message
+    : 'Failed to start OCR scan.';
+}
+
+export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
   const [file, setFile] = useState(null);
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('bookflow:hf_api_key') || '');
   const [isDragging, setIsDragging] = useState(false);
   const [jobId, setJobId] = useState(null);
   const [status, setStatus] = useState('idle'); // 'idle' | 'uploading' | 'processing' | 'completed' | 'failed'
@@ -109,21 +117,11 @@ export function OcrUploader({ onDocumentLoaded }) {
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('model_id', 'deepseek-ai/DeepSeek-OCR-2');
     formData.append('batch_size', '16');
-    if (apiKey && apiKey.trim()) {
-      formData.append('api_key', apiKey.trim());
-    }
 
     try {
-      const headers = {};
-      if (apiKey && apiKey.trim()) {
-        headers['Authorization'] = `Bearer ${apiKey.trim()}`;
-      }
-
       const response = await fetch(`${API_BASE}/api/ocr/scan`, {
         method: 'POST',
-        headers,
         body: formData,
       });
 
@@ -144,7 +142,7 @@ export function OcrUploader({ onDocumentLoaded }) {
       // Connect to Server-Sent Events (SSE) stream
       connectEventSource(newJobId);
     } catch (err) {
-      setError(err.message || 'Failed to start OCR scan.');
+      setError(ocrRequestErrorMessage(err));
       setStatus('failed');
     }
   };
@@ -223,7 +221,7 @@ export function OcrUploader({ onDocumentLoaded }) {
 
         if (onDocumentLoaded && data.markdown) {
           onDocumentLoaded({
-            title: file ? file.name.replace('.pdf', '') : 'DeepSeek OCR Document',
+            title: file ? file.name.replace('.pdf', '') : 'OCR Document',
             content: data.markdown,
             totalPages: data.total_pages,
             pages: data.pages,
@@ -335,7 +333,7 @@ export function OcrUploader({ onDocumentLoaded }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${file ? file.name.replace('.pdf', '') : 'document'}_deepseek_ocr.md`;
+    a.download = `${file ? file.name.replace('.pdf', '') : 'document'}_ocr.md`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -356,11 +354,11 @@ export function OcrUploader({ onDocumentLoaded }) {
       <div className="ocr-header">
         <div className="ocr-title-badge">
           <Zap className="w-4 h-4 text-amber-500" />
-          <span>DeepSeek-OCR-2 Accelerated Engine</span>
+          <span>Optional Hugging Face OCR Endpoint</span>
         </div>
-        <h2 className="ocr-title">High-Throughput Book Digitizer</h2>
+        <h2 className="ocr-title">Accelerated Book Digitizer</h2>
         <p className="ocr-subtitle">
-          Process 400–600 page books at lightning speed. Rendered in-memory at 96 DPI and batched through vLLM.
+          Uses the compatible OCR endpoint configured on your backend. If it is unavailable, switch to private on-device English OCR.
         </p>
       </div>
 
@@ -395,58 +393,20 @@ export function OcrUploader({ onDocumentLoaded }) {
                 <p className="dropzone-prompt">
                   <strong>Click to select a PDF</strong> or drag & drop here
                 </p>
-                <span className="dropzone-hint">Supports scanned book PDFs up to 600+ pages</span>
+                <span className="dropzone-hint">Scanned PDF pages are sent only after you start this optional scan</span>
               </>
             )}
           </div>
         </div>
       )}
 
-      {/* Start Button & API Key Input */}
+      {/* Start Button */}
       {status === 'idle' && (
         <div className="ocr-actions">
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              width: '100%',
-              maxWidth: '480px',
-              margin: '0 auto 1rem auto',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '8px',
-              padding: '0.4rem 0.75rem',
-            }}
-          >
-            <Key className="w-4 h-4 text-zinc-400 flex-shrink-0" />
-            <input
-              type="password"
-              placeholder="Hugging Face API Token (optional if set in backend .env)"
-              value={apiKey}
-              onChange={(e) => {
-                const val = e.target.value;
-                setApiKey(val);
-                try {
-                  localStorage.setItem('bookflow:hf_api_key', val);
-                } catch {
-                  // localStorage optional
-                }
-              }}
-              style={{
-                width: '100%',
-                background: 'transparent',
-                border: 'none',
-                outline: 'none',
-                color: 'inherit',
-                fontSize: '0.85rem',
-              }}
-            />
-          </div>
           {file && (
             <button className="btn-primary" onClick={startScan}>
               <Zap className="w-4 h-4 mr-2" />
-              Start DeepSeek-OCR-2 Scan
+              Try configured OCR endpoint
             </button>
           )}
         </div>
@@ -459,6 +419,14 @@ export function OcrUploader({ onDocumentLoaded }) {
           <div className="error-text">
             <strong>Scan Error:</strong> {error}
           </div>
+          {file && onUseLocalOcr && (
+            <button className="btn-secondary" onClick={() => onUseLocalOcr(file)}>
+              Use private on-device OCR
+            </button>
+          )}
+          <button className="btn-secondary" onClick={handleReset}>
+            Try again
+          </button>
           <button className="btn-icon" onClick={() => setError(null)}>
             &times;
           </button>
@@ -543,7 +511,7 @@ export function OcrUploader({ onDocumentLoaded }) {
                 onClick={() => {
                   const fullMarkdown = pages.map((p) => `<!-- Page ${p.page_number} -->\n\n${p.text}`).join('\n\n---\n\n');
                   onDocumentLoaded({
-                    title: file ? file.name.replace('.pdf', '') : 'DeepSeek OCR Document',
+                    title: file ? file.name.replace('.pdf', '') : 'OCR Document',
                     content: fullMarkdown,
                     totalPages: pages.length,
                     pages: pages,

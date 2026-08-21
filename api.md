@@ -10,7 +10,7 @@ This document specifies the internal JavaScript interfaces, browser-storage cont
     |-> Browser File API
     |-> (Option A: Local Processing) Local JS Parsers (PDF.js / JSZip / Tesseract WASM)
     |-> (Option B: Backend Fast Processing) FastAPI Backend (/api/documents/parse or /api/ocr/...)
-          |-> Hugging Face Vision Inference API (TrOCR / Nougat / GOT-OCR 2.0)
+          |-> Hugging Face Inference Provider (model selected by OCR_MODEL)
     |-> Normalized Book Object
     |-> React Reader State (Focus Rail, Active Sentence)
     `-> localStorage (Reading Progress, Bookmarks, Notes)
@@ -170,9 +170,9 @@ Returns server capabilities, supported file formats, and OCR model configuration
   "supported_formats": [".pdf", ".epub", ".txt", ".md", ".markdown"],
   "max_upload_size_mb": 50,
   "hf_ocr": {
-    "default_model": "microsoft/trocr-base-stage1",
+    "default_model": "<configured-model-or-empty>",
     "token_configured": true,
-    "available_models_count": 4
+    "available_models_count": 0
   }
 }
 ```
@@ -182,39 +182,14 @@ Returns server capabilities, supported file formats, and OCR model configuration
 ### 5.2 Hugging Face OCR & Vision Endpoints
 
 #### `GET /api/ocr/models`
-Lists recommended Hugging Face Image-to-Text vision models.
+Returns the single model configured through `OCR_MODEL`, or an empty list when remote OCR is disabled.
 
 **Response** (`200 OK`):
 ```json
 {
-  "defaultModel": "microsoft/trocr-base-stage1",
+  "defaultModel": "<configured-model-or-empty>",
   "hfTokenConfigured": true,
-  "availableModels": [
-    {
-      "id": "microsoft/trocr-base-stage1",
-      "name": "TrOCR Base (Stage 1)",
-      "description": "Fast and lightweight transformer OCR for printed and handwritten text.",
-      "recommendedFor": "General single/multi-line text segments and pages."
-    },
-    {
-      "id": "microsoft/trocr-large-printed",
-      "name": "TrOCR Large (Printed)",
-      "description": "High-accuracy transformer OCR optimized for printed book text.",
-      "recommendedFor": "High-fidelity book pages and dense typography."
-    },
-    {
-      "id": "stepfun-ai/GOT-OCR2_0",
-      "name": "GOT-OCR 2.0",
-      "description": "General OCR Theory 2.0 model handling plain text, formatting, and tables.",
-      "recommendedFor": "Full page scans with complex formatting."
-    },
-    {
-      "id": "facebook/nougat-base",
-      "name": "Nougat Base",
-      "description": "Neural Optical Understanding for Academic Documents.",
-      "recommendedFor": "Academic papers and technical books."
-    }
-  ]
+  "availableModels": []
 }
 ```
 
@@ -236,7 +211,7 @@ Performs fast image-to-text OCR extraction on a single uploaded image.
     "Extracted text from image."
   ],
   "confidence": null,
-  "modelUsed": "microsoft/trocr-base-stage1",
+  "modelUsed": "<configured-model>",
   "latencyMs": 142.5,
   "success": true,
   "error": null
@@ -260,20 +235,20 @@ Performs concurrent OCR text extraction on multiple image files.
       "pageNumber": 1,
       "text": "Page 1 text",
       "paragraphs": ["Page 1 text"],
-      "modelUsed": "microsoft/trocr-base-stage1",
+      "modelUsed": "<configured-model>",
       "latencyMs": 120.0,
       "success": true,
       "error": null
     }
   ],
   "totalImages": 1,
-  "modelUsed": "microsoft/trocr-base-stage1",
+  "modelUsed": "<configured-model>",
   "totalLatencyMs": 125.4
 }
 ```
 
 #### `POST /api/ocr/pdf`
-Processes a scanned PDF document: uses native text when available, and automatically dispatches scanned/image pages to Hugging Face Vision OCR models.
+Processes a scanned PDF document: uses native text when available, and dispatches scanned/image pages to the model configured in `OCR_MODEL`.
 
 - **Content-Type**: `multipart/form-data`
 - **Form Fields**:
@@ -291,7 +266,7 @@ Processes a scanned PDF document: uses native text when available, and automatic
       "pageNumber": 1,
       "text": "Page 1 contents...",
       "paragraphs": ["Paragraph 1", "Paragraph 2"],
-      "modelUsed": "microsoft/trocr-base-stage1",
+      "modelUsed": "<configured-model>",
       "latencyMs": 210.0,
       "success": true,
       "error": null
@@ -302,7 +277,7 @@ Processes a scanned PDF document: uses native text when available, and automatic
   "failedPages": 0,
   "totalWordCount": 240,
   "totalLatencyMs": 215.3,
-  "modelUsed": "microsoft/trocr-base-stage1",
+  "modelUsed": "<configured-model>",
   "error": null
 }
 ```

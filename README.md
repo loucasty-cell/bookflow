@@ -18,8 +18,9 @@ Designed with cognitive ergonomics and behavioral product design, Bookflow helps
 - **Pin & Reflect**: Press `Escape`, `Space`, or tap the active card to freeze scroll and take contextual margin notes.
 - **Calm Atmospheres**: Switch effortlessly between warm **Paper** and near-black **Dusk** dark mode.
 
-### 2. High-Throughput Visual OCR Engine
-- **DeepSeek-OCR-2 Backend**: Batch-processes scanned PDFs in memory utilizing PyMuPDF and Hugging Face inference.
+### 2. Visual OCR
+- **Private Local OCR**: Scanned English PDF pages use bundled Tesseract.js assets in the browser by default.
+- **Optional Hugging Face OCR Backend**: Batch-processes scanned PDFs through a configured serverless Inference Provider model or a compatible dedicated/self-hosted endpoint.
 - **Real-Time SSE Streaming**: Live page extraction updates, word count tracking, and heartbeat keepalives.
 - **Intelligent Fast-Path**: Digital PDF pages with selectable text automatically bypass rasterization for sub-millisecond extraction.
 
@@ -61,6 +62,8 @@ start_backend.bat
 ```
 *(The backend will run on `http://localhost:8000`)*
 
+The standard importer and local English OCR do not require the backend. Optional remote scanning is disabled until you set `OCR_MODEL` to a currently supported Hugging Face serverless image-to-text model. Keep the default `HF_INFERENCE_URL` for the public Inference Provider, or replace it with the exact URL of a compatible dedicated endpoint.
+
 ### 2. Launch the Frontend Application
 
 In a separate terminal, install the Node modules and start the Next.js development server:
@@ -87,4 +90,4 @@ npm run build   # Production Turbopack build
 
 ## 🛡 Privacy Invariant
 
-Bookflow processes standard text extraction entirely on-device by default. The DeepSeek OCR visual engine utilizes the Hugging Face Inference API seamlessly—requiring your own `.env` API key—while strictly managing memory lifetimes to prevent unbounded data retention.
+Bookflow processes standard text extraction and local English OCR on-device by default. The optional remote OCR flow sends scanned page images to the configured backend only when the user explicitly starts an accelerated scan. A Hugging Face token alone is not enough: `OCR_MODEL` must identify a model currently exposed by the selected endpoint.

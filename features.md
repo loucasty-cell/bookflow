@@ -42,8 +42,8 @@ Bookflow is a private, high-focus document reading environment with a React fron
 
 ## 3. High-Throughput Visual OCR Engine
 
-### DeepSeek-OCR-2 Dual-Router Inference (Primary)
-- **`POST /api/ocr/scan`**: In-memory 96-144 DPI rendering via PyMuPDF with concurrent 16-page batching dispatched to Hugging Face Inference API and Router (`https://api-inference.huggingface.co/models/deepseek-ai/DeepSeek-OCR-2`).
+### Configured Hugging Face Serverless OCR (Opt-in)
+- **`POST /api/ocr/scan`**: In-memory 96 DPI rendering via PyMuPDF with concurrent page batching dispatched to the model configured in `OCR_MODEL` through the selected Hugging Face endpoint.
 - **Real-Time SSE Streaming**: `GET /api/ocr/progress/{job_id}` streams page completions, velocity (pages/sec), word counts, and 8s heartbeat keepalives.
 - **Native Text Microsecond Fast Path**: Selectable PDF pages with >= 15 words bypass rasterization, processing 600+ page documents in under 1 second.
 - **Active Job Cancellation**: `POST /api/ocr/cancel/{job_id}` aborts processing and frees resources immediately.

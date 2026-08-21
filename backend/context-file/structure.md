@@ -46,7 +46,7 @@ backend/
 |   `-- test_reader.py           # Reader utilities tests
 |-- .env.example                 # Configuration template
 |-- .venv/                       # Python 3.12 virtual environment (gitignored)
-|-- main.py                      # High-throughput vLLM OCR engine (DeepSeek-OCR-2 + SSE)
+|-- main.py                      # Optional configured Hugging Face OCR engine + SSE
 |-- requirements.txt             # Python dependency manifest
 |-- run.py                       # CLI application launcher
 `-- README.md                    # Backend setup and documentation
@@ -56,10 +56,10 @@ backend/
 
 ## 2. Dual Entry Points
 
-### `backend/main.py` (High-Throughput OCR Engine)
-The standalone FastAPI application powering DeepSeek-OCR-2 visual scanning:
+### `backend/main.py` (Optional Remote OCR Engine)
+The standalone FastAPI application for explicitly requested remote visual scanning:
 - Renders PDF pages to 96 DPI JPEG in-memory via PyMuPDF with thread pool executor.
-- Dispatches concurrent batches (default 16 pages) to a vLLM inference server via `AsyncOpenAI`.
+- Verifies Hugging Face provider support or uses an explicitly configured compatible dedicated endpoint.
 - Streams real-time progress to the frontend via Server-Sent Events (SSE) with heartbeat keepalives.
 - Manages background OCR jobs with in-memory thread-safe storage and subscriber queues.
 - Mounts the legacy `app/routers/` when available via conditional import.
@@ -75,7 +75,7 @@ The original modular FastAPI application with router-based architecture:
 
 ### Core (`app/core/`)
 - Encapsulates environment variable parsing via Pydantic `BaseSettings`.
-- Defines immutable configuration constants (max file sizes, batch limits, curated model definitions).
+- Defines configuration constants (max file sizes, batch limits, and the selected remote OCR model).
 
 ### Models (`app/models/`)
 - Declares type-safe data contracts using Pydantic v2 `BaseModel` with `ConfigDict(populate_by_name=True)`.
@@ -109,8 +109,7 @@ The original modular FastAPI application with router-based architecture:
 
 | Extension | Target File | Pattern |
 | --- | --- | --- |
-| Add vLLM OCR model | `backend/main.py` | Update `OCR_MODEL` env var or `model_id` form field |
-| Add Hugging Face Vision model | `app/core/config.py` | Add entry to `available_hf_ocr_models` |
+| Change remote OCR model or endpoint | `.env` | Update `OCR_MODEL` or `HF_INFERENCE_URL` after checking provider support |
 | Add document format parser | `app/services/document_service.py` | Implement parser method + update `validate_file` |
 | Add endpoint router | `app/routers/` + `app/main.py` | Create router module and register in `app.include_router` |
 | Add data model | `app/models/` | Add Pydantic schema with `populate_by_name=True` and `serialization_alias` + `validation_alias` |

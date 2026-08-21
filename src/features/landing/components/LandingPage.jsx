@@ -104,7 +104,7 @@ export function LandingPage({
           </div>
 
           <p className="import-guidance">
-            PDF, EPUB, plain text, or Markdown up to 50 MB. Scanned English PDFs can be read with on-device OCR or high-throughput DeepSeek-OCR-2 acceleration.
+            PDF, EPUB, plain text, or Markdown up to 50 MB. Scanned English PDFs use private on-device OCR, with an optional configured Hugging Face serverless OCR endpoint.
           </p>
 
           <div className="hero-actions">
@@ -123,10 +123,10 @@ export function LandingPage({
                   color: "#ffffff",
                 }}
               >
-                <Zap size={16} /> DeepSeek OCR <ChevronRight size={16} />
+                <Zap size={16} /> Optional Hugging Face OCR <ChevronRight size={16} />
               </button>
             )}
-            <span><ShieldCheck size={15} /> Nothing leaves your device</span>
+            <span><ShieldCheck size={15} /> Standard imports stay on your device</span>
           </div>
 
           {error && (

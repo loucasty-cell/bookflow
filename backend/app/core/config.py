@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     app_name: str = "Bookflow Backend"
     app_version: str = "2.0.0"
     environment: str = "development"
-    debug: bool = False
+    debug: bool = Field(default=False, validation_alias="BOOKFLOW_DEBUG")
     host: str = "0.0.0.0"
     port: int = 8000
 
@@ -30,7 +30,6 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-        "*",
     ]
 
     @field_validator("cors_origins", mode="before")
@@ -40,49 +39,22 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in v.split(",") if origin.strip()]
         return v
 
+    @field_validator("ocr_model", mode="before")
+    @classmethod
+    def normalize_ocr_model(cls, v: str) -> str:
+        return (v or "").strip()
+
     # Hugging Face Settings for OCR
     hf_token: str = Field(default_factory=lambda: os.getenv("HF_TOKEN", os.getenv("HF_API_KEY", "")))
     hf_api_key: str = Field(default_factory=lambda: os.getenv("HF_TOKEN", os.getenv("HF_API_KEY", "")))
-    ocr_model: str = Field(default_factory=lambda: os.getenv("OCR_MODEL", "deepseek-ai/DeepSeek-OCR-2"))
+    ocr_model: str = Field(default="", validation_alias="OCR_MODEL")
     ocr_engine_url: str = Field(default_factory=lambda: os.getenv("OCR_ENGINE_URL", "http://ocr-engine:8000/v1"))
-    hf_ocr_model: str = "deepseek-ai/DeepSeek-OCR-2"
     hf_api_timeout: float = 60.0
     hf_max_retries: int = 3
-    hf_inference_url_template: str = "https://api-inference.huggingface.co/models/{model_id}"
-
-    # Recommended HF OCR models list
-    available_hf_ocr_models: List[dict] = [
-        {
-            "id": "deepseek-ai/DeepSeek-OCR-2",
-            "name": "DeepSeek-OCR-2",
-            "description": "High-throughput visual transformer OCR with structured Markdown formatting.",
-            "recommended_for": "Dense 400-600 page books, technical documents, and multi-column layouts.",
-        },
-        {
-            "id": "stepfun-ai/GOT-OCR2_0",
-            "name": "GOT-OCR 2.0",
-            "description": "General OCR Theory 2.0 model handling plain text, formatting, and tables.",
-            "recommended_for": "Full page scans with complex formatting.",
-        },
-        {
-            "id": "microsoft/trocr-large-printed",
-            "name": "TrOCR Large (Printed)",
-            "description": "High-accuracy transformer OCR optimized for printed book text.",
-            "recommended_for": "High-fidelity book pages and dense typography.",
-        },
-        {
-            "id": "microsoft/trocr-base-stage1",
-            "name": "TrOCR Base (Stage 1)",
-            "description": "Fast and lightweight transformer OCR for printed and handwritten text.",
-            "recommended_for": "General single/multi-line text segments and pages.",
-        },
-        {
-            "id": "facebook/nougat-base",
-            "name": "Nougat Base",
-            "description": "Neural Optical Understanding for Academic Documents (extracts text & formulas).",
-            "recommended_for": "Academic papers and technical books.",
-        },
-    ]
+    hf_inference_url_template: str = Field(
+        default="https://router.huggingface.co/hf-inference/models/{model_id}",
+        validation_alias="HF_INFERENCE_URL",
+    )
 
     # Processing Limits
     max_upload_size_mb: int = 500

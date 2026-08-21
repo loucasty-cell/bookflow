@@ -1148,8 +1148,8 @@ function App() {
         };
       });
       const bookDoc = {
-        title: ocrResult.title || "DeepSeek OCR Book",
-        author: "DeepSeek-OCR-2",
+        title: ocrResult.title || "OCR Document",
+        author: "Hugging Face OCR",
         kind: "PDF",
         chapters: docChapters,
       };
@@ -1199,7 +1199,13 @@ function App() {
                 </button>
               </div>
               <Suspense fallback={null}>
-                <OcrUploader onDocumentLoaded={handleOcrDocumentLoaded} />
+                <OcrUploader
+                  onDocumentLoaded={handleOcrDocumentLoaded}
+                  onUseLocalOcr={(file) => {
+                    setOcrOpen(false);
+                    handleFile(file);
+                  }}
+                />
               </Suspense>
             </div>
           </div>

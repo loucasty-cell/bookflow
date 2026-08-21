@@ -36,7 +36,7 @@ class HuggingFaceOCRService:
         max_cache_size: int = 1000,
     ):
         self.api_key = api_key or settings.hf_api_key
-        self.default_model = default_model or settings.hf_ocr_model
+        self.default_model = (settings.ocr_model if default_model is None else default_model).strip()
         self.timeout = timeout if timeout is not None else settings.hf_api_timeout
         self.max_retries = max_retries if max_retries is not None else settings.hf_max_retries
         self.base_url_template = settings.hf_inference_url_template
@@ -123,8 +123,22 @@ class HuggingFaceOCRService:
         """
         Send an image to Hugging Face Inference API for OCR text extraction.
         """
-        active_model = model_id or self.default_model
+        active_model = (model_id or self.default_model).strip()
         start_time = time.perf_counter()
+
+        if not active_model.strip():
+            return OCRPageResult(
+                page_number=page_number,
+                text="",
+                paragraphs=[],
+                model_used="",
+                latency_ms=0.0,
+                success=False,
+                error=(
+                    "No remote OCR model is configured. Set OCR_MODEL in backend/.env "
+                    "to a Hugging Face serverless image-to-text model."
+                ),
+            )
 
         processed_bytes = self.preprocess_image(image_bytes)
         img_hash = hashlib.sha256(processed_bytes).hexdigest()
@@ -213,6 +227,15 @@ class HuggingFaceOCRService:
                         "Hugging Face API rate limit reached (HTTP 429). Please retry shortly."
                     )
 
+                if response.status_code in (400, 403, 404):
+                    try:
+                        detail = response.json().get("error") or response.text
+                    except Exception:
+                        detail = response.text
+                    raise ValueError(
+                        f"Hugging Face does not provide {active_model} through this endpoint: {detail}"
+                    )
+
                 response.raise_for_status()
 
             except Exception as exc:
@@ -220,6 +243,8 @@ class HuggingFaceOCRService:
                 logger.warning(
                     f"Attempt {attempt}/{self.max_retries} failed for model {active_model}: {exc}"
                 )
+                if any(code in last_error for code in ("400", "401", "403", "404")):
+                    break
                 if attempt < self.max_retries:
                     await asyncio.sleep(1.0 * attempt)
 
@@ -260,15 +285,16 @@ class HuggingFaceOCRService:
         return list(results)
 
     def get_available_models(self) -> List[HFModelInfo]:
-        """Return curated list of high-performance Vision and OCR models on Hugging Face."""
+        """Return the single model configured for this backend, when present."""
+        if not self.default_model:
+            return []
         return [
             HFModelInfo(
-                id=m["id"],
-                name=m["name"],
-                description=m["description"],
-                recommended_for=m["recommended_for"],
+                id=self.default_model,
+                name=self.default_model,
+                description="Configured Hugging Face serverless image-to-text model.",
+                recommended_for="Use a model whose Inference Provider mapping supports image-to-text requests.",
             )
-            for m in settings.available_hf_ocr_models
         ]
 
 

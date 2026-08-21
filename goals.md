@@ -31,8 +31,8 @@ Bookflow transforms long-form reading into a calm, sustainable, and habit-formin
 | **Scroll Intent Accumulator** | Complete | Trackpad dampening to eliminate jitter |
 | **Pinned Reading State** | Complete | Lock focus with `Escape`, `Space`, or tap |
 | **Notes & Bookmarks** | Complete | Local browser storage with chapter anchors |
-| **Fast Visual OCR** | Complete | DeepSeek-OCR-2 via FastAPI with SSE progress streaming |
-| **Dual-Router HF Failover** | Complete | Automatic fallback between Inference API and HF Router |
+| **Fast Visual OCR** | Opt-in | Configured Hugging Face serverless model via FastAPI with SSE progress streaming |
+| **Hugging Face Provider Check** | Complete | Rejects models that are not exposed by the selected Inference Provider |
 | **Instant Intro Skip** | Complete | Click, keydown, and Skip button on opening video |
 | **Cross-Page Hierarchy** | Complete | Dynamic chapter hierarchy reconstruction from `# Headings` |
 | **Type Safety & Testing** | Complete | Pyright strict typing, Pydantic v2 aliases, 33 Vitest tests |
@@ -54,5 +54,5 @@ Bookflow transforms long-form reading into a calm, sustainable, and habit-formin
 - Enable time-shifted reaction drift capsules for synchronized reader discovery.
 
 ### Phase 4: Local ONNX Inference & Layout Geometry
-- Add INT8 quantized local ONNX OCR models (`got-ocr2.onnx`) for air-gapped environments.
+- Add an INT8 quantized local ONNX OCR model for air-gapped environments.
 - Add spatial multi-column layout sorting to eliminate column interleaving.

@@ -28,8 +28,8 @@ async def get_info():
         "supported_formats": [".pdf", ".epub", ".txt", ".md", ".markdown"],
         "max_upload_size_mb": settings.max_upload_size_mb,
         "hf_ocr": {
-            "default_model": settings.hf_ocr_model,
+            "default_model": settings.ocr_model,
             "token_configured": bool(settings.hf_api_key and settings.hf_api_key.strip()),
-            "available_models_count": len(settings.available_hf_ocr_models),
+            "available_models_count": 1 if settings.ocr_model else 0,
         },
     }

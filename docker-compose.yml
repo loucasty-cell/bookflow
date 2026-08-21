@@ -3,7 +3,7 @@ services:
     image: vllm/vllm-openai:latest
     container_name: bookflow-ocr-engine
     command: >
-      --model deepseek-ai/DeepSeek-OCR-2
+      --model ${OCR_MODEL:?Set OCR_MODEL to a compatible self-hosted model before starting the GPU service}
       --trust-remote-code
       --port 8000
       --max-model-len 4096
@@ -44,7 +44,7 @@ services:
       - "8000:8000"
     environment:
       - OCR_ENGINE_URL=http://ocr-engine:8000/v1
-      - OCR_MODEL=deepseek-ai/DeepSeek-OCR-2
+      - OCR_MODEL=${OCR_MODEL:?Set OCR_MODEL to the same model served by the GPU service}
       - HF_TOKEN=${HF_TOKEN}
       - HF_API_KEY=${HF_TOKEN}
       - ENVIRONMENT=production

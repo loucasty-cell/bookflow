@@ -12,9 +12,9 @@ Comprehensive technical reference, architectural patterns, and production engine
 - **Thread Pool CPU Offloading**: CPU-intensive PyMuPDF page rasterization and text extraction offloaded to `concurrent.futures.ThreadPoolExecutor(max_workers=min(32, cpu_count * 4))` to ensure zero event loop lag.
 - **Persistent HTTP Client**: Connection-pooled `httpx.AsyncClient` with custom timeouts, header customization, and exponential backoff retry mechanics.
 
-### 1.2 Vision OCR Engine with Hugging Face Multi-Router Failover
-- **Dual Router Resolution**: Automatically attempts the primary Hugging Face Inference API (`https://api-inference.huggingface.co/models/{model_id}`) and seamlessly falls back to the modern HF Router (`https://router.huggingface.co/hf-inference/models/{model_id}`) to prevent routing and DNS dropouts.
-- **DeepSeek-OCR-2 Integration**: Ingests visual book pages, passes optimized JPEG buffers, and parses structured Markdown outputs (`# Headings`, subheadings, paragraphs, bullet points).
+### 1.2 Optional Remote Vision OCR
+- **Provider Preflight**: Checks current Hugging Face provider mappings before uploading scanned page images.
+- **Endpoint Flexibility**: Uses the configured serverless provider URL or accepts an exact compatible dedicated Hugging Face endpoint URL without appending a model path.
 - **Cold-Start & Rate Limit Recovery**: Handles HTTP 503 (model loading) by reading `estimated_time` with adaptive sleep, and backs off gracefully on HTTP 429 rate limits.
 - **Native Text Microsecond Fast-Path**: Selectable PDF pages with >= 15 words bypass visual rasterization, returning native text in < 1ms to process 500+ page books rapidly.
 - **Token Ingestion Flexibility**: Supports API tokens from environment variables (`HF_TOKEN` / `HF_API_KEY`), request forms (`api_key`), or headers (`Authorization: Bearer`, `X-HF-Token`).

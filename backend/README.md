@@ -1,10 +1,10 @@
 # Bookflow FastAPI Backend
 
-High-performance Python backend for Bookflow providing document parsing, text segmentation, reading metrics, and fast Image-to-Text OCR scanning powered by Hugging Face Vision models.
+Python backend for Bookflow providing document parsing, text segmentation, reading metrics, and optional remote OCR integration.
 
 ## Features
 
-- **Hugging Face Vision OCR**: Fast image-to-text text extraction using models such as `microsoft/trocr-base-stage1`, `microsoft/trocr-large-printed`, `stepfun-ai/GOT-OCR2_0`, and `facebook/nougat-base`.
+- **Optional Remote OCR**: Sends scanned pages only when explicitly requested and verifies provider support before processing.
 - **Document Processing**: Parses PDF, EPUB, Markdown, and TXT documents into normalized Bookflow book structures.
 - **Text & Reading Metrics**: Abbreviation-aware sentence segmentation, paragraph normalization, and reading time estimation.
 - **Notes & Bookmarks Exchange**: Validated import and export pipelines for reader notes and reading states.
@@ -45,14 +45,15 @@ Copy the sample environment file:
 cp .env.example .env
 ```
 
-Set your Hugging Face API key in `.env`:
+To enable optional remote OCR, set a serverless-supported model and API key in `.env`:
 
 ```ini
-HF_API_KEY=your_huggingface_token_here
-HF_OCR_MODEL=microsoft/trocr-base-stage1
+HF_TOKEN=your_huggingface_token_here
+OCR_MODEL=your-org/your-serverless-image-to-text-model
+HF_INFERENCE_URL=https://router.huggingface.co/hf-inference/models/{model_id}
 ```
 
-Get a free Hugging Face API token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens).
+Confirm the model page lists the Hugging Face Inference Provider and supports image-to-text requests. For a dedicated endpoint, set `HF_INFERENCE_URL` to its exact URL. Leave `OCR_MODEL` blank when you only want the private browser-based OCR path; standard imports do not need this backend.
 
 ### 4. Running the Development Server
 
@@ -82,7 +83,7 @@ pytest
 | --- | --- | --- |
 | `GET` | `/api/health` | Health check endpoint |
 | `GET` | `/api/info` | Backend configuration and model capabilities |
-| `GET` | `/api/ocr/models` | List recommended Hugging Face OCR models |
+| `GET` | `/api/ocr/models` | Show the configured Hugging Face OCR model |
 | `POST` | `/api/ocr/image` | Scan a single image via Hugging Face OCR |
 | `POST` | `/api/ocr/batch` | Scan multiple images concurrently |
 | `POST` | `/api/ocr/pdf` | Scan a PDF document with native + HF OCR |

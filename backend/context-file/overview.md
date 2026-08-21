@@ -1,13 +1,13 @@
 # Bookflow Backend Overview
 
-High-performance Python backend powering document ingestion, structural parsing, sentence analytics, and accelerated Hugging Face Vision OCR scanning for Bookflow.
+Python backend powering document ingestion, structural parsing, sentence analytics, and optional remote OCR scanning for Bookflow.
 
 ---
 
 ## 1. System Purpose & Core Pillars
 
 - **Zero Content Persistence**: Book contents are processed on-demand in-memory without persistent server storage to respect user privacy.
-- **High-Throughput Vision OCR**: Offloads heavy scanned document text extraction to Hugging Face Vision models (`microsoft/trocr-base-stage1`, `stepfun-ai/GOT-OCR2_0`, `facebook/nougat-base`).
+- **Optional Remote OCR**: Verifies provider support before sending explicitly submitted scanned page images.
 - **Normalized Data Contracts**: Produces identical `NormalizedBook` structures matching frontend reader expectations.
 - **Asynchronous & Non-Blocking**: Built on `asyncio` and `httpx.AsyncClient` with bounded concurrency semaphores.
 

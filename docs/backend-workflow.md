@@ -1,6 +1,6 @@
 # Bookflow Backend Architecture & DevOps Workflow
 
-Production-grade engineering and DevOps documentation for the Bookflow FastAPI / vLLM DeepSeek-OCR-2 backend engine.
+Production-grade engineering and DevOps documentation for the Bookflow FastAPI optional Hugging Face OCR backend.
 
 ---
 
@@ -9,7 +9,7 @@ Production-grade engineering and DevOps documentation for the Bookflow FastAPI /
 - **Processing SLA**: Process full **400–600 page book files in under 2 minutes (<120s)** with 0 memory leaks and zero runtime exceptions.
 - **Microsecond Native Fast-Path**: Selectable text pages are extracted via PyMuPDF (`fitz`) in under 0.5 seconds for a 600-page book.
 - **In-Memory 96 DPI Rasterization**: Scanned pages are rendered to JPEG base64 directly in RAM using CPU thread pools without touching the physical disk.
-- **Asynchronous Batching**: Parallel non-blocking worker pools dispatch 16–32 page batches to `deepseek-ai/DeepSeek-OCR-2` on vLLM.
+- **Asynchronous Batching**: Parallel non-blocking worker pools dispatch page batches to the model configured in `OCR_MODEL`.
 - **Zero Disk Persistence**: Document binaries and OCR buffers exist purely in volatile RAM during the request lifecycle.
 
 ---
@@ -21,7 +21,7 @@ backend/
 |-- app/
 |   |-- core/
 |   |   |-- __init__.py
-|   |   `-- config.py            # Pydantic BaseSettings, 0.0.0.0 host, HF models, limits
+|   |   `-- config.py            # Pydantic BaseSettings, 0.0.0.0 host, selected HF model, limits
 |   |-- models/
 |   |   |-- __init__.py
 |   |   |-- document.py          # NormalizedBook, Chapter, Subheading contracts
@@ -63,7 +63,7 @@ graph TD
     D -->|Scanned / Image Page| F[96 DPI In-Memory Rasterizer]
     E --> G[Normalized Chapter Page]
     F --> H[16-Page Async Batch Queue]
-    H --> I[vLLM DeepSeek-OCR-2 Inference Engine]
+    H --> I[Configured Hugging Face OCR endpoint]
     I -->|Markdown Result| G
     G --> J[Instant In-Memory Deallocation of Image Buffer]
     G --> K[SSE Stream: GET /api/ocr/progress/job_id]
@@ -80,7 +80,7 @@ graph TD
 | `/api/ocr/progress/{job_id}` | `GET` | SSE real-time page-by-page progress stream | `job_id` (str) |
 | `/api/ocr/job/{job_id}` | `GET` | Instant snapshot of job state & processed pages | `job_id` (str) |
 | `/api/ocr/result/{job_id}` | `GET` | Final structured Markdown document download | `job_id` (str) |
-| `/api/ocr/models` | `GET` | List available OCR and Vision models | None |
+| `/api/ocr/models` | `GET` | Show the configured OCR model | None |
 | `/api/ocr/image` | `POST` | Single image OCR extraction | `file` (image binary), `model_id` |
 | `/api/ocr/batch` | `POST` | Parallel batch OCR across image files | `files` (list of images) |
 | `/api/documents/parse` | `POST` | Parse PDF, EPUB, TXT, MD to NormalizedBook | `file` (document binary) |
@@ -104,7 +104,7 @@ python run.py
 
 ### 5.2 GPU OCR Engine Containerization (Docker Compose)
 ```bash
-# Start GPU DeepSeek-OCR-2 inference engine + FastAPI backend
+# Start the optional self-hosted GPU OCR engine + FastAPI backend
 docker compose up -d
 
 # Check live logs

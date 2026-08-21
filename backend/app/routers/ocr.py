@@ -23,7 +23,7 @@ async def list_ocr_models(
 ):
     """List recommended Hugging Face Image-to-Text OCR models and default configuration."""
     return OCRModelListResponse(
-        default_model=settings.hf_ocr_model,
+        default_model=settings.ocr_model,
         hf_token_configured=bool(settings.hf_api_key and settings.hf_api_key.strip()),
         available_models=hf_service.get_available_models(),
     )

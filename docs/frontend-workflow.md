@@ -1,6 +1,6 @@
 # Bookflow Frontend Architecture & Engineering Workflow
 
-Production-grade engineering documentation for the Bookflow React 18 / Vite 6 client application.
+Production-grade engineering documentation for the Bookflow React 18 / Next.js 16 client application.
 
 ---
 
@@ -16,9 +16,12 @@ Production-grade engineering documentation for the Bookflow React 18 / Vite 6 cl
 ## 2. Directory Structure & Architecture Boundaries
 
 ```text
+app/
+|-- layout.jsx                   # Next.js root layout and metadata
+`-- page.jsx                     # Client-side App shell (use client)
 src/
 |-- components/
-|   `-- OcrUploader.jsx          # High-throughput DeepSeek-OCR-2 SSE client & lazy reader
+|   `-- OcrUploader.jsx          # Configured Hugging Face OCR SSE client & lazy reader
 |-- features/
 |   |-- document-import/         # In-browser format parsers (PDF, EPUB, TXT, MD) & validation
 |   |   |-- lib/
@@ -60,8 +63,10 @@ src/
 |       |-- storage.js           # LocalStorage safe serialization & restoration
 |       |-- text.js              # Word count, sentence splitting & sanitization
 |       `-- index.js
+|-- store/
+|   |-- readerStore.js           # Zustand reader state management
+|   `-- uiStore.js               # Zustand UI state management
 |-- App.jsx                      # Application state machine, feature composition, modal routing
-|-- main.jsx                     # Vite React DOM entrypoint
 `-- styles.css                   # Responsive styles, theme tokens, animations, layout grids
 ```
 
@@ -87,7 +92,7 @@ graph TD
     I --> J[ReaderPage: Sentence Focus Engine]
 ```
 
-### 3.2 High-Throughput DeepSeek-OCR-2 Pipeline Flow
+### 3.2 Configured Hugging Face OCR Pipeline Flow
 
 ```mermaid
 sequenceDiagram
@@ -95,7 +100,7 @@ sequenceDiagram
     actor User
     participant React as OcrUploader (Client)
     participant FastAPI as FastAPI Backend (0.0.0.0:8000)
-    participant Engine as vLLM DeepSeek-OCR-2
+    participant Engine as Configured Hugging Face OCR endpoint
     participant Reader as ReaderPage Focus Mode
 
     User->>React: Drop 400-600 Page Scanned PDF
