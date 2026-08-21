@@ -20,3 +20,4 @@ export {
   readingProgress,
 } from './lib/readingController.js'
 export { computeScrollMetrics, useScrollPosition } from './lib/useScrollPosition.js'
+export { formatParagraphText, getFixationLength } from './lib/textFormatter.js'
