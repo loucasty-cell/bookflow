@@ -600,6 +600,7 @@ async def process_ocr_pipeline(
             "total_words": job.total_words,
             "pages_per_second": pps,
             "elapsed_seconds": elapsed,
+
             "markdown": job.markdown,
             "pages": job.pages,
         }
@@ -623,6 +624,19 @@ async def process_ocr_pipeline(
             page["image_b64"] = None
 
 
+async def prune_stale_jobs(ttl_seconds: float = 3600.0) -> None:
+    """Removes completed or timed-out jobs to prevent unbounded memory growth."""
+    now = time.time()
+    async with jobs_lock:
+        stale_ids = [
+            jid
+            for jid, j in jobs.items()
+            if (now - j.created_at > ttl_seconds) or (j.completed_at and now - j.completed_at > 1800)
+        ]
+        for jid in stale_ids:
+            jobs.pop(jid, None)
+
+
 @app.post("/api/ocr/scan")
 async def scan_pdf_endpoint(
     background_tasks: BackgroundTasks,
@@ -638,6 +652,7 @@ async def scan_pdf_endpoint(
     Initiates asynchronous visual OCR scan of an uploaded PDF using PaddleOCR first and Hugging Face fallback.
     Returns a job_id to stream progress via SSE at /api/ocr/progress/{job_id}.
     """
+    await prune_stale_jobs()
     filename = file.filename or "uploaded_document.pdf"
     if not filename.lower().endswith(".pdf"):
         raise HTTPException(
@@ -676,15 +691,6 @@ async def scan_pdf_endpoint(
     )
 
     async with jobs_lock:
-        # Cleanup old completed/failed jobs to prevent memory leaks
-        current_time = time.time()
-        stale_jobs = [
-            jid for jid, j in jobs.items() 
-            if j.status in ("completed", "failed") and (current_time - j.updated_at) > 3600
-        ]
-        for jid in stale_jobs:
-            del jobs[jid]
-            
         jobs[job_id] = new_job
 
     background_tasks.add_task(
