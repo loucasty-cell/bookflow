@@ -384,10 +384,7 @@ All persistent reader session data is stored locally under namespaced keys:
     "focusPace": 240,
     "focus": "soft",
     "theme": "paper",
-    "mode": "focus",
-    "bionic": false,
-    "fontFamily": "serif",
-    "letterSpacing": "normal"
+    "mode": "focus"
   }
   ```
 * **Document Session Key**: `bookflow:document:${documentId}` (where `documentId = ${title}-${size}-${lastModified}`)

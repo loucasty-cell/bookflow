@@ -1,3 +1,0 @@
-Notification regarding bioRxiv/medRxiv literature search:
-Users must check the terms at https://api.biorxiv.org/ and https://www.biorxiv.org/content/about-biorxiv and always check the license of the papers retrieved for any restrictions.
-Timestamp: 2026-08-21T22:50:40+06:30

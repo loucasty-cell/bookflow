@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Copy, Check, MessageSquareText, Bookmark } from "lucide-react";
+import { Copy, Check, MessageSquareText, Bookmark, Highlighter } from "lucide-react";
 import { triggerHaptic, HAPTIC_PATTERNS } from "../../../shared/lib/index.js";
 
 export function SelectionTooltip({

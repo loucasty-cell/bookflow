@@ -15,7 +15,6 @@ import { SettingsPanel } from "./SettingsPanel.jsx";
 import { SelectionTooltip } from "./SelectionTooltip.jsx";
 import { formatReadingTime } from "../lib/readingTime.js";
 import { useScrollPosition } from "../lib/useScrollPosition.js";
-import { formatParagraphText } from "../lib/textFormatter.js";
 import { VariableRewardCapsule } from "../../../components/VariableRewardCapsule.jsx";
 
 export function ReaderPage({
@@ -196,9 +195,6 @@ export function ReaderPage({
           ref={readerRef}
           className={`reader-canvas focus-${safeSettings.focus} reader-mode-${safeSettings.mode} ${activeParagraphIsLarge ? "has-large-selection" : ""} ${isStaticFocusRegion ? "is-over-static" : ""} ${isScrolling ? "is-scrolling" : ""}`}
           data-scroll-direction={scrollDirection}
-          data-font={safeSettings.fontFamily}
-          data-letter-spacing={safeSettings.letterSpacing}
-          data-bionic={safeSettings.bionic ? "true" : "false"}
           style={{
             "--reader-size": `${safeSettings.fontSize}px`,
             "--reader-leading": safeSettings.lineHeight,
@@ -290,7 +286,7 @@ export function ReaderPage({
                             : undefined
                         }
                       >
-                        {formatParagraphText(paragraph.text, { bionic: safeSettings.bionic })}
+                        {paragraph.text}
                       </p>
                     ))}
                   </div>

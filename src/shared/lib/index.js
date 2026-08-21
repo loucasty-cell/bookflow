@@ -8,11 +8,5 @@ export {
   safeParse,
   setStorageItem,
 } from './storage.js'
-export {
-  classifyParagraph,
-  documentId,
-  formatClassification,
-  splitSentences,
-  wordCount,
-} from './text.js'
+export { documentId, splitSentences, wordCount } from './text.js'
 

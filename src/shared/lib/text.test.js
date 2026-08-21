@@ -1,14 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  classifyParagraph,
-  documentId,
-  formatClassification,
-  normalizeText,
-  splitParagraphs,
-  splitSentences,
-  stripMarkdown,
-  wordCount,
-} from './text.js'
+import { documentId, normalizeText, splitParagraphs, splitSentences, stripMarkdown, wordCount } from './text.js'
 
 describe('reader text helpers', () => {
   it('normalizes whitespace without flattening paragraphs', () => {
@@ -33,17 +24,5 @@ describe('reader text helpers', () => {
 
   it('builds a stable local progress key from file metadata', () => {
     expect(documentId({ name: 'book.pdf', size: 42, lastModified: 9 })).toBe('book.pdf:42:9')
-  })
-
-  it('classifies dialogue and formats result', () => {
-    const text = '"Let us go immediately," she asked, looking back at the door.'
-    const result = classifyParagraph(text)
-    expect(result.type).toBe('DIALOGUE')
-    expect(formatClassification(1, text, result)).toContain('Paragraph [1]:')
-  })
-
-  it('classifies structural markers and headings', () => {
-    expect(classifyParagraph('### Section 2').type).toBe('STRUCTURAL_MARKER')
-    expect(classifyParagraph('---').type).toBe('STRUCTURAL_MARKER')
   })
 })

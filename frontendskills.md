@@ -1,4 +1,4 @@
-# Bookflow Frontend Skills & Cognitive Design System Reference
+# Bookflow Frontend Skills & Design System Reference
 
 Comprehensive technical guide, cognitive ergonomics research principles, design tokens, and frontend feature specifications for Bookflow.
 
@@ -7,94 +7,80 @@ Comprehensive technical guide, cognitive ergonomics research principles, design 
 ## 1. Cognitive Ergonomics & Digital Reading Architecture
 
 ### 1.1 Focal Reading Rail & Saccadic Regression Reduction
-- **Empirical Foundation**: Eye-tracking and psychophysiological research (*Keith Rayner's E-Z Reader Model; Ekin et al., PLoS ONE 2025; Haller et al., Cognitive Science 2026*) demonstrates that digital readers experience cognitive fatigue, elevated return-sweep errors, and frequent disorienting regressions when reading unguided long-form text.
-- **Sentence/Paragraph Rail Focus**: Bookflow positions an active focal rail at `FOCUS_RAIL_RATIO = 0.42` (the golden reading horizon). As the reader scrolls or steps, exactly one paragraph receives clear, high-contrast prominence while surrounding text gently softens.
+- **Empirical Foundation**: Eye-tracking and psychophysiological research (*Ekin et al., PLoS ONE 2025; Haller et al., Cognitive Science 2026*) demonstrates that digital readers experience cognitive fatigue and elevated regression rates (backward eye jumps) when reading unguided long-form text.
+- **Sentence/Paragraph Rail Focus**: Bookflow positions an active focal rail at `FOCUS_RAIL_RATIO = 0.382` (golden ratio). As the reader scrolls or steps, exactly one paragraph receives clear, high-contrast prominence while surrounding text gently softens.
 - **Distraction Isolation**: Non-focal paragraphs remain legible for contextual awareness without visually competing with the active sentence.
 
-### 1.2 Bionic Reading & Saccadic Fixation Engine
-- **Perceptual Span Targeting**: The human perceptual span extends 3–4 characters left and 14–15 characters right. Bionic reading bolds the leading graphemes of each word (`getFixationLength`), allowing the oculomotor system to anchor rapid saccades without fixating on entire words.
-- **Pure React Tokenizer**: `formatParagraphText` tokenizes words and applies `<b className="fixation-anchor">` via React element trees without `dangerouslySetInnerHTML`, preserving strict security and accessibility.
-- **Toggleable Acceleration**: Readers can switch between Standard prose and Bionic fixations instantly via the reading space settings popover.
+### 1.2 Working-Memory Buffering & Self-Paced Pacing
+- **Cognitive Integration**: Sentence-level pacing mirrors the natural syntactic integration buffer of human working memory.
+- **Scroll Intent Accumulator**: Dampens trackpad velocity and mousewheel jitter (`SCROLL_INTENT_THRESHOLD`), ensuring paragraph progression occurs with deliberate rhythm rather than erratic jumps.
+- **Reading Velocity Adaptation**: Configurable pace settings (`180-420ms`) allow readers to tailor the stepping transition to their personal comprehension rate.
 
-### 1.3 Neurodivergent & Accessible Typography System
-- **Typeface Selection**:
-  - **Serif**: Classic literary serif (`Georgia, Cambria, "Times New Roman", serif`) for prolonged reading comfort.
-  - **Sans**: Crisp modern system stack (`-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif`).
-  - **Clean (Hyperlegible)**: High-distinction letterforms (`Atkinson Hyperlegible`) designed to eliminate character ambiguity (e.g., distinguishing `1`, `I`, `l`).
-  - **Dyslexic**: Heavily weighted baselines (`OpenDyslexic`) to prevent letter inversion and visual crowding.
-- **Letter Tracking (Character Spacing)**:
-  - `Default (0.002em)`: Balanced optical rhythm.
-  - `Wide (0.035em)`: Reduced inter-character crowding for visual processing ease.
-  - `Spacious (0.07em)`: Maximum separation for dyslexia accommodation and high-velocity scanning.
-- **Dynamic Optical Pacing**: Adjustable font size (`17px–24px`), line height (`1.5–2.2`), page width (`720px–1120px`), and stepping cooldown (`180ms–420ms`).
+### 1.3 Variable Reward Chapter Completion Mechanics
+To compete directly with short-form video feeds without gamifying books into cheap mobile games:
+1. **The Serendipitous Marginalia Capsule**: Upon finishing a chapter, generates an unannounced, beautifully typeset 1-sentence synthesis or contrasting philosophical paradox connecting the chapter to an unexpected external domain.
+2. **Chapter Velocity & Flow Sparkline**: An organic visual footprint illustrating the reader's cognitive flow, pacing stability, and moments of deep absorption compared to their baseline.
+3. **Next Chapter Horizon Teaser**: A 2-line contextual curiosity bridge previewing the core tension or unanswered dilemma in the upcoming chapter's opening lines.
 
-### 1.4 Momentum-Aware Scroll Controller
-- **Scroll Position Tracking (`useScrollPosition`)**: High-frequency RAF-backed hook that monitors scroll velocity, direction (`up` / `down` / `idle`), progress percentage, and active focal element.
-- **Scroll Intent Dampening**: Dampens trackpad inertia and wheel jitter (`MAX_SCROLL_INPUT = 64`, `SCROLL_INTENT_THRESHOLD = 96`), ensuring paragraph progression occurs with deliberate rhythm.
-- **Reduced Motion Compliance**: Automatically disables smooth-scrolling animations and translates transitions into instant jumps when `prefers-reduced-motion: reduce` is detected.
-
-### 1.5 Floating Selection Context Toolbar (`SelectionTooltip`)
-- **Spatial Positioning**: Renders directly above the user's selected text selection using DOM range coordinates with boundary containment checks.
-- **Quick Margin Notes**: Extracts selected text directly into the notes drawer with an active drafting cursor.
-- **Clipboard & Bookmarks**: One-tap copy with haptic confirmation and paragraph-level bookmarking.
-
-### 1.6 Editorial Typography & Semantic Styles
-- **Drop Caps**: Elegant first-letter drop caps on chapter opening paragraphs with brand blue accenting.
-- **Keyword Highlights (`.kw`)**: Subtle background tinting for critical conceptual terms.
-- **Pull Quotes (`.pullq`)**: Indented, italicized quotes with brand royal left borders for memorable passages.
-- **Insight Callout Boxes (`.insight-box`)**: Warm amber warning and insight containers with structured uppercase badges.
-
-### 1.7 Cognitive Flow & Habit Anchoring
-- **4-Minute Drop-Off Intervention (`InterventionModal`)**: Re-anchoring dialogs that trigger during attention drift (inactivity or velocity decay around minute 4), presenting curiosity hooks to recover flow.
-- **Variable Reward Capsules (`VariableRewardCapsule`)**: Unannounced, serendipitous synthesis cards and flow sparklines at chapter milestones.
-- **Tactile Haptic Feedback (`haptics.js`)**: Subtle mobile vibration feedback for bookmarking, notes, and navigation milestones.
+### 1.4 In-Margin Social Layer (Asynchronous Shared Experience)
+1. **Margin Resonance Heatmap & Thought Whispers**: Minimalist margin resonance indicators that reveal curated, high-signal reflections and alternative perspectives from other readers on that exact sentence.
+2. **Time-Shifted Reaction Drift**: Timestamped reaction capsules left by fellow readers at emotional/intellectual climaxes that unlock only when reaching that exact paragraph.
 
 ---
 
 ## 2. Visual Identity & Apple-Inspired Design System
 
-### 2.1 Atmosphere Themes & Color Palette
+### 2.1 Color Palette & Semantic Tokens
 
-| Role | Paper (Light) | Dusk (Near-Black) | Tint (Remix) | Description |
-| --- | --- | --- | --- | --- |
-| **Surface Canvas** | `#FFFEFA` | `#0B0F19` | `#F4EFEA` | Warm, glare-free, non-smearing background |
-| **Reading Card** | `#FFFFFF` | `#121826` | `#FAF7F2` | High-legibility reading surface |
-| **Text Ink** | `#1B2633` | `#F2F2F7` | `#2D251E` | WCAG AAA contrast text |
-| **Text Muted** | `#647384` | `#94A3B8` | `#7A6E65` | Contextual ambient text |
-| **Brand Blue** | `#2B5A84` | `#6B9AC4` | `#3A6B94` | Primary brand accent and focus outline |
-| **Brand Royal** | `#4169E1` | `#5B86E5` | `#4A72E8` | Active buttons, progress indicators |
-| **Wine Accent** | `#7B1020` | `#9B2236` | `#8A1828` | Pinned state and bookmark markers |
-| **Border / Glass** | `rgba(0,0,0,0.08)` | `rgba(255,255,255,0.10)`| `rgba(0,0,0,0.06)` | Layered glass borders and subtle dividers |
+| Role | Light (Paper) | Dark (Dusk / Near-Black) | Description |
+| --- | --- | --- | --- |
+| **Surface Base** | `#FFFEFA` | `#000000` | Calm, warm, glare-free background canvas |
+| **Reading Card** | `#FFFFFF` | `#070708` | High-legibility reading surface |
+| **Text Primary** | `#1C1C1E` | `#F5F5F7` | WCAG AAA contrast text |
+| **Text Muted** | `#636366` | `#8E8E93` | Ambient context text |
+| **Bookflow Blue** | `#507B9C` | `#6B9AC4` | Primary brand accent and focus outline |
+| **Interactive Accent**| `#4169E1` | `#5B86E5` | Active buttons, progress indicators |
+| **Ink Wine** | `#7B1020` | `#9B2236` | Pinned state and secondary focus markers |
+| **Border / Divider** | `rgba(0,0,0,0.08)` | `rgba(255,255,255,0.12)`| Layered glass borders and subtle dividers |
 
-### 2.2 Layout Invariants & Touch Targets
-- **Minimum Hit Targets**: All interactive buttons render with minimum `44 x 44` CSS pixels touch areas.
-- **Mobile Responsive Drawer**: Settings, contents, and notes transform into smooth right drawers / bottom sheets on viewports `< 768px`.
-- **Zero Horizontal Overflow**: Fluid typography and max-width containers prevent horizontal scrolling at all mobile widths (320px–430px).
+### 2.2 Typography & Optimal Measure
+- **Interface Font**: System UI stack (`-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif`) for crisp, native-feeling controls.
+- **Reading Font**: Proven serif typographic stack (`"Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif`) for prolonged reading comfort.
+- **Optimal Line Length**: Default column width constrained between `60ch` and `75ch` to maintain the proven optical sweet spot for minimizing line-tracking errors.
+- **Dynamic Type Scale**: Adjustable font sizes (`14px` to `28px`) with proportional line-height scaling (`1.5` to `2.0`).
 
----
-
-## 3. High-Performance Engineering Standards
-
-### 3.1 Code-Splitting & Lazy Loading
-- Heavy components (`OcrUploader`, `BookOpeningIntro`) and format parsers (`pdfjs-dist`, `jszip`, `tesseract.js`) are dynamically imported via `React.lazy()` and dynamic `import()`.
-- Production bundle is organized into distinct vendor chunks (`vendor-react`, `vendor-motion`, `vendor-icons`, `vendor-state`, `pdf`, `jszip`).
-
-### 3.2 Resilient Error Boundaries
-- Critical panels and subtrees (Focus Card, Settings, Notes, and root App) are wrapped in `ErrorBoundary` components with graceful fallbacks and reset handlers.
-
-### 3.3 Keyboard Navigation Matrix
-- `Down` / `J` / `Space`: Advance to next paragraph.
-- `Up` / `K` / `Shift+Space`: Return to previous paragraph.
-- `PageDown` / `PageUp`: Advance / rewind 3 paragraphs.
-- `Escape`: Pin / unpin current paragraph or close panels.
+### 2.3 Responsive Layouts & Touch Targets
+- **Mobile Touch Invariants**: All interactive buttons, icon toggles, and controls render with minimum `44 x 44` CSS pixels hit targets.
+- **Mobile Bottom Sheets**: Settings, table of contents, and notes transform into smooth bottom-sheet modals on viewports `< 768px` (tested at `390 x 844px` mobile viewport).
+- **Desktop Side Materials**: Translucent floating panels with `backdrop-filter: blur(20px)` and soft layered shadows.
 
 ---
 
-## 4. Frontend Verification Checklist
+## 3. High-Performance Frontend Engineering Standards
+
+### 3.1 Code-Splitting & Lazy Chunking
+- **Component Code Splitting**: Heavy conditional components (`BookOpeningIntro`, `OcrUploader`) use `React.lazy()` with `<Suspense fallback={null}>` to keep the initial landing bundle < 220 kB gzipped.
+- **Dynamic Parser Loading**: Document parsing libraries (`pdfjs-dist`, `jszip`, `tesseract.js`) are dynamically imported only when a user uploads a corresponding file.
+
+### 3.2 In-Memory Virtualization & DOM Efficiency
+- **Lazy OCR Page Rendering**: The `OcrUploader` viewer renders only the currently active page in the DOM with windowed thumbnail navigation, easily handling 600+ page books without DOM bloat.
+- **Monotonic Progress Indicators**: Document import and OCR loaders guarantee strictly increasing progress percentages that visibly reach `100%` before transitioning to the reader.
+
+### 3.3 Keyboard & Accessibility Standards
+- **Keyboard Shortcuts**:
+  - `Down` / `J` / `Space`: Advance to next paragraph.
+  - `Up` / `K` / `Shift+Space`: Return to previous paragraph.
+  - `PageDown` / `PageUp`: Skip 3 paragraphs rapidly.
+  - `Escape`: Pin / unpin current paragraph.
+- **Accessibility Attributes**: Full `aria-label`, `aria-modal`, `role="dialog"`, and `prefers-reduced-motion` compliance.
+
+---
+
+## 4. Verification Checklist
 
 Before releasing or staging frontend changes:
 - `npm run lint` passes with 0 warnings/errors.
-- `npm test` executes vitest across all 12 test suites (44 tests).
-- `npm run build` generates production bundle in `dist/` without errors.
+- `npm run test` executes vitest across all 10 test suites (35 tests).
+- `npm run build` succeeds with isolated lazy-loaded chunks.
 - Mobile viewport `390 x 844` displays zero horizontal overflow.
-- Bionic fixations, typefaces, and letter spacing toggle cleanly without flicker.
+- Instant skip functions smoothly on the opening video intro.
