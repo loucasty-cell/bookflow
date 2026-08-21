@@ -1,8 +1,42 @@
 import '../src/styles.css'
 import Script from 'next/script'
 
-const extensionHydrationGuard = `
+const windowEnvProtectionScript = `
 (() => {
+  try {
+    if (typeof window !== 'undefined') {
+      let currentFetch = window.fetch ? window.fetch.bind(window) : undefined;
+      const desc = Object.getOwnPropertyDescriptor(window, 'fetch');
+      if (!desc || !desc.set || !desc.writable) {
+        try {
+          Object.defineProperty(window, 'fetch', {
+            get() {
+              return currentFetch;
+            },
+            set(newFetch) {
+              currentFetch = newFetch;
+            },
+            configurable: true,
+            enumerable: true,
+          });
+        } catch {
+          try {
+            Object.defineProperty(Window.prototype, 'fetch', {
+              get() {
+                return currentFetch;
+              },
+              set(newFetch) {
+                currentFetch = newFetch;
+              },
+              configurable: true,
+              enumerable: true,
+            });
+          } catch {}
+        }
+      }
+    }
+  } catch {}
+
   const attributeName = 'bis_skin_checked';
   const clean = (node) => {
     if (!(node instanceof Element)) return;
@@ -51,9 +85,15 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          id="window-protection-init"
+          dangerouslySetInnerHTML={{ __html: windowEnvProtectionScript }}
+        />
+      </head>
       <body>
         <Script id="extension-hydration-guard" strategy="beforeInteractive">
-          {extensionHydrationGuard}
+          {windowEnvProtectionScript}
         </Script>
         <div id="root">{children}</div>
       </body>
