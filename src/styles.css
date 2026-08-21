@@ -1439,7 +1439,40 @@ img {
   margin: 0 0 1.42em;
   color: var(--reader-ink);
   font: 400 var(--reader-size)/var(--reader-leading) var(--font-reading);
-  letter-spacing: 0.002em;
+  letter-spacing: var(--reader-tracking, 0.002em);
+}
+
+.reader-canvas[data-font="serif"] .reading-column {
+  font-family: Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+.reader-canvas[data-font="sans"] .reading-column {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+}
+
+.reader-canvas[data-font="hyperlegible"] .reading-column {
+  font-family: "Atkinson Hyperlegible", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.reader-canvas[data-font="dyslexic"] .reading-column {
+  font-family: "OpenDyslexic", "Comic Sans MS", -apple-system, sans-serif;
+}
+
+.reader-canvas[data-letter-spacing="normal"] {
+  --reader-tracking: 0.002em;
+}
+
+.reader-canvas[data-letter-spacing="wide"] {
+  --reader-tracking: 0.035em;
+}
+
+.reader-canvas[data-letter-spacing="expanded"] {
+  --reader-tracking: 0.07em;
+}
+
+.bionic-token .fixation-anchor {
+  font-weight: 750;
+  color: var(--reader-ink);
 }
 
 .reading-section p:first-of-type::first-letter {

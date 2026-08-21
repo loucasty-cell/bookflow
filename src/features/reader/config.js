@@ -9,4 +9,7 @@ export const DEFAULT_SETTINGS = {
   focus: 'soft',
   mode: 'focus',
   theme: 'paper',
+  bionic: false,
+  fontFamily: 'serif',
+  letterSpacing: 'normal',
 }

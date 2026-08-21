@@ -168,6 +168,69 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
           </div>
           <p>Soft keeps context present. Deep creates a quieter reading tunnel.</p>
         </section>
+
+        <section className="setting-group">
+          <label>Cognitive reading</label>
+          <div className="segmented" role="group" aria-label="Bionic reading mode">
+            <button
+              className={!safeSettings.bionic ? "active" : ""}
+              onClick={() => update("bionic", false)}
+              aria-pressed={!safeSettings.bionic}
+            >
+              Standard
+            </button>
+            <button
+              className={safeSettings.bionic ? "active" : ""}
+              onClick={() => update("bionic", true)}
+              aria-pressed={safeSettings.bionic}
+            >
+              Bionic fixations
+            </button>
+          </div>
+          <p>Bionic mode anchors the initial letters of each word to guide saccadic eye movement.</p>
+        </section>
+
+        <section className="setting-group">
+          <label>Typeface</label>
+          <div className="focus-options" role="group" aria-label="Typeface selection">
+            {[
+              { id: "serif", label: "Serif" },
+              { id: "sans", label: "Sans" },
+              { id: "hyperlegible", label: "Clean" },
+              { id: "dyslexic", label: "Dyslexic" },
+            ].map((font) => (
+              <button
+                key={font.id}
+                className={safeSettings.fontFamily === font.id ? "active" : ""}
+                onClick={() => update("fontFamily", font.id)}
+                aria-pressed={safeSettings.fontFamily === font.id}
+              >
+                {font.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="setting-group">
+          <label>Letter tracking</label>
+          <div className="segmented" role="group" aria-label="Letter tracking">
+            {[
+              { id: "normal", label: "Default" },
+              { id: "wide", label: "Wide" },
+              { id: "expanded", label: "Spacious" },
+            ].map((spacing) => (
+              <button
+                key={spacing.id}
+                className={safeSettings.letterSpacing === spacing.id ? "active" : ""}
+                onClick={() => update("letterSpacing", spacing.id)}
+                aria-pressed={safeSettings.letterSpacing === spacing.id}
+              >
+                {spacing.label}
+              </button>
+            ))}
+          </div>
+          <p>Reduces visual crowding across lines for neurodivergent reading comfort.</p>
+        </section>
       </div>
     </aside>
   );
