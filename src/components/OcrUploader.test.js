@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ocrRequestErrorMessage } from './OcrUploader.jsx';
+import { ocrRequestErrorMessage } from './ocrErrors.js';
 
 describe('OCR request errors', () => {
   it('turns a network failure into an actionable backend message', () => {

@@ -7,6 +7,7 @@ import {
   Copy,
   Focus,
 } from "lucide-react";
+import { triggerHaptic, HAPTIC_PATTERNS } from "../../../shared/lib/index.js";
 import "./resonance.css";
 
 export function FocusCard({
@@ -35,7 +36,10 @@ export function FocusCard({
       <div className="focus-card-actions">
         <button
           className="focus-card-step"
-          onClick={() => moveFocus(-1)}
+          onClick={() => {
+            triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+            moveFocus(-1);
+          }}
           aria-label="Previous paragraph"
           title="Previous paragraph"
         >
@@ -43,7 +47,10 @@ export function FocusCard({
         </button>
         <button
           className="focus-card-step"
-          onClick={() => moveFocus(1)}
+          onClick={() => {
+            triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+            moveFocus(1);
+          }}
           aria-label="Next paragraph"
           title="Next paragraph"
         >
@@ -51,21 +58,38 @@ export function FocusCard({
         </button>
         <button
           className="focus-card-primary"
-          onClick={toggleBookmark}
+          onClick={() => {
+            triggerHaptic(HAPTIC_PATTERNS.MEDIUM);
+            toggleBookmark();
+          }}
           aria-pressed={isBookmarked}
         >
           {isBookmarked ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
           {isBookmarked ? "Saved" : "Save"}
         </button>
-        <button onClick={copyFocusedParagraph}>
+        <button
+          onClick={() => {
+            triggerHaptic(HAPTIC_PATTERNS.SUCCESS);
+            copyFocusedParagraph();
+          }}
+        >
           <Copy size={16} /> Copy
         </button>
         {pinnedId && (
-          <button onClick={resumeFlow}>
+          <button
+            onClick={() => {
+              triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+              resumeFlow();
+            }}
+          >
             <Check size={16} /> Resume flow
           </button>
         )}
-        <button className="resonance-indicator" title="2 thoughtful reflections from the community">
+        <button
+          className="resonance-indicator"
+          title="2 thoughtful reflections from the community"
+          onClick={() => triggerHaptic(HAPTIC_PATTERNS.SELECTION)}
+        >
           <span className="resonance-dot"></span>
           Resonance
         </button>

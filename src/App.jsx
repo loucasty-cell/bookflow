@@ -162,7 +162,7 @@ function App() {
       // The intro remains optional when session storage is unavailable.
     }
     setShowEntryIntro(false);
-  }, []);
+  }, [setShowEntryIntro]);
 
   useEffect(() => {
     if (book) return undefined;
@@ -180,7 +180,7 @@ function App() {
 
     setShowEntryIntro(true);
     return undefined;
-  }, [book]);
+  }, [book, setShowEntryIntro]);
 
   const updateStaticRegion = useCallback(() => {
     const reader = readerRef.current;
@@ -199,7 +199,7 @@ function App() {
       setActiveChapter(Number(section.dataset.chapterIndex));
     const maximum = Math.max(0, reader.scrollHeight - reader.clientHeight);
     setProgress(maximum ? Math.round((reader.scrollTop / maximum) * 100) : 0);
-  }, []);
+  }, [setProgress]);
 
   const chapters = useMemo(() => {
     if (!book) return [];
@@ -290,7 +290,7 @@ function App() {
         readingProgress(paragraphIndex, paragraphsRef.current.length),
       );
     }
-  }, []);
+  }, [setProgress]);
 
   const finishAlignment = useCallback(() => {
     programmaticScrollRef.current = false;
@@ -472,7 +472,7 @@ function App() {
       }
     }, 10000);
     return () => clearInterval(interval);
-  }, [book, showIntervention]);
+  }, [book, setShowIntervention, showIntervention]);
 
   useEffect(() => {
     localStorage.setItem("bookflow:settings", JSON.stringify(settings));
@@ -977,7 +977,7 @@ function App() {
       setError("");
       document.title = `${nextBook.title} - Bookflow`;
     },
-    [clearTimers],
+    [clearTimers, setBookmarks, setError, setNotes, setProgress, setSidebarCollapsed, setSidebarOpen],
   );
 
   const handleFile = useCallback(
@@ -1024,7 +1024,7 @@ function App() {
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     },
-    [openBook],
+    [openBook, setError, setLoading],
   );
 
   const closeBook = () => {
@@ -1126,7 +1126,7 @@ function App() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [ocrOpen]);
+  }, [ocrOpen, setOcrOpen]);
 
   const handleOcrDocumentLoaded = useCallback(
     (ocrResult) => {
@@ -1156,7 +1156,7 @@ function App() {
       setOcrOpen(false);
       openBook(bookDoc, `ocr-${Date.now()}`);
     },
-    [openBook],
+    [openBook, setOcrOpen],
   );
 
   if (!book) {
