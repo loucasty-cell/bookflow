@@ -80,7 +80,7 @@ To compete directly with short-form video feeds without gamifying books into che
 
 Before releasing or staging frontend changes:
 - `npm run lint` passes with 0 warnings/errors.
-- `npm run test` executes vitest across all 9 test suites.
+- `npm run test` executes vitest across all 10 test suites (35 tests).
 - `npm run build` succeeds with isolated lazy-loaded chunks.
 - Mobile viewport `390 x 844` displays zero horizontal overflow.
 - Instant skip functions smoothly on the opening video intro.

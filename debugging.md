@@ -95,8 +95,8 @@ curl -s http://127.0.0.1:8000/api/health
   2. If using the backend, use `POST /api/ocr/scan` to process pages through PaddleOCR and the configured Hugging Face fallback.
 
 ### Symptom: PDF.js Worker Fails to Load
-- **Root Cause**: Path mismatch for `pdf.worker.min.mjs` in Next.js build.
-- **Resolution**: Verify `pdfjs-dist` worker configuration in `src/features/document-import/lib/pdfParser.js`. The `scripts/copy-assets.js` script copies the worker to `public/` at build time.
+- **Root Cause**: Path mismatch for `pdf.worker.min.mjs` in build.
+- **Resolution**: Verify `pdfjs-dist` worker configuration in `src/features/document-import/lib/pdfParser.js`. The `public/pdf.worker.min.mjs` asset is served at runtime and copied to `dist/` at build time.
 
 ### Symptom: EPUB Parsing Errors
 - **Root Cause**: Non-standard EPUB structure or missing `META-INF/container.xml`.
@@ -134,7 +134,7 @@ curl -s http://127.0.0.1:8000/api/health
 
 - [ ] `npm run lint` passes with 0 warnings/errors.
 - [ ] `npm run test` passes all unit tests.
-- [ ] `npm run build` generates a clean Next.js production build in `.next/`.
+- [ ] `npm run build` generates a clean Vite production build in `dist/`.
 - [ ] `pytest backend/tests` passes all backend test suites.
 - [ ] No API keys, credentials, or private documents in source code or `.env`.
 - [ ] No emojis in code or commit messages.
