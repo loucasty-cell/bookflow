@@ -15,7 +15,7 @@ export function NotesPanel({
       className={`notes-drawer ${open ? "is-open" : ""}`}
       aria-hidden={!open}
       aria-label="Margin notes"
-      inert={open ? undefined : ""}
+      inert={open ? undefined : true}
     >
       <div className="panel-heading">
         <span><MessageSquareText size={16} /> Margin notes</span>

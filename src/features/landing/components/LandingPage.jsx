@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import {
   BookOpen,
   ChevronRight,
@@ -28,6 +29,30 @@ export function LandingPage({
   theme,
   toggleTheme,
 }) {
+  const [isPopped, setIsPopped] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0, isHovering: false });
+  const cardRef = useRef(null);
+
+  const handleMouseMove = (event) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width - 0.5) * 22;
+    const y = ((event.clientY - rect.top) / rect.height - 0.5) * 16;
+    setMousePos({ x, y, isHovering: true });
+  };
+
+  const handleMouseLeave = (event) => {
+    if (!event.currentTarget.contains(event.relatedTarget)) {
+      setDragging(false);
+      setMousePos({ x: 0, y: 0, isHovering: false });
+    }
+  };
+
+  const handleCardClick = () => {
+    setIsPopped(true);
+    setTimeout(() => setIsPopped(false), 500);
+  };
+
   return (
     <main className="landing-shell" data-theme={theme}>
       <nav className="landing-nav" aria-label="Primary navigation">
@@ -62,19 +87,24 @@ export function LandingPage({
           </p>
 
           <div
-            className={`drop-card ${dragging ? "is-dragging" : ""}`}
+            ref={cardRef}
+            className={`drop-card ${dragging ? "is-dragging" : ""} ${isPopped ? "is-popped" : ""} ${mousePos.isHovering ? "is-hover-moving" : ""}`}
+            style={{
+              "--mouse-move-x": `${mousePos.x}px`,
+              "--mouse-move-y": `${mousePos.y}px`,
+            }}
+            onMouseMove={handleMouseMove}
+            onMouseDown={handleCardClick}
             onDragEnter={(event) => {
               event.preventDefault();
               setDragging(true);
             }}
             onDragOver={(event) => event.preventDefault()}
-            onDragLeave={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget))
-                setDragging(false);
-            }}
+            onDragLeave={handleMouseLeave}
             onDrop={(event) => {
               event.preventDefault();
               setDragging(false);
+              setMousePos({ x: 0, y: 0, isHovering: false });
               handleFile(event.dataTransfer.files[0]);
             }}
           >

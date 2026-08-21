@@ -6,12 +6,15 @@ import {
   Settings2,
   X,
 } from "lucide-react";
-import { Brand } from "../../../shared/components/index.js";
+import { Brand, ErrorBoundary } from "../../../shared/components/index.js";
+import { DEFAULT_SETTINGS } from "../config.js";
 import { ContentsPanel } from "./ContentsPanel.jsx";
 import { FocusCard } from "./FocusCard.jsx";
 import { NotesPanel } from "./NotesPanel.jsx";
 import { SettingsPanel } from "./SettingsPanel.jsx";
+import { SelectionTooltip } from "./SelectionTooltip.jsx";
 import { formatReadingTime } from "../lib/readingTime.js";
+import { useScrollPosition } from "../lib/useScrollPosition.js";
 import { VariableRewardCapsule } from "../../../components/VariableRewardCapsule.jsx";
 
 export function ReaderPage({
@@ -54,7 +57,14 @@ export function ReaderPage({
   addNote,
   resumeFlow,
 }) {
-  const isStaticFocusRegion = settings.mode === "focus" && overStaticRegion;
+  const safeSettings = {
+    ...DEFAULT_SETTINGS,
+    ...(settings || {}),
+  };
+  const { isScrolling, direction: scrollDirection } = useScrollPosition(readerRef, {
+    disabled: !book,
+  });
+  const isStaticFocusRegion = safeSettings.mode === "focus" && overStaticRegion;
   const readerStatus = {
     focused: "In focus",
     transitioning: "Moving",
@@ -70,8 +80,8 @@ export function ReaderPage({
   return (
     <div
       className="app-shell"
-      data-theme={settings.theme}
-      data-reader-mode={settings.mode}
+      data-theme={safeSettings.theme}
+      data-reader-mode={safeSettings.mode}
       data-reader-state={readerState}
     >
       <header className="reader-topbar">
@@ -174,7 +184,7 @@ export function ReaderPage({
         />
 
         <div
-          className={`focus-rail focus-rail-${settings.focus} ${isStaticFocusRegion ? "is-dimmed" : ""}`}
+          className={`focus-rail focus-rail-${safeSettings.focus} ${isStaticFocusRegion ? "is-dimmed" : ""}`}
           aria-hidden="true"
         >
           <span key={focusId || "idle"} />
@@ -183,15 +193,16 @@ export function ReaderPage({
 
         <main
           ref={readerRef}
-          className={`reader-canvas focus-${settings.focus} reader-mode-${settings.mode} ${activeParagraphIsLarge ? "has-large-selection" : ""} ${isStaticFocusRegion ? "is-over-static" : ""}`}
+          className={`reader-canvas focus-${safeSettings.focus} reader-mode-${safeSettings.mode} ${activeParagraphIsLarge ? "has-large-selection" : ""} ${isStaticFocusRegion ? "is-over-static" : ""} ${isScrolling ? "is-scrolling" : ""}`}
+          data-scroll-direction={scrollDirection}
           style={{
-            "--reader-size": `${settings.fontSize}px`,
-            "--reader-leading": settings.lineHeight,
-            "--reader-width": `${settings.columnWidth}px`,
+            "--reader-size": `${safeSettings.fontSize}px`,
+            "--reader-leading": safeSettings.lineHeight,
+            "--reader-width": `${safeSettings.columnWidth}px`,
           }}
           tabIndex={0}
-          aria-label={`${settings.mode === "focus" ? "Paragraph focus reading" : "Normal reading"}: ${book.title}`}
-          aria-keyshortcuts={settings.mode === "focus" ? "ArrowDown ArrowUp Space Escape" : undefined}
+          aria-label={`${safeSettings.mode === "focus" ? "Paragraph focus reading" : "Normal reading"}: ${book.title}`}
+          aria-keyshortcuts={safeSettings.mode === "focus" ? "ArrowDown ArrowUp Space Escape" : undefined}
         >
           <article className="reading-column">
             <header className="document-header">
@@ -302,31 +313,46 @@ export function ReaderPage({
             {staticRegionLabel}
           </div>
         ) : (
-          <FocusCard
-            focusedParagraph={focusedParagraph}
-            pinnedId={pinnedId}
-            isBookmarked={isBookmarked}
-            toggleBookmark={toggleBookmark}
-            copyFocusedParagraph={copyFocusedParagraph}
-            moveFocus={moveFocus}
-            resumeFlow={resumeFlow}
-          />
+          <ErrorBoundary>
+            <FocusCard
+              focusedParagraph={focusedParagraph}
+              pinnedId={pinnedId}
+              isBookmarked={isBookmarked}
+              toggleBookmark={toggleBookmark}
+              copyFocusedParagraph={copyFocusedParagraph}
+              moveFocus={moveFocus}
+              resumeFlow={resumeFlow}
+            />
+          </ErrorBoundary>
         )}
-        <SettingsPanel
-          settings={settings}
-          setSettings={setSettings}
-          open={settingsOpen}
-          close={() => setSettingsOpen(false)}
-        />
-        <NotesPanel
-          open={notesOpen}
-          close={() => setNotesOpen(false)}
-          notes={notes}
-          setNotes={setNotes}
-          draft={noteDraft}
-          setDraft={setNoteDraft}
-          addNote={addNote}
-          focusedParagraph={focusedParagraph}
+        <ErrorBoundary>
+          <SettingsPanel
+            settings={settings}
+            setSettings={setSettings}
+            open={settingsOpen}
+            close={() => setSettingsOpen(false)}
+          />
+        </ErrorBoundary>
+        <ErrorBoundary>
+          <NotesPanel
+            open={notesOpen}
+            close={() => setNotesOpen(false)}
+            notes={notes}
+            setNotes={setNotes}
+            draft={noteDraft}
+            setDraft={setNoteDraft}
+            addNote={addNote}
+            focusedParagraph={focusedParagraph}
+          />
+        </ErrorBoundary>
+        <SelectionTooltip
+          containerRef={readerRef}
+          onAddNoteFromSelection={(text) => {
+            setNoteDraft(text);
+            setNotesOpen(true);
+          }}
+          onBookmarkParagraph={toggleBookmark}
+          activeParagraphId={focusId}
         />
       </div>
     </div>

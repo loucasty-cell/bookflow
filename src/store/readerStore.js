@@ -1,26 +1,22 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { getSafeStorage } from '../shared/lib/storage.js';
-
-const DEFAULT_SETTINGS = {
-  fontSize: 16,
-  columnWidth: 640,
-  focusPace: 260,
-  theme: "paper",
-  mode: "focus",
-};
+import { DEFAULT_SETTINGS } from '../features/reader/config.js';
 
 export const createReaderStore = (storage = undefined) => create(
   persist(
     (set) => ({
-      settings: DEFAULT_SETTINGS,
+      settings: { ...DEFAULT_SETTINGS },
       progress: 0,
       bookmarks: [],
       notes: [],
       
-      setSettings: (updater) => set((state) => ({ 
-        settings: typeof updater === 'function' ? updater(state.settings) : { ...state.settings, ...updater } 
-      })),
+      setSettings: (updater) => set((state) => {
+        const nextSettings = typeof updater === 'function' ? updater(state.settings) : { ...state.settings, ...updater };
+        return {
+          settings: { ...DEFAULT_SETTINGS, ...nextSettings }
+        };
+      }),
       
       setProgress: (progress) => set({ progress }),
       
@@ -45,6 +41,14 @@ export const createReaderStore = (storage = undefined) => create(
     {
       name: 'bookflow-reader-storage',
       storage: storage ?? createJSONStorage(getSafeStorage),
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...persistedState,
+        settings: {
+          ...DEFAULT_SETTINGS,
+          ...(persistedState?.settings || {})
+        }
+      }),
       partialize: (state) => ({ 
         settings: state.settings 
       }),

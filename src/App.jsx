@@ -15,6 +15,7 @@ import {
   LandingPage,
 } from "./features/landing/index.js";
 import { InterventionModal } from "./components/InterventionModal.jsx";
+import { ErrorBoundary } from "./shared/components/index.js";
 import { AnimatePresence } from 'framer-motion';
 import { useReaderStore } from "./store/readerStore.js";
 import { useUIStore } from "./store/uiStore.js";
@@ -1218,47 +1219,49 @@ function App() {
 
   return (
     <>
-      <ReaderPage
-      book={book}
-      settings={settings}
-      setSettings={setSettings}
-      chapters={chapters}
-      activeChapter={activeChapter}
-      progress={progress}
-      readerState={readerState}
-      activeParagraphIsLarge={activeParagraphIsLarge}
-      overStaticRegion={overStaticRegion}
-      staticRegionLabel={staticRegionLabel}
-      notes={notes}
-      setNotes={setNotes}
-      bookmarks={bookmarks}
-      bookmarkCount={bookmarks.length}
-      noteDraft={noteDraft}
-      setNoteDraft={setNoteDraft}
-      sidebarOpen={sidebarOpen}
-      setSidebarOpen={setSidebarOpen}
-      sidebarCollapsed={sidebarCollapsed}
-      setSidebarCollapsed={setSidebarCollapsed}
-      notesOpen={notesOpen}
-      setNotesOpen={setNotesOpen}
-      settingsOpen={settingsOpen}
-      setSettingsOpen={setSettingsOpen}
-      focusId={focusId}
-      focusedParagraph={focusedParagraph}
-      pinnedId={pinnedId}
-      isBookmarked={isBookmarked}
-      minutes={minutes}
-      totalWords={totalWords}
-      readerRef={readerRef}
-      closeBook={closeBook}
-      jumpToChapter={jumpToChapter}
-      focusParagraph={focusParagraph}
-      toggleBookmark={toggleBookmark}
-      copyFocusedParagraph={copyFocusedParagraph}
-      moveFocus={moveFocus}
-      addNote={addNote}
-      resumeFlow={resumeFlow}
-    />
+      <ErrorBoundary onReset={closeBook}>
+        <ReaderPage
+          book={book}
+          settings={settings}
+          setSettings={setSettings}
+          chapters={chapters}
+          activeChapter={activeChapter}
+          progress={progress}
+          readerState={readerState}
+          activeParagraphIsLarge={activeParagraphIsLarge}
+          overStaticRegion={overStaticRegion}
+          staticRegionLabel={staticRegionLabel}
+          notes={notes}
+          setNotes={setNotes}
+          bookmarks={bookmarks}
+          bookmarkCount={bookmarks.length}
+          noteDraft={noteDraft}
+          setNoteDraft={setNoteDraft}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          sidebarCollapsed={sidebarCollapsed}
+          setSidebarCollapsed={setSidebarCollapsed}
+          notesOpen={notesOpen}
+          setNotesOpen={setNotesOpen}
+          settingsOpen={settingsOpen}
+          setSettingsOpen={setSettingsOpen}
+          focusId={focusId}
+          focusedParagraph={focusedParagraph}
+          pinnedId={pinnedId}
+          isBookmarked={isBookmarked}
+          minutes={minutes}
+          totalWords={totalWords}
+          readerRef={readerRef}
+          closeBook={closeBook}
+          jumpToChapter={jumpToChapter}
+          focusParagraph={focusParagraph}
+          toggleBookmark={toggleBookmark}
+          copyFocusedParagraph={copyFocusedParagraph}
+          moveFocus={moveFocus}
+          addNote={addNote}
+          resumeFlow={resumeFlow}
+        />
+      </ErrorBoundary>
       <AnimatePresence>
         {showIntervention && (
           <InterventionModal onDismiss={() => setShowIntervention(false)} bookTitle={book?.title} />

@@ -7,18 +7,32 @@ import {
   Sun,
   X,
 } from "lucide-react";
-import { FONT_SIZE_MAX, FONT_SIZE_MIN } from "../config.js";
+import { DEFAULT_SETTINGS, FONT_SIZE_MAX, FONT_SIZE_MIN } from "../config.js";
 
 export function SettingsPanel({ settings, setSettings, open, close }) {
+  const safeSettings = {
+    ...DEFAULT_SETTINGS,
+    ...(settings || {}),
+  };
+
   const update = (key, value) =>
-    setSettings((current) => ({ ...current, [key]: value }));
+    setSettings((current) => ({
+      ...DEFAULT_SETTINGS,
+      ...(current || {}),
+      [key]: value,
+    }));
+
+  const lineHeightNumber =
+    typeof safeSettings.lineHeight === "number" && !isNaN(safeSettings.lineHeight)
+      ? safeSettings.lineHeight
+      : DEFAULT_SETTINGS.lineHeight;
 
   return (
     <aside
       className={`settings-popover ${open ? "is-open" : ""}`}
       aria-hidden={!open}
       aria-label="Reading settings"
-      inert={open ? undefined : ""}
+      inert={open ? undefined : true}
     >
       <div className="panel-heading">
         <span>
@@ -34,16 +48,16 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
           <label>Reading mode</label>
           <div className="segmented" role="group" aria-label="Reading mode">
             <button
-              className={settings.mode === "focus" ? "active" : ""}
+              className={safeSettings.mode === "focus" ? "active" : ""}
               onClick={() => update("mode", "focus")}
-              aria-pressed={settings.mode === "focus"}
+              aria-pressed={safeSettings.mode === "focus"}
             >
               <BookOpen size={15} /> Focus
             </button>
             <button
-              className={settings.mode === "normal" ? "active" : ""}
+              className={safeSettings.mode === "normal" ? "active" : ""}
               onClick={() => update("mode", "normal")}
-              aria-pressed={settings.mode === "normal"}
+              aria-pressed={safeSettings.mode === "normal"}
             >
               <BookOpenText size={15} /> Normal
             </button>
@@ -55,23 +69,23 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
           <label>Atmosphere</label>
           <div className="segmented" role="group" aria-label="Reading atmosphere">
             <button
-              className={settings.theme === "paper" ? "active" : ""}
+              className={safeSettings.theme === "paper" ? "active" : ""}
               onClick={() => update("theme", "paper")}
-              aria-pressed={settings.theme === "paper"}
+              aria-pressed={safeSettings.theme === "paper"}
             >
               <Sun size={15} /> Light
             </button>
             <button
-              className={settings.theme === "dusk" ? "active" : ""}
+              className={safeSettings.theme === "dusk" ? "active" : ""}
               onClick={() => update("theme", "dusk")}
-              aria-pressed={settings.theme === "dusk"}
+              aria-pressed={safeSettings.theme === "dusk"}
             >
               <Moon size={15} /> Black
             </button>
             <button
-              className={settings.theme === "remix" ? "active" : ""}
+              className={safeSettings.theme === "remix" ? "active" : ""}
               onClick={() => update("theme", "remix")}
-              aria-pressed={settings.theme === "remix"}
+              aria-pressed={safeSettings.theme === "remix"}
             >
               <Palette size={15} /> Tint
             </button>
@@ -80,21 +94,21 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
 
         <section className="setting-group setting-range-group">
           <label htmlFor="font-size">
-            Text size <b>{settings.fontSize}px</b>
+            Text size <b>{safeSettings.fontSize}px</b>
           </label>
           <input
             id="font-size"
             type="range"
             min={FONT_SIZE_MIN}
             max={FONT_SIZE_MAX}
-            value={settings.fontSize}
+            value={safeSettings.fontSize}
             onChange={(event) => update("fontSize", Number(event.target.value))}
           />
         </section>
 
         <section className="setting-group setting-range-group">
           <label htmlFor="line-height">
-            Line space <b>{settings.lineHeight.toFixed(1)}</b>
+            Line space <b>{lineHeightNumber.toFixed(1)}</b>
           </label>
           <input
             id="line-height"
@@ -102,14 +116,14 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
             min="1.5"
             max="2.2"
             step="0.1"
-            value={settings.lineHeight}
+            value={lineHeightNumber}
             onChange={(event) => update("lineHeight", Number(event.target.value))}
           />
         </section>
 
         <section className="setting-group setting-range-group">
           <label htmlFor="column-width">
-            Page width <b>{settings.columnWidth}px</b>
+            Page width <b>{safeSettings.columnWidth}px</b>
           </label>
           <input
             id="column-width"
@@ -117,14 +131,14 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
             min="720"
             max="1120"
             step="20"
-            value={settings.columnWidth}
+            value={safeSettings.columnWidth}
             onChange={(event) => update("columnWidth", Number(event.target.value))}
           />
         </section>
 
         <section className="setting-group setting-range-group">
           <label htmlFor="focus-pace">
-            Paragraph pace <b>{settings.focusPace}ms</b>
+            Paragraph pace <b>{safeSettings.focusPace}ms</b>
           </label>
           <input
             id="focus-pace"
@@ -132,7 +146,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
             min="180"
             max="420"
             step="20"
-            value={settings.focusPace}
+            value={safeSettings.focusPace}
             onChange={(event) => update("focusPace", Number(event.target.value))}
           />
           <p>Sets the calm minimum between controlled paragraph changes.</p>
@@ -144,9 +158,9 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
             {["off", "soft", "deep"].map((option) => (
               <button
                 key={option}
-                className={settings.focus === option ? "active" : ""}
+                className={safeSettings.focus === option ? "active" : ""}
                 onClick={() => update("focus", option)}
-                aria-pressed={settings.focus === option}
+                aria-pressed={safeSettings.focus === option}
               >
                 {option}
               </button>

@@ -1,7 +1,10 @@
 import bookflowArtwork from "../../assets/bookflow-quill.png";
 
 export function LoadingOverlay({ loading }) {
-  const percent = Math.min(100, Math.max(0, Math.round(loading.percent)));
+  const rawPercent = typeof loading?.percent === "number" && !isNaN(loading.percent)
+    ? loading.percent
+    : 1;
+  const percent = Math.min(100, Math.max(1, Math.round(rawPercent)));
 
   return (
     <div className="loading-overlay" role="status" aria-live="polite">
@@ -9,9 +12,9 @@ export function LoadingOverlay({ loading }) {
         <img className="loading-artwork" src={bookflowArtwork} alt="" />
         <div className="loading-copy">
           <small>Preparing your book</small>
-          <h2>{loading.label}</h2>
-          <p title={loading.name}>{loading.name}</p>
-          {loading.detail && <span>{loading.detail}</span>}
+          <h2>{loading?.label || "Preparing your book"}</h2>
+          <p title={loading?.name}>{loading?.name}</p>
+          {loading?.detail && <span>{loading.detail}</span>}
         </div>
         <div
           className="loading-progress"

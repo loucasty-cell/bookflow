@@ -98,7 +98,7 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
     setProgress({
       currentPage: 0,
       totalPages: 0,
-      percent: 0,
+      percent: 1,
       totalWords: 0,
       pagesPerSecond: 0,
       elapsedSeconds: 0,
@@ -289,6 +289,31 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
     );
   }, [pages, searchQuery]);
 
+  // Predicted remaining time estimation
+  const predictedRemainingSeconds = useMemo(() => {
+    if (status !== 'processing') return null;
+    const current = Number(progress?.currentPage) || 0;
+    const total = Number(progress?.totalPages) || 0;
+    if (total <= 0 || current >= total) return 0;
+
+    if (progress?.pagesPerSecond && Number(progress.pagesPerSecond) > 0) {
+      const remainingPages = total - current;
+      return Math.max(1, Math.ceil(remainingPages / Number(progress.pagesPerSecond)));
+    }
+
+    if (progress?.elapsedSeconds && Number(progress.elapsedSeconds) > 0 && current > 0) {
+      const secPerPage = Number(progress.elapsedSeconds) / current;
+      const remainingPages = total - current;
+      return Math.max(1, Math.ceil(secPerPage * remainingPages));
+    }
+
+    return null;
+  }, [status, progress]);
+
+  const safePercent = typeof progress?.percent === 'number' && !isNaN(progress.percent)
+    ? Math.min(100, Math.max(status === 'completed' ? 100 : 1, Math.round(progress.percent)))
+    : (status === 'completed' ? 100 : (status === 'processing' || status === 'uploading' ? 1 : 0));
+
   // Active page selection
   const activePage = pages[activePageIndex] || pages[0] || null;
 
@@ -429,11 +454,13 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
             <div className="flex items-center gap-2">
               <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
               <span className="font-medium text-zinc-100">
-                {status === 'uploading' ? 'Ingesting PDF in memory...' : `Scanning Page ${progress.currentPage} of ${progress.totalPages || '...'}`}
+                {status === 'uploading'
+                  ? 'Ingesting PDF in memory...'
+                  : `Scanning Page ${progress.currentPage} of ${progress.totalPages || '...'}${predictedRemainingSeconds !== null ? ` (~${predictedRemainingSeconds}s remaining)` : ''}`}
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="progress-percent">{progress.percent}%</span>
+              <span className="progress-percent">{safePercent}%</span>
               <button
                 type="button"
                 className="btn-ghost"
@@ -455,7 +482,7 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
           <div className="progress-bar-track">
             <div
               className="progress-bar-fill"
-              style={{ width: `${Math.max(2, progress.percent)}%` }}
+              style={{ width: `${Math.max(1, safePercent)}%` }}
             />
           </div>
 
@@ -463,19 +490,21 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
           <div className="progress-metrics-grid">
             <div className="metric-item">
               <span className="metric-label">Pages Completed</span>
-              <span className="metric-value">{progress.currentPage} / {progress.totalPages}</span>
+              <span className="metric-value">{progress.currentPage} / {progress.totalPages || '—'}</span>
+            </div>
+            <div className="metric-item">
+              <span className="metric-label">Est. Remaining</span>
+              <span className="metric-value">
+                {predictedRemainingSeconds !== null ? `~${predictedRemainingSeconds}s` : (status === 'uploading' ? 'Starting...' : 'Calculating...')}
+              </span>
             </div>
             <div className="metric-item">
               <span className="metric-label">Words Extracted</span>
-              <span className="metric-value">{progress.totalWords.toLocaleString()}</span>
+              <span className="metric-value">{(progress?.totalWords || 0).toLocaleString()}</span>
             </div>
             <div className="metric-item">
               <span className="metric-label">Speed</span>
-              <span className="metric-value">{progress.pagesPerSecond} pages/sec</span>
-            </div>
-            <div className="metric-item">
-              <span className="metric-label">Elapsed Time</span>
-              <span className="metric-value">{progress.elapsedSeconds}s</span>
+              <span className="metric-value">{progress.pagesPerSecond || 0} pages/sec</span>
             </div>
           </div>
         </div>

@@ -3,11 +3,13 @@ import { cleanTitle } from "./textParser.js";
 import {
   createPdfOcrScheduler,
   pageNeedsOcr,
-  pdfPageProgress,
   recognizePdfPage,
 } from "./pdfOcr.js";
 
 export async function parsePdf(file, onProgress) {
+  const startTime = Date.now();
+  onProgress?.(1, "Initializing PDF document...", "Reading local file bytes");
+
   const [pdfjs] = await Promise.all([
     import("pdfjs-dist"),
   ]);
@@ -27,11 +29,11 @@ export async function parsePdf(file, onProgress) {
     normalizeText(metadata?.info?.Title) || cleanTitle(file.name);
   let ocrScheduler = null;
   let ocrPageCount = 0;
-  let lastProgress = 10;
+  let lastProgress = 1;
 
-  const reportProgress = (percent, label) => {
-    lastProgress = Math.max(lastProgress, Math.min(96, Math.round(percent)));
-    onProgress?.(lastProgress, label);
+  const reportProgress = (percent, label, detail) => {
+    lastProgress = Math.max(lastProgress, Math.min(99, Math.round(percent)));
+    onProgress?.(lastProgress, label, detail);
   };
 
   let totalPagesForOcr = 0;
@@ -45,9 +47,15 @@ export async function parsePdf(file, onProgress) {
   try {
     // Pass 1: Extract native text and determine which pages need OCR
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-      // Intentionally don't update progress here to keep it monotonic during Pass 2
-      // Just notify we are analyzing structure quickly.
-      onProgress?.(lastProgress, `Reading page ${pageNumber} of ${pdf.numPages}`);
+      const elapsedSec = (Date.now() - startTime) / 1000;
+      const estRemainingSec = Math.max(1, Math.ceil((elapsedSec / Math.max(1, pageNumber)) * (pdf.numPages - pageNumber)));
+      const pass1Progress = Math.max(2, Math.min(25, Math.round((pageNumber / pdf.numPages) * 25)));
+
+      reportProgress(
+        pass1Progress,
+        `Reading page ${pageNumber} of ${pdf.numPages} (~${estRemainingSec}s remaining)`,
+        "Inspecting native text and document structure"
+      );
 
       const page = await pdf.getPage(pageNumber);
       const content = await page.getTextContent({ normalizeWhitespace: true });
@@ -94,8 +102,9 @@ export async function parsePdf(file, onProgress) {
     // Pass 2: Initialize OCR Scheduler if needed, and run OCR concurrently
     if (totalPagesForOcr > 0) {
       reportProgress(
-        pdfPageProgress(1, pdf.numPages, 0.04),
-        "Starting private on-device OCR",
+        26,
+        "Starting private on-device OCR...",
+        `Processing ${totalPagesForOcr} scanned pages`
       );
       try {
         ocrScheduler = await createPdfOcrScheduler(ocrLogger);
@@ -105,6 +114,7 @@ export async function parsePdf(file, onProgress) {
         );
       }
 
+      const ocrStartTime = Date.now();
       let completedOcr = 0;
       await Promise.all(pagesNeedingOcr.map(async (pageData) => {
         const recognized = await recognizePdfPage(ocrScheduler, pageData.page);
@@ -112,14 +122,21 @@ export async function parsePdf(file, onProgress) {
         if (pageData.paragraphs.length) ocrPageCount += 1;
 
         completedOcr++;
+        const ocrElapsedSec = (Date.now() - ocrStartTime) / 1000;
+        const estOcrRemainingSec = Math.max(1, Math.ceil((ocrElapsedSec / completedOcr) * (totalPagesForOcr - completedOcr)));
+        const ocrProgress = Math.min(92, Math.round(26 + (completedOcr / totalPagesForOcr) * 66));
         reportProgress(
-          pdfPageProgress(pageData.pageNumber, pdf.numPages, 1),
-          `Recovered scanned page ${pageData.pageNumber} of ${pdf.numPages} (${completedOcr}/${totalPagesForOcr})`
+          ocrProgress,
+          `Recovered scanned page ${pageData.pageNumber} of ${pdf.numPages} (${completedOcr}/${totalPagesForOcr}) ~${estOcrRemainingSec}s remaining`,
+          "Private local OCR processing in parallel"
         );
       }));
+    } else {
+      reportProgress(85, "Structuring chapters and sections...", "Preparing native text layout");
     }
 
     // Pass 3: Assemble Chapters in order
+    reportProgress(94, "Formatting paragraphs and sentences...", "Almost ready");
     for (const pageData of pagesData) {
       if (!pageData.requiresOcr) {
         const pageText = pageData.readableLines
