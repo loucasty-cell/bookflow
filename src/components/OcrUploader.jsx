@@ -27,6 +27,7 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
   const [jobId, setJobId] = useState(null);
   const [status, setStatus] = useState('idle'); // 'idle' | 'uploading' | 'processing' | 'completed' | 'failed'
   const [error, setError] = useState(null);
+  const [ocrProfile, setOcrProfile] = useState('small');
 
   // Real-time progress metrics
   const [progress, setProgress] = useState({
@@ -107,6 +108,7 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('batch_size', '16');
+    formData.append('ocr_profile', ocrProfile);
 
     try {
       const response = await fetch(`${API_BASE}/api/ocr/scan`, {
@@ -368,11 +370,11 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
       <div className="ocr-header">
         <div className="ocr-title-badge">
           <Zap className="w-4 h-4 text-amber-500" />
-          <span>Optional PaddleOCR + Hugging Face OCR</span>
+          <span>Self-hosted PP-OCRv6</span>
         </div>
         <h2 className="ocr-title">Accelerated Book Digitizer</h2>
         <p className="ocr-subtitle">
-          Uses PaddleOCR on your backend first, then the configured Hugging Face vision model. If both are unavailable, switch to private on-device English OCR.
+          Uses the small detector and recognizer by default, with a medium quality mode for difficult scans. If the backend is unavailable, switch to private on-device English OCR.
         </p>
       </div>
 
@@ -418,10 +420,19 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
       {status === 'idle' && (
         <div className="ocr-actions">
           {file && (
-            <button className="btn-primary" onClick={startScan}>
-              <Zap className="w-4 h-4 mr-2" />
-              Try configured OCR endpoint
-            </button>
+            <>
+              <label className="ocr-profile-field">
+                <span>OCR quality</span>
+                <select value={ocrProfile} onChange={(event) => setOcrProfile(event.target.value)}>
+                  <option value="small">Balanced and faster</option>
+                  <option value="medium">Higher quality for difficult scans</option>
+                </select>
+              </label>
+              <button className="btn-primary" onClick={startScan}>
+                <Zap className="w-4 h-4 mr-2" />
+                Start PP-OCRv6 scan
+              </button>
+            </>
           )}
         </div>
       )}
