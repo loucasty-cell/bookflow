@@ -4,7 +4,7 @@ import {
   wordCount,
 } from "../../../shared/lib/text.js";
 
-const OCR_RENDER_SCALE = 2.5;
+const OCR_RENDER_SCALE = 1.5;
 const OCR_MAX_PIXELS = 10_000_000;
 const NATIVE_TEXT_MIN_CHARACTERS = 80;
 const NATIVE_TEXT_MIN_WORDS = 12;
@@ -57,7 +57,7 @@ function localOcrUrl(path) {
 export async function createPdfOcrScheduler(reportProgress) {
   const { createWorker, createScheduler } = await import("tesseract.js");
   const scheduler = createScheduler();
-  const workerCount = Math.min(4, navigator.hardwareConcurrency || 2);
+  const workerCount = navigator.hardwareConcurrency || 4;
 
   for (let i = 0; i < workerCount; i++) {
     const worker = await createWorker("eng", 1, {
