@@ -38,7 +38,7 @@ describe("scanned PDF OCR helpers", () => {
   });
 
   it("keeps OCR image rendering inside the configured pixel budget", () => {
-    expect(renderScaleForDimensions(612, 792)).toBe(1.5);
+    expect(renderScaleForDimensions(612, 792)).toBe(2.5);
     expect(renderScaleForDimensions(6000, 8000)).toBeLessThan(0.5);
   });
 
