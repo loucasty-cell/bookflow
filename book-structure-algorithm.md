@@ -526,6 +526,7 @@ The existing reader can keep using `focusEligible`. Later styling may use `displ
 - Limit continuity comparison to neighboring units.
 - Store compact roles, confidence values, policies, boundaries, and overrides rather than full extracted text.
 - Keep the current scroll focus calculation separate from structure analysis.
+- Use a bounded concurrency worker pool during initial document OCR and extraction to prevent memory spikes on large documents, bounded to a maximum of 8 parallel workers based on `navigator.hardwareConcurrency`.
 
 ## Accuracy validation plan
 

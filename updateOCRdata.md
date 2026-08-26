@@ -57,7 +57,7 @@ Limitations:
 - A 400–600-page scan can take many minutes on a phone or ordinary laptop.
 - More browser workers do not always improve speed; they can exhaust memory and battery.
 
-Use one or two browser workers on phones and up to four only after measuring a laptop. Terminate workers when a document is complete or cancelled.
+Use a bounded concurrency worker pool to prevent memory exhaustion and browser crashes. Concurrency should be scaled based on `navigator.hardwareConcurrency` (up to a maximum of 8 workers for high-end laptops). Terminate workers when a document is complete or cancelled.
 
 ### 2.2 Self-hosted OCR service
 
