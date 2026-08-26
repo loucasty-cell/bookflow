@@ -17,6 +17,8 @@ import { formatReadingTime } from "../lib/readingTime.js";
 import { useScrollPosition } from "../lib/useScrollPosition.js";
 import { formatParagraphText } from "../lib/textFormatter.js";
 import { VariableRewardCapsule } from "../../../components/VariableRewardCapsule.jsx";
+import { SaccadicGuide } from "./SaccadicGuide.jsx";
+import { HorizonTeaser } from "./HorizonTeaser.jsx";
 
 export function ReaderPage({
   book,
@@ -192,6 +194,12 @@ export function ReaderPage({
           <i />
         </div>
 
+        <SaccadicGuide
+          readerRef={readerRef}
+          activeParagraphId={focusId}
+          visible={safeSettings.mode === "focus" && !isStaticFocusRegion}
+        />
+
         <main
           ref={readerRef}
           className={`reader-canvas focus-${safeSettings.focus} reader-mode-${safeSettings.mode} ${activeParagraphIsLarge ? "has-large-selection" : ""} ${isStaticFocusRegion ? "is-over-static" : ""} ${isScrolling ? "is-scrolling" : ""}`}
@@ -298,6 +306,13 @@ export function ReaderPage({
                 
                 {chapter.focusEligible && (
                   <VariableRewardCapsule chapterTitle={chapter.title} />
+                )}
+
+                {chapter.focusEligible && chapterIndex < chapters.length - 1 && (
+                  <HorizonTeaser
+                    nextChapter={chapters[chapterIndex + 1]}
+                    onJumpToNext={() => jumpToChapter(chapterIndex + 1)}
+                  />
                 )}
               </section>
             ))}

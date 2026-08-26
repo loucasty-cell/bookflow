@@ -3460,3 +3460,672 @@ img {
   color: #f2f2f7;
   background: rgba(255, 255, 255, 0.1);
 }
+
+/* ==========================================================================
+   4 MASTER CRAFT THEMES (ATELIER PAPER, MIDNIGHT VAULT, KYOTO, MONOCODEX)
+   ========================================================================== */
+
+/* 1. Atelier Paper (Default Warm Reading Canvas) */
+[data-theme="paper"] {
+  --app-bg: #faf7f2;
+  --app-surface: #fffefa;
+  --app-surface-subtle: #f4ede2;
+  --app-text: #1e1b18;
+  --app-text-muted: #6b635b;
+  --app-line: rgba(139, 94, 52, 0.14);
+  --app-accent: #8b5e34;
+  --reader-card-bg: #fffefa;
+  --reader-text: #1e1b18;
+  --focus-glow: rgba(217, 119, 6, 0.12);
+  --reentry-glow: rgba(217, 119, 6, 0.24);
+}
+
+/* 2. Midnight Vault (OLED Deep Dark Canvas) */
+[data-theme="dusk"] {
+  --app-bg: #090d14;
+  --app-surface: #111722;
+  --app-surface-subtle: #192231;
+  --app-text: #f3f4f6;
+  --app-text-muted: #9ca3af;
+  --app-line: rgba(255, 255, 255, 0.1);
+  --app-accent: #d97706;
+  --reader-card-bg: #111722;
+  --reader-text: #f3f4f6;
+  --focus-glow: rgba(245, 158, 11, 0.16);
+  --reentry-glow: rgba(245, 158, 11, 0.32);
+}
+
+/* 3. Kyoto Mist (Zen Bamboo Linen & Slate) */
+[data-theme="kyoto"] {
+  --app-bg: #eaebe6;
+  --app-surface: #f4f5f1;
+  --app-surface-subtle: #dfe2db;
+  --app-text: #202421;
+  --app-text-muted: #5c6660;
+  --app-line: rgba(74, 107, 93, 0.16);
+  --app-accent: #4a6b5d;
+  --reader-card-bg: #f4f5f1;
+  --reader-text: #202421;
+  --focus-glow: rgba(74, 107, 93, 0.14);
+  --reentry-glow: rgba(74, 107, 93, 0.28);
+}
+
+/* 4. Monospace Codex (Nerd Terminal / CRT Phosphor) */
+[data-theme="monocodex"] {
+  --app-bg: #0a0c0e;
+  --app-surface: #13171c;
+  --app-surface-subtle: #1d232a;
+  --app-text: #e2e8f0;
+  --app-text-muted: #8b949e;
+  --app-line: rgba(16, 185, 129, 0.18);
+  --app-accent: #10b981;
+  --reader-card-bg: #13171c;
+  --reader-text: #e2e8f0;
+  --focus-glow: rgba(16, 185, 129, 0.14);
+  --reentry-glow: rgba(16, 185, 129, 0.3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+}
+
+/* 5. Sepia Remix */
+[data-theme="remix"] {
+  --app-bg: #f5ecd7;
+  --app-surface: #fdfbf7;
+  --app-surface-subtle: #ebdcc0;
+  --app-text: #2b231a;
+  --app-text-muted: #736453;
+  --app-line: rgba(156, 65, 70, 0.14);
+  --app-accent: #9c4146;
+  --reader-card-bg: #fdfbf7;
+  --reader-text: #2b231a;
+  --focus-glow: rgba(156, 65, 70, 0.12);
+  --reentry-glow: rgba(156, 65, 70, 0.24);
+}
+
+.segmented-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(68px, 1fr));
+  gap: 6px;
+  background: var(--app-surface-subtle, rgba(0, 0, 0, 0.04));
+  padding: 4px;
+  border-radius: var(--radius-md);
+}
+
+.segmented-grid button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--app-text-muted, #666);
+  transition: all var(--duration-micro) ease;
+}
+
+.segmented-grid button.active {
+  background: var(--app-surface, #fff);
+  color: var(--app-text, #111);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--app-line, rgba(0, 0, 0, 0.08));
+}
+
+/* ==========================================================================
+   3D TACTILE SPATIAL BUTTONS (VISIONOS DEPTH & SPECULAR SHEEN)
+   ========================================================================== */
+.btn-3d-tactile {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transform-style: preserve-3d;
+  transition:
+    transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 160ms ease,
+    background 160ms ease;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.btn-3d-sm {
+  padding: 6px 14px;
+  font-size: 13px;
+}
+
+.btn-3d-md {
+  padding: 10px 20px;
+  font-size: 15px;
+}
+
+.btn-3d-lg {
+  padding: 14px 26px;
+  font-size: 16px;
+}
+
+.btn-3d-primary {
+  background: linear-gradient(145deg, #1e3a8a, #0f172a);
+  color: #ffffff;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.3) inset,
+    0 4px 14px -2px rgba(15, 23, 42, 0.35),
+    0 2px 4px -1px rgba(15, 23, 42, 0.2);
+}
+
+.btn-3d-secondary {
+  background: linear-gradient(145deg, #4169e1, #1e3a8a);
+  color: #ffffff;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 4px 14px -2px rgba(65, 105, 225, 0.35),
+    0 2px 4px -1px rgba(65, 105, 225, 0.2);
+}
+
+.btn-3d-tactile:hover {
+  transform: translateY(-2px) scale(1.015);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.45) inset,
+    0 8px 24px -4px rgba(15, 23, 42, 0.3),
+    0 4px 8px -2px rgba(15, 23, 42, 0.15);
+}
+
+.btn-3d-tactile:active {
+  transform: translateY(2px) scale(0.98);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.25) inset,
+    0 2px 6px -1px rgba(0, 0, 0, 0.15);
+}
+
+.btn-3d-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  z-index: 2;
+}
+
+.btn-3d-sheen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.18), transparent);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ==========================================================================
+   3D LIVING SHELF & 3D HARDCOVER PRISMS
+   ========================================================================== */
+.living-shelf-section {
+  position: relative;
+  margin: var(--space-8) 0;
+  perspective: 1200px;
+}
+
+.living-shelf-header {
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+.shelf-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--app-accent, #8b5e34);
+  background: rgba(139, 94, 52, 0.08);
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  margin-bottom: var(--space-2);
+}
+
+.shelf-title {
+  font-family: var(--font-reading);
+  font-size: clamp(24px, 3.5vw, 36px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--space-2);
+}
+
+.shelf-subtitle {
+  font-size: 15px;
+  color: var(--app-text-muted, #647384);
+  max-width: 580px;
+  margin: 0 auto;
+}
+
+.living-shelf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-8);
+  justify-items: center;
+  align-items: end;
+  padding: var(--space-6) var(--space-4) var(--space-2);
+  position: relative;
+  z-index: 2;
+}
+
+.book-3d-scene {
+  width: 220px;
+  height: 310px;
+  position: relative;
+  perspective: 1200px;
+}
+
+.book-3d-prism {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  cursor: pointer;
+  outline: none;
+  transition: transform 380ms cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.book-3d-prism:focus-visible {
+  outline: 3px solid var(--app-accent, #4169e1);
+  outline-offset: 8px;
+  border-radius: var(--radius-lg);
+}
+
+.book-3d-face {
+  position: absolute;
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+}
+
+.book-3d-front {
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px var(--radius-lg) var(--radius-lg) 4px;
+  box-shadow:
+    -3px 0 6px rgba(0, 0, 0, 0.3) inset,
+    0 20px 40px -10px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.book-cover-inner {
+  height: 100%;
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+}
+
+.book-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  align-self: flex-start;
+  backdrop-filter: blur(4px);
+}
+
+.book-title-block {
+  margin: var(--space-4) 0;
+}
+
+.book-cover-title {
+  font-family: var(--font-reading);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin: 0 0 6px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.book-cover-author {
+  font-size: 12px;
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.book-footer-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 500;
+  padding-top: var(--space-3);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.book-cta-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.book-specular-sheen {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, transparent 70%);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.book-texture-grain {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.015) 0px,
+    rgba(255, 255, 255, 0.015) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 3D Spine */
+.book-3d-spine {
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 22px;
+  transform: rotateY(-90deg) translateZ(11px);
+  border-radius: 4px 0 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spine-title-vertical {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 240px;
+}
+
+/* 3D Page Edges */
+.book-3d-pages-right {
+  right: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 16px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #fefefe 0px,
+    #fefefe 1px,
+    #e8e4dc 1px,
+    #e8e4dc 2px
+  );
+  transform: rotateY(90deg) translateZ(-8px);
+  border-radius: 0 2px 2px 0;
+}
+
+.book-3d-pages-top {
+  top: 0;
+  left: 4px;
+  right: 4px;
+  height: 16px;
+  background: repeating-linear-gradient(
+    to right,
+    #fefefe 0px,
+    #fefefe 1px,
+    #e8e4dc 1px,
+    #e8e4dc 2px
+  );
+  transform: rotateX(90deg) translateZ(-8px);
+}
+
+.book-3d-shadow {
+  position: absolute;
+  bottom: -16px;
+  left: 10%;
+  right: 10%;
+  height: 20px;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.4) 0%, transparent 75%);
+  filter: blur(8px);
+  transform: rotateX(85deg);
+  pointer-events: none;
+}
+
+.book-3d-add-card {
+  border: 2px dashed var(--app-line, rgba(80, 123, 156, 0.3));
+  border-radius: var(--radius-lg);
+  background: var(--app-surface-subtle, rgba(0, 0, 0, 0.02));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 260ms ease;
+}
+
+.book-3d-add-card:hover {
+  border-color: var(--app-accent, #4169e1);
+  background: rgba(65, 105, 225, 0.04);
+  transform: translateY(-4px) scale(1.02);
+}
+
+.add-card-inner {
+  text-align: center;
+  padding: var(--space-4);
+}
+
+.add-icon-bubble {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--app-surface, #ffffff);
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  place-items: center;
+  margin: 0 auto var(--space-3);
+  color: var(--app-accent, #4169e1);
+}
+
+.add-card-inner h4 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.add-card-inner p {
+  margin: 0 0 var(--space-3);
+  font-size: 12px;
+  color: var(--app-text-muted, #647384);
+}
+
+.add-privacy-tag {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.living-shelf-plank {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  margin-top: -8px;
+  z-index: 1;
+}
+
+.shelf-plank-top {
+  height: 12px;
+  background: linear-gradient(to bottom, #d4a373, #bc6c25);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.12) inset;
+}
+
+[data-theme="dusk"] .shelf-plank-top {
+  background: linear-gradient(to bottom, #2b2d42, #181926);
+}
+
+.shelf-plank-edge {
+  height: 12px;
+  background: linear-gradient(to bottom, #99582a, #6f1d1b);
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+
+[data-theme="dusk"] .shelf-plank-edge {
+  background: linear-gradient(to bottom, #181926, #0e0f17);
+}
+
+.shelf-plank-shadow {
+  height: 24px;
+  background: radial-gradient(ellipse at top, rgba(0, 0, 0, 0.35) 0%, transparent 75%);
+  filter: blur(6px);
+  margin-top: -2px;
+}
+
+/* ==========================================================================
+   SACCADIC RETURN PADS & MARGIN RHYTHM GUIDES
+   ========================================================================== */
+.saccadic-return-pad {
+  position: absolute;
+  left: max(12px, calc(50% - var(--reader-width, 980px) / 2 - 40px));
+  top: 0;
+  width: 24px;
+  height: 32px;
+  pointer-events: none;
+  z-index: 25;
+  transition: transform 180ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.saccadic-notch {
+  width: 3px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--app-accent, #8b5e34);
+  opacity: 0.85;
+  box-shadow: 0 0 8px var(--focus-glow, rgba(217, 119, 6, 0.4));
+}
+
+.saccadic-glow {
+  position: absolute;
+  left: -8px;
+  top: -4px;
+  width: 20px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--focus-glow, rgba(217, 119, 6, 0.15));
+  filter: blur(6px);
+}
+
+/* ==========================================================================
+   ZEIGARNIK HORIZON TEASER (NEXT CHAPTER BRIDGE)
+   ========================================================================== */
+.horizon-teaser {
+  margin: var(--space-8) 0 var(--space-4);
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+  background: var(--app-surface-subtle, rgba(0, 0, 0, 0.03));
+  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.08));
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  animation: fadeIn 400ms ease;
+}
+
+.horizon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--app-accent, #8b5e34);
+}
+
+.horizon-title {
+  font-family: var(--font-reading);
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.horizon-hook {
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.6;
+  opacity: 0.85;
+  margin: 0;
+}
+
+.horizon-action-btn {
+  align-self: flex-start;
+  margin-top: var(--space-2);
+  background: var(--app-accent, #8b5e34);
+  color: #ffffff;
+  padding: 8px 18px;
+  font-size: 14px;
+}
+
+/* ==========================================================================
+   ONE-SENTENCE RE-ENTRY BREATH GLOW
+   ========================================================================== */
+.reentry-glow {
+  animation: reentry-glow-pulse 3.5s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  border-radius: var(--radius-md);
+  padding: 4px 8px;
+  margin: -4px -8px;
+}
+
+@keyframes reentry-glow-pulse {
+  0% {
+    background-color: var(--reentry-glow, rgba(245, 158, 11, 0.35));
+    box-shadow: 0 0 16px var(--reentry-glow, rgba(245, 158, 11, 0.25));
+  }
+  70% {
+    background-color: var(--reentry-glow, rgba(245, 158, 11, 0.15));
+    box-shadow: 0 0 8px var(--reentry-glow, rgba(245, 158, 11, 0.1));
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+/* ==========================================================================
+   SYNTACTIC SALIENCE FIXATION ENGINE STYLES
+   ========================================================================== */
+.bionic-salient .fixation-salient {
+  font-weight: 750;
+  color: var(--app-text, inherit);
+}
+
+.bionic-calm {
+  opacity: 0.92;
+  font-weight: 400;
+}
+

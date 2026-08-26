@@ -1,4 +1,5 @@
 import React from "react";
+import { formatSalientParagraphText } from "./salienceFormatter.js";
 
 export function getFixationLength(wordLength) {
   if (wordLength <= 0) return 0;
@@ -11,6 +12,11 @@ export function getFixationLength(wordLength) {
 export function formatParagraphText(text, options = {}) {
   const { bionic = false } = options;
   if (!text || !bionic) return text;
+
+  // Syntactic Salience Bionic Fixation mode
+  if (bionic === "salience" || bionic === "syntactic") {
+    return formatSalientParagraphText(text);
+  }
 
   const tokens = text.split(/(\s+)/);
   return tokens.map((token, index) => {
@@ -33,3 +39,5 @@ export function formatParagraphText(text, options = {}) {
     );
   });
 }
+
+export { formatSalientParagraphText } from "./salienceFormatter.js";

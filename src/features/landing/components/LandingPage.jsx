@@ -13,9 +13,10 @@ import {
   Zap,
 } from "lucide-react";
 import { ACCEPTED_FILES } from "../../document-import/index.js";
-import { Brand, LoadingOverlay } from "../../../shared/components/index.js";
+import { Brand, LoadingOverlay, ThreeDButton, AmbientDustCanvas } from "../../../shared/components/index.js";
 import bookflowArtwork from "../../../assets/bookflow-quill.png";
 import { SAMPLE_BOOK } from "../sampleBook.js";
+import { LivingShelf } from "./LivingShelf.jsx";
 
 export function LandingPage({
   dragging,
@@ -54,8 +55,11 @@ export function LandingPage({
   };
 
   return (
-    <main className="landing-shell" data-theme={theme}>
-      <nav className="landing-nav" aria-label="Primary navigation">
+    <main className="landing-shell relative overflow-hidden" data-theme={theme}>
+      {/* Low-CPU Ambient Volumetric Dust & Light Shader */}
+      <AmbientDustCanvas active={true} />
+
+      <nav className="landing-nav relative z-10" aria-label="Primary navigation">
         <Brand />
         <div className="landing-nav-actions">
           <div className="nav-trust">
@@ -72,10 +76,10 @@ export function LandingPage({
         </div>
       </nav>
 
-      <section className="hero">
+      <section className="hero relative z-10">
         <div className="hero-copy-column">
           <div className="eyebrow">
-            <Sparkles size={14} /> Your private reading library
+            <Sparkles size={14} /> Your private reading sanctuary
           </div>
           <h1>
             Read deeper.
@@ -138,23 +142,24 @@ export function LandingPage({
           </p>
 
           <div className="hero-actions">
-            <button
-              className="sample-button"
+            <ThreeDButton
+              variant="primary"
+              size="lg"
               onClick={() => openBook(SAMPLE_BOOK, "bookflow-sample")}
+              icon={BookOpen}
             >
-              <BookOpen size={17} /> Read the sample <ChevronRight size={16} />
-            </button>
+              Read the sample
+            </ThreeDButton>
+
             {onOpenOcr && (
-              <button
-                className="sample-button"
+              <ThreeDButton
+                variant="secondary"
+                size="lg"
                 onClick={onOpenOcr}
-                style={{
-                  background: "linear-gradient(135deg, #4169e1, #1e3a8a)",
-                  color: "#ffffff",
-                }}
+                icon={Zap}
               >
-                <Zap size={16} /> Optional accelerated OCR <ChevronRight size={16} />
-              </button>
+                Optional accelerated OCR
+              </ThreeDButton>
             )}
             <span><ShieldCheck size={15} /> Standard imports stay on your device</span>
           </div>
@@ -194,7 +199,15 @@ export function LandingPage({
         </div>
       </section>
 
-      <section className="feature-strip" aria-label="Bookflow features">
+      {/* Interactive 3D Living Shelf Section */}
+      <div className="relative z-10 max-w-6xl mx-auto px-6 py-12">
+        <LivingShelf
+          onOpenBook={(book) => openBook(book, book.kind === "SAMPLE" ? "bookflow-sample" : undefined)}
+          onUploadClick={() => fileInputRef.current?.click()}
+        />
+      </div>
+
+      <section className="feature-strip relative z-10" aria-label="Bookflow features">
         <article>
           <span>01</span>
           <h2>Calm by default</h2>

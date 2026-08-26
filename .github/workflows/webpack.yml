@@ -1,4 +1,4 @@
-name: Frontend checks
+name: CI checks
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
+  frontend:
     runs-on: ubuntu-latest
 
     strategy:
@@ -32,5 +32,28 @@ jobs:
       run: npm test
 
     - name: Build
+      run: npm run build
+
+  backend:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install backend dependencies
       run: |
-        npm run build
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+
+    - name: Test backend
+      run: |
+        pytest backend/tests/ -v

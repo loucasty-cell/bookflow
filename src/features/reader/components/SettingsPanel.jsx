@@ -67,28 +67,26 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
 
         <section className="setting-group">
           <label>Atmosphere</label>
-          <div className="segmented" role="group" aria-label="Reading atmosphere">
-            <button
-              className={safeSettings.theme === "paper" ? "active" : ""}
-              onClick={() => update("theme", "paper")}
-              aria-pressed={safeSettings.theme === "paper"}
-            >
-              <Sun size={15} /> Light
-            </button>
-            <button
-              className={safeSettings.theme === "dusk" ? "active" : ""}
-              onClick={() => update("theme", "dusk")}
-              aria-pressed={safeSettings.theme === "dusk"}
-            >
-              <Moon size={15} /> Black
-            </button>
-            <button
-              className={safeSettings.theme === "remix" ? "active" : ""}
-              onClick={() => update("theme", "remix")}
-              aria-pressed={safeSettings.theme === "remix"}
-            >
-              <Palette size={15} /> Tint
-            </button>
+          <div className="segmented-grid" role="group" aria-label="Reading atmosphere">
+            {[
+              { id: "paper", label: "Paper", icon: Sun },
+              { id: "dusk", label: "Midnight", icon: Moon },
+              { id: "kyoto", label: "Kyoto", icon: Palette },
+              { id: "monocodex", label: "Codex", icon: BookOpen },
+              { id: "remix", label: "Sepia", icon: Palette },
+            ].map((thm) => {
+              const IconComponent = thm.icon;
+              return (
+                <button
+                  key={thm.id}
+                  className={safeSettings.theme === thm.id ? "active" : ""}
+                  onClick={() => update("theme", thm.id)}
+                  aria-pressed={safeSettings.theme === thm.id}
+                >
+                  <IconComponent size={14} /> {thm.label}
+                </button>
+              );
+            })}
           </div>
         </section>
 
@@ -180,14 +178,21 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
               Standard
             </button>
             <button
-              className={safeSettings.bionic ? "active" : ""}
+              className={safeSettings.bionic === true ? "active" : ""}
               onClick={() => update("bionic", true)}
-              aria-pressed={safeSettings.bionic}
+              aria-pressed={safeSettings.bionic === true}
             >
-              Bionic fixations
+              Bionic
+            </button>
+            <button
+              className={safeSettings.bionic === "salience" ? "active" : ""}
+              onClick={() => update("bionic", "salience")}
+              aria-pressed={safeSettings.bionic === "salience"}
+            >
+              Syntactic Salience
             </button>
           </div>
-          <p>Bionic mode anchors the initial letters of each word to guide saccadic eye movement.</p>
+          <p>Syntactic Salience bolds structural nouns and verbs while leaving minor particles calm to reduce visual fatigue.</p>
         </section>
 
         <section className="setting-group">

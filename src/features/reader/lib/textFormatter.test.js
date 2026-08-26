@@ -23,4 +23,11 @@ describe("textFormatter", () => {
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBeGreaterThan(1);
   });
+
+  it("formats words with syntactic salience when bionic is salience", () => {
+    const text = "The architecture of memory.";
+    const result = formatParagraphText(text, { bionic: "salience" });
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThan(1);
+  });
 });
