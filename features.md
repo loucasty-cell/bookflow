@@ -57,7 +57,7 @@ Bookflow is a private, high-focus document reading environment with a React/Vite
 ## 2. Document Processing & Formats
 
 ### 2.1 Supported Document Types
-- **PDF Documents**: Native text extraction with page-by-page progress reporting; handles embedded images and multi-page layouts.
+- **PDF Documents**: Native text extraction with page-by-page progress reporting; handles embedded images and multi-page layouts. Includes a high-speed, batched local WASM OCR processing pipeline (bounded by `navigator.hardwareConcurrency`) for scanned pages.
 - **EPUB Ebooks**: Extracts OPF metadata, spine order, chapter navigation, and subheadings across EPUB 2 and EPUB 3 files.
 - **Markdown (`.md`, `.markdown`)**: Automatically converts top-level headings to chapters and subheadings to reading sections.
 - **Plain Text (`.txt`)**: Parses paragraphs with smart chapter demarcation heuristics.
