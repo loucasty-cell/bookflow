@@ -165,7 +165,7 @@ Use a confidence threshold only as a routing signal. Confidence values from diff
 
 ### Laptops and desktops
 
-- Use two to four local workers depending on measured memory and CPU.
+- Use up to four local workers bounded by memory concurrency explicitly, calling `page.cleanup()` to avoid memory exhaustion during large PDFs processing.
 - Offer the self-hosted backend for large imports.
 - Use background jobs so the reader can open already completed pages.
 - Prefer a local network OCR service for organizations that do not want book images to leave their network.

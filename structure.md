@@ -67,7 +67,7 @@ bookflow/
 |   |   |   |   |-- epubUtils.js
 |   |   |   |   |-- fileValidation.js
 |   |   |   |   |-- pdfOcr.js
-|   |   |   |   |-- pdfParser.js
+|   |   |   |   |-- pdfParser.js             # Parses PDF structure and orchestrates bounded native extraction and OCR with memory cleanup (top-to-bottom readability)
 |   |   |   |   `-- textParser.js
 |   |   |   `-- index.js           # Public API for document import
 |   |   |-- landing/               # Welcome screen and sample book experience

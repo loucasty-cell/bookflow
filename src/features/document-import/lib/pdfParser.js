@@ -6,6 +6,53 @@ import {
   recognizePdfPage,
 } from "./pdfOcr.js";
 
+export async function parsePdf(file, onProgress) {
+  const startTime = Date.now();
+
+  let lastProgress = 1;
+  const reportProgress = (percent, label, detail) => {
+    lastProgress = Math.max(lastProgress, Math.min(99, Math.round(percent)));
+    onProgress?.(lastProgress, label, detail);
+  };
+
+  reportProgress(1, "Initializing PDF document...", "Reading local file bytes");
+
+  const pdf = await loadPdfDocument(file);
+  const metadata = await pdf.getMetadata().catch(() => null);
+  const documentTitle = normalizeText(metadata?.info?.Title) || cleanTitle(file.name);
+
+  // Pass 1: Extract native text and determine which pages need OCR
+  const pagesData = await extractNativeText(pdf, documentTitle, startTime, reportProgress);
+
+  const pagesNeedingOcr = pagesData.filter((p) => p.requiresOcr);
+  const totalPagesForOcr = pagesNeedingOcr.length;
+  let ocrPageCount = 0;
+
+  // Pass 2: Run OCR if needed
+  if (totalPagesForOcr > 0) {
+    ocrPageCount = await performLocalOcr(pagesNeedingOcr, totalPagesForOcr, pdf, reportProgress);
+  } else {
+    reportProgress(85, "Structuring chapters and sections...", "Preparing native text layout");
+  }
+
+  // Pass 3: Assemble Chapters in order
+  const chapters = assembleChapters(pagesData, reportProgress);
+
+  if (!chapters.length) {
+    throw new Error(
+      "Local OCR could not find readable English text in this PDF. Try a clearer, upright scan or an OCR-ready copy.",
+    );
+  }
+
+  return {
+    title: documentTitle,
+    author: normalizeText(metadata?.info?.Author),
+    kind: "PDF",
+    chapters,
+    ocrPageCount,
+  };
+}
+
 async function loadPdfDocument(file) {
   const [pdfjs] = await Promise.all([import("pdfjs-dist")]);
   pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
@@ -19,63 +66,88 @@ async function loadPdfDocument(file) {
 }
 
 async function extractNativeText(pdf, documentTitle, startTime, reportProgress) {
-  const pagesData = [];
-  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-    const elapsedSec = (Date.now() - startTime) / 1000;
-    const estRemainingSec = Math.max(
-      1,
-      Math.ceil((elapsedSec / Math.max(1, pageNumber)) * (pdf.numPages - pageNumber)),
-    );
-    const pass1Progress = Math.max(2, Math.min(25, Math.round((pageNumber / pdf.numPages) * 25)));
+  const pagesData = new Array(pdf.numPages);
+  let completed = 0;
 
-    reportProgress(
-      pass1Progress,
-      `Reading page ${pageNumber} of ${pdf.numPages} (~${estRemainingSec}s remaining)`,
-      "Inspecting native text and document structure",
-    );
-
+  const extractPage = async (pageNumber) => {
     const page = await pdf.getPage(pageNumber);
-    const content = await page.getTextContent({ normalizeWhitespace: true });
-    const lines = [];
-    let currentLine = [];
-    let lastY = null;
+    try {
+      const content = await page.getTextContent({ normalizeWhitespace: true });
+      const lines = [];
+      let currentLine = [];
+      let lastY = null;
 
-    for (const item of content.items) {
-      const value = item.str?.trim();
-      if (!value) continue;
-      const y = Math.round(item.transform?.[5] ?? 0);
-      if (lastY !== null && Math.abs(y - lastY) > 4 && currentLine.length) {
-        lines.push(currentLine.join(" "));
-        currentLine = [];
+      for (const item of content.items) {
+        const value = item.str?.trim();
+        if (!value) continue;
+        const y = Math.round(item.transform?.[5] ?? 0);
+        if (lastY !== null && Math.abs(y - lastY) > 4 && currentLine.length) {
+          lines.push(currentLine.join(" "));
+          currentLine = [];
+        }
+        currentLine.push(value);
+        if (item.hasEOL) {
+          lines.push(currentLine.join(" "));
+          currentLine = [];
+        }
+        lastY = y;
       }
-      currentLine.push(value);
-      if (item.hasEOL) {
-        lines.push(currentLine.join(" "));
-        currentLine = [];
-      }
-      lastY = y;
+      if (currentLine.length) lines.push(currentLine.join(" "));
+
+      const readableLines = lines.filter(
+        (candidate) =>
+          !(pageNumber === 1 && normalizeText(candidate) === documentTitle),
+      );
+      const nativeText = readableLines.join("\n");
+      const requiresOcr = pageNeedsOcr(nativeText);
+
+      pagesData[pageNumber - 1] = {
+        pageNumber,
+        readableLines,
+        requiresOcr,
+        paragraphs: null,
+      };
+    } finally {
+      page.cleanup();
+      completed += 1;
+
+      const elapsedSec = (Date.now() - startTime) / 1000;
+      const estRemainingSec = Math.max(
+        1,
+        Math.ceil((elapsedSec / Math.max(1, completed)) * (pdf.numPages - completed)),
+      );
+      const pass1Progress = Math.max(2, Math.min(25, Math.round((completed / pdf.numPages) * 25)));
+
+      reportProgress(
+        pass1Progress,
+        `Reading page ${completed} of ${pdf.numPages} (~${estRemainingSec}s remaining)`,
+        "Inspecting native text and document structure",
+      );
     }
-    if (currentLine.length) lines.push(currentLine.join(" "));
+  };
 
-    const readableLines = lines.filter(
-      (candidate) =>
-        !(pageNumber === 1 && normalizeText(candidate) === documentTitle),
-    );
-    const nativeText = readableLines.join("\n");
-    const requiresOcr = pageNeedsOcr(nativeText);
+  const maxConcurrency = Math.min(4, navigator.hardwareConcurrency || 2);
+  let currentIndex = 1;
 
-    pagesData.push({
-      pageNumber,
-      page,
-      readableLines,
-      requiresOcr,
-      paragraphs: null,
-    });
+  const processNext = async () => {
+    while (currentIndex <= pdf.numPages) {
+      const pageNumber = currentIndex;
+      currentIndex += 1;
+      await extractPage(pageNumber);
+    }
+  };
+
+  const workers = [];
+  for (let i = 0; i < maxConcurrency; i += 1) {
+    workers.push(processNext());
   }
+
+  await Promise.all(workers);
+
   return pagesData;
 }
 
-async function performLocalOcr(pagesNeedingOcr, totalPagesForOcr, pdfNumPages, reportProgress) {
+async function performLocalOcr(pagesNeedingOcr, totalPagesForOcr, pdf, reportProgress) {
   reportProgress(
     26,
     "Starting private on-device OCR...",
@@ -96,7 +168,7 @@ async function performLocalOcr(pagesNeedingOcr, totalPagesForOcr, pdfNumPages, r
   let ocrPageCount = 0;
 
   try {
-    const maxConcurrency = Math.min(8, navigator.hardwareConcurrency || 2);
+    const maxConcurrency = Math.min(4, navigator.hardwareConcurrency || 2);
     let currentIndex = 0;
 
     const processNext = async () => {
@@ -104,9 +176,14 @@ async function performLocalOcr(pagesNeedingOcr, totalPagesForOcr, pdfNumPages, r
         const pageData = pagesNeedingOcr[currentIndex];
         currentIndex += 1;
 
-        const recognized = await recognizePdfPage(ocrScheduler, pageData.page);
-        pageData.paragraphs = recognized.paragraphs;
-        if (pageData.paragraphs.length) ocrPageCount += 1;
+        const page = await pdf.getPage(pageData.pageNumber);
+        try {
+          const recognized = await recognizePdfPage(ocrScheduler, page);
+          pageData.paragraphs = recognized.paragraphs;
+          if (pageData.paragraphs.length) ocrPageCount += 1;
+        } finally {
+          page.cleanup();
+        }
 
         completedOcr += 1;
         const ocrElapsedSec = (Date.now() - ocrStartTime) / 1000;
@@ -118,7 +195,7 @@ async function performLocalOcr(pagesNeedingOcr, totalPagesForOcr, pdfNumPages, r
 
         reportProgress(
           ocrProgress,
-          `Recovered scanned page ${pageData.pageNumber} of ${pdfNumPages} (${completedOcr}/${totalPagesForOcr}) ~${estOcrRemainingSec}s remaining`,
+          `Recovered scanned page ${pageData.pageNumber} of ${pdf.numPages} (${completedOcr}/${totalPagesForOcr}) ~${estOcrRemainingSec}s remaining`,
           "Private local OCR processing in parallel chunks",
         );
       }
@@ -180,51 +257,4 @@ function assembleChapters(pagesData, reportProgress) {
   }
 
   return chapters;
-}
-
-export async function parsePdf(file, onProgress) {
-  const startTime = Date.now();
-
-  let lastProgress = 1;
-  const reportProgress = (percent, label, detail) => {
-    lastProgress = Math.max(lastProgress, Math.min(99, Math.round(percent)));
-    onProgress?.(lastProgress, label, detail);
-  };
-
-  reportProgress(1, "Initializing PDF document...", "Reading local file bytes");
-
-  const pdf = await loadPdfDocument(file);
-  const metadata = await pdf.getMetadata().catch(() => null);
-  const documentTitle = normalizeText(metadata?.info?.Title) || cleanTitle(file.name);
-
-  // Pass 1: Extract native text and determine which pages need OCR
-  const pagesData = await extractNativeText(pdf, documentTitle, startTime, reportProgress);
-
-  const pagesNeedingOcr = pagesData.filter((p) => p.requiresOcr);
-  const totalPagesForOcr = pagesNeedingOcr.length;
-  let ocrPageCount = 0;
-
-  // Pass 2: Run OCR if needed
-  if (totalPagesForOcr > 0) {
-    ocrPageCount = await performLocalOcr(pagesNeedingOcr, totalPagesForOcr, pdf.numPages, reportProgress);
-  } else {
-    reportProgress(85, "Structuring chapters and sections...", "Preparing native text layout");
-  }
-
-  // Pass 3: Assemble Chapters in order
-  const chapters = assembleChapters(pagesData, reportProgress);
-
-  if (!chapters.length) {
-    throw new Error(
-      "Local OCR could not find readable English text in this PDF. Try a clearer, upright scan or an OCR-ready copy.",
-    );
-  }
-
-  return {
-    title: documentTitle,
-    author: normalizeText(metadata?.info?.Author),
-    kind: "PDF",
-    chapters,
-    ocrPageCount,
-  };
 }

@@ -57,7 +57,7 @@ function localOcrUrl(path) {
 export async function createPdfOcrScheduler(reportProgress) {
   const { createWorker, createScheduler } = await import("tesseract.js");
   const scheduler = createScheduler();
-  const workerCount = Math.min(8, navigator.hardwareConcurrency || 2);
+  const workerCount = Math.min(4, navigator.hardwareConcurrency || 2);
 
   for (let i = 0; i < workerCount; i++) {
     const worker = await createWorker("eng", 1, {
