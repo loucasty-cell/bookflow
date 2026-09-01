@@ -57,8 +57,10 @@ Limitations:
 - A 400–600-page scan can take many minutes on a phone or ordinary laptop.
 - More browser workers do not always improve speed; they can exhaust memory and battery.
 
-Use a bounded concurrency worker pool to prevent memory exhaustion and browser crashes. Concurrency should be scaled based on `navigator.hardwareConcurrency` (up to a maximum of 8 workers for high-end laptops). Terminate workers when a document is complete or cancelled.
+Use a bounded concurrency worker pool to prevent memory exhaustion and browser crashes. Concurrency should be scaled based on `navigator.hardwareConcurrency` (up to a maximum of 4 workers for high-end laptops). Terminate workers when a document is complete or cancelled.
 Use bounded chunked processing in the browser to prevent massive memory usage (crashing when creating hundreds of high-resolution canvas elements at once). Process OCR pages in batches equal to `navigator.hardwareConcurrency` (capped at 4). Terminate workers when a document is complete or cancelled.
+
+Additionally, to prevent memory leaks during text extraction and OCR, large PDF.js `page` instances must not be retained in memory arrays. They should be fetched on-demand and explicitly cleaned up (`page.cleanup()`) immediately after processing to allow garbage collection.
 
 ### 2.2 Self-hosted OCR service
 

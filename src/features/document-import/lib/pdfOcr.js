@@ -9,6 +9,42 @@ const OCR_MAX_PIXELS = 10_000_000;
 const NATIVE_TEXT_MIN_CHARACTERS = 80;
 const NATIVE_TEXT_MIN_WORDS = 12;
 
+export async function createPdfOcrScheduler(reportProgress) {
+  const { createWorker, createScheduler } = await import("tesseract.js");
+  const scheduler = createScheduler();
+  const workerCount = Math.min(4, navigator.hardwareConcurrency || 2);
+
+  for (let i = 0; i < workerCount; i++) {
+    const worker = await createWorker("eng", 1, {
+      workerPath: localOcrUrl("worker.min.js"),
+      corePath: localOcrUrl("core"),
+      langPath: localOcrUrl("lang"),
+      logger: (message) => reportProgress?.(message),
+    });
+    scheduler.addWorker(worker);
+  }
+
+  return scheduler;
+}
+
+export async function recognizePdfPage(scheduler, page) {
+  const { canvas, dpi } = await renderPdfPageForOcr(page);
+  try {
+    const result = await scheduler.addJob('recognize', canvas, {
+      preserve_interword_spaces: "1",
+      tessedit_pageseg_mode: "3",
+      user_defined_dpi: String(dpi),
+    });
+    return {
+      confidence: Number(result.data.confidence) || 0,
+      paragraphs: ocrTextToParagraphs(result.data.text),
+    };
+  } finally {
+    canvas.width = 1;
+    canvas.height = 1;
+  }
+}
+
 export function pageNeedsOcr(text) {
   const normalized = normalizeText(text);
   return (
@@ -52,24 +88,6 @@ export function ocrDpiForScale(scale) {
 
 function localOcrUrl(path) {
   return new URL(`/ocr/${path}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost').href;
-}
-
-export async function createPdfOcrScheduler(reportProgress) {
-  const { createWorker, createScheduler } = await import("tesseract.js");
-  const scheduler = createScheduler();
-  const workerCount = Math.min(8, navigator.hardwareConcurrency || 2);
-
-  for (let i = 0; i < workerCount; i++) {
-    const worker = await createWorker("eng", 1, {
-      workerPath: localOcrUrl("worker.min.js"),
-      corePath: localOcrUrl("core"),
-      langPath: localOcrUrl("lang"),
-      logger: (message) => reportProgress?.(message),
-    });
-    scheduler.addWorker(worker);
-  }
-
-  return scheduler;
 }
 
 function renderScaleForPage(page) {
@@ -135,22 +153,4 @@ export async function renderPdfPageForOcr(page) {
   }).promise;
   normalizeScanContrast(canvasContext, canvas.width, canvas.height);
   return { canvas, dpi: ocrDpiForScale(scale) };
-}
-
-export async function recognizePdfPage(scheduler, page) {
-  const { canvas, dpi } = await renderPdfPageForOcr(page);
-  try {
-    const result = await scheduler.addJob('recognize', canvas, {
-      preserve_interword_spaces: "1",
-      tessedit_pageseg_mode: "3",
-      user_defined_dpi: String(dpi),
-    });
-    return {
-      confidence: Number(result.data.confidence) || 0,
-      paragraphs: ocrTextToParagraphs(result.data.text),
-    };
-  } finally {
-    canvas.width = 1;
-    canvas.height = 1;
-  }
 }
