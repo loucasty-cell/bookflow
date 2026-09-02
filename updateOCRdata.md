@@ -59,6 +59,7 @@ Limitations:
 
 Use a bounded concurrency worker pool to prevent memory exhaustion and browser crashes. Concurrency should be scaled based on `navigator.hardwareConcurrency` (up to a maximum of 8 workers for high-end laptops). Terminate workers when a document is complete or cancelled.
 Use bounded chunked processing in the browser to prevent massive memory usage (crashing when creating hundreds of high-resolution canvas elements at once). Process OCR pages in batches equal to `navigator.hardwareConcurrency` (capped at 4). Terminate workers when a document is complete or cancelled.
+- **Memory Management Optimization**: To prevent memory bloat and browser thrashing during large document OCR, PDF.js page instances are retrieved on-demand and immediately cleared using `page.cleanup()` once native text or visual text has been extracted. Concurrency is strictly capped using `Math.min(4, navigator.hardwareConcurrency || 1)`.
 
 ### 2.2 Self-hosted OCR service
 
