@@ -331,3 +331,8 @@ Official references:
 - [Hugging Face server inference client](https://huggingface.co/docs/huggingface_hub/guides/inference)
 - [Tesseract OCR](https://github.com/tesseract-ocr/tesseract)
 - [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)
+
+### Recent Optimizations (Bounded Concurrency & Memory Scaling)
+
+- **Frontend Tesseract.js (Local)**: The maximum Web Worker concurrency pool has been formally capped at 4 workers (`Math.min(4, navigator.hardwareConcurrency || 2)`). Explicit pdf.js page rendering garbage collection (`page.cleanup()`) has been added after native extraction passes and successful OCR scans to clear pixel data from JS heap.
+- **Backend FastAPI**: Offloaded PDF parsing (PyMuPDF `fitz`) into a batched on-the-fly rendering architecture. The backend explicitly iterates chunks of length `batch_size` (16 pages) directly rather than rendering the entire 600-page book at once into uncompressed `base64` JPEGs within the RAM heap space.
