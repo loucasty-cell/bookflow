@@ -6,6 +6,53 @@ import {
   recognizePdfPage,
 } from "./pdfOcr.js";
 
+export async function parsePdf(file, onProgress) {
+  const startTime = Date.now();
+
+  let lastProgress = 1;
+  const reportProgress = (percent, label, detail) => {
+    lastProgress = Math.max(lastProgress, Math.min(99, Math.round(percent)));
+    onProgress?.(lastProgress, label, detail);
+  };
+
+  reportProgress(1, "Initializing PDF document...", "Reading local file bytes");
+
+  const pdf = await loadPdfDocument(file);
+  const metadata = await pdf.getMetadata().catch(() => null);
+  const documentTitle = normalizeText(metadata?.info?.Title) || cleanTitle(file.name);
+
+  // Pass 1: Extract native text and determine which pages need OCR
+  const pagesData = await extractNativeText(pdf, documentTitle, startTime, reportProgress);
+
+  const pagesNeedingOcr = pagesData.filter((p) => p.requiresOcr);
+  const totalPagesForOcr = pagesNeedingOcr.length;
+  let ocrPageCount = 0;
+
+  // Pass 2: Run OCR if needed
+  if (totalPagesForOcr > 0) {
+    ocrPageCount = await performLocalOcr(pagesNeedingOcr, totalPagesForOcr, pdf.numPages, reportProgress);
+  } else {
+    reportProgress(85, "Structuring chapters and sections...", "Preparing native text layout");
+  }
+
+  // Pass 3: Assemble Chapters in order
+  const chapters = assembleChapters(pagesData, reportProgress);
+
+  if (!chapters.length) {
+    throw new Error(
+      "Local OCR could not find readable English text in this PDF. Try a clearer, upright scan or an OCR-ready copy.",
+    );
+  }
+
+  return {
+    title: documentTitle,
+    author: normalizeText(metadata?.info?.Author),
+    kind: "PDF",
+    chapters,
+    ocrPageCount,
+  };
+}
+
 async function loadPdfDocument(file) {
   const [pdfjs] = await Promise.all([import("pdfjs-dist")]);
   pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
@@ -96,7 +143,7 @@ async function performLocalOcr(pagesNeedingOcr, totalPagesForOcr, pdfNumPages, r
   let ocrPageCount = 0;
 
   try {
-    const maxConcurrency = Math.min(8, navigator.hardwareConcurrency || 2);
+    const maxConcurrency = Math.min(4, navigator.hardwareConcurrency || 2);
     let currentIndex = 0;
 
     const processNext = async () => {
@@ -107,6 +154,10 @@ async function performLocalOcr(pagesNeedingOcr, totalPagesForOcr, pdfNumPages, r
         const recognized = await recognizePdfPage(ocrScheduler, pageData.page);
         pageData.paragraphs = recognized.paragraphs;
         if (pageData.paragraphs.length) ocrPageCount += 1;
+
+        if (typeof pageData.page.cleanup === 'function') {
+          pageData.page.cleanup();
+        }
 
         completedOcr += 1;
         const ocrElapsedSec = (Date.now() - ocrStartTime) / 1000;
@@ -180,51 +231,4 @@ function assembleChapters(pagesData, reportProgress) {
   }
 
   return chapters;
-}
-
-export async function parsePdf(file, onProgress) {
-  const startTime = Date.now();
-
-  let lastProgress = 1;
-  const reportProgress = (percent, label, detail) => {
-    lastProgress = Math.max(lastProgress, Math.min(99, Math.round(percent)));
-    onProgress?.(lastProgress, label, detail);
-  };
-
-  reportProgress(1, "Initializing PDF document...", "Reading local file bytes");
-
-  const pdf = await loadPdfDocument(file);
-  const metadata = await pdf.getMetadata().catch(() => null);
-  const documentTitle = normalizeText(metadata?.info?.Title) || cleanTitle(file.name);
-
-  // Pass 1: Extract native text and determine which pages need OCR
-  const pagesData = await extractNativeText(pdf, documentTitle, startTime, reportProgress);
-
-  const pagesNeedingOcr = pagesData.filter((p) => p.requiresOcr);
-  const totalPagesForOcr = pagesNeedingOcr.length;
-  let ocrPageCount = 0;
-
-  // Pass 2: Run OCR if needed
-  if (totalPagesForOcr > 0) {
-    ocrPageCount = await performLocalOcr(pagesNeedingOcr, totalPagesForOcr, pdf.numPages, reportProgress);
-  } else {
-    reportProgress(85, "Structuring chapters and sections...", "Preparing native text layout");
-  }
-
-  // Pass 3: Assemble Chapters in order
-  const chapters = assembleChapters(pagesData, reportProgress);
-
-  if (!chapters.length) {
-    throw new Error(
-      "Local OCR could not find readable English text in this PDF. Try a clearer, upright scan or an OCR-ready copy.",
-    );
-  }
-
-  return {
-    title: documentTitle,
-    author: normalizeText(metadata?.info?.Author),
-    kind: "PDF",
-    chapters,
-    ocrPageCount,
-  };
 }
