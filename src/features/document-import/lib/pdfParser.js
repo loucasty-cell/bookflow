@@ -96,7 +96,7 @@ async function performLocalOcr(pagesNeedingOcr, totalPagesForOcr, pdfNumPages, r
   let ocrPageCount = 0;
 
   try {
-    const maxConcurrency = Math.min(8, navigator.hardwareConcurrency || 2);
+    const maxConcurrency = Math.min(4, navigator.hardwareConcurrency || 2);
     let currentIndex = 0;
 
     const processNext = async () => {
@@ -107,6 +107,9 @@ async function performLocalOcr(pagesNeedingOcr, totalPagesForOcr, pdfNumPages, r
         const recognized = await recognizePdfPage(ocrScheduler, pageData.page);
         pageData.paragraphs = recognized.paragraphs;
         if (pageData.paragraphs.length) ocrPageCount += 1;
+
+        // Ensure garbage collection of large PDF page instances
+        pageData.page.cleanup();
 
         completedOcr += 1;
         const ocrElapsedSec = (Date.now() - ocrStartTime) / 1000;
@@ -218,6 +221,13 @@ export async function parsePdf(file, onProgress) {
     throw new Error(
       "Local OCR could not find readable English text in this PDF. Try a clearer, upright scan or an OCR-ready copy.",
     );
+  }
+
+  // Ensure all page instances are cleaned up for garbage collection
+  for (const p of pagesData) {
+    if (p.page && typeof p.page.cleanup === 'function') {
+      p.page.cleanup();
+    }
   }
 
   return {

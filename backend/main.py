@@ -118,9 +118,16 @@ except ImportError as e:
     logger.warning(f"Could not load social router: {e}")
 
 
-def _render_pdf_pages_sync(pdf_bytes: bytes, force_ocr: bool = False) -> List[Dict[str, Any]]:
+def get_pdf_page_count(pdf_bytes: bytes) -> int:
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    count = len(doc)
+    doc.close()
+    return count
+
+
+def _render_pdf_pages_sync(pdf_bytes: bytes, page_indices: List[int], force_ocr: bool = False) -> List[Dict[str, Any]]:
     """
-    Synchronous high-speed CPU worker to extract pages.
+    Synchronous high-speed CPU worker to extract specific pages in a batch.
     Native text pages are processed in microseconds; scanned image pages are rendered at 96 DPI.
     Eliminates disk I/O bottlenecks.
     """
@@ -128,7 +135,9 @@ def _render_pdf_pages_sync(pdf_bytes: bytes, force_ocr: bool = False) -> List[Di
     rendered_pages = []
     matrix = fitz.Matrix(RENDER_SCALE, RENDER_SCALE)
 
-    for idx in range(len(doc)):
+    for idx in page_indices:
+        if idx >= len(doc):
+            continue
         page = doc.load_page(idx)
         # Extract native blocks / text with structure preservation
         blocks = page.get_text("blocks")
@@ -166,10 +175,10 @@ def _render_pdf_pages_sync(pdf_bytes: bytes, force_ocr: bool = False) -> List[Di
     return rendered_pages
 
 
-async def render_pdf_pages_async(pdf_bytes: bytes, force_ocr: bool = False) -> List[Dict[str, Any]]:
-    """Asynchronously offload PDF page rendering to thread pool executor."""
+async def render_pdf_pages_async(pdf_bytes: bytes, page_indices: List[int], force_ocr: bool = False) -> List[Dict[str, Any]]:
+    """Asynchronously offload PDF page rendering to thread pool executor for a specific batch of pages."""
     loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(executor, _render_pdf_pages_sync, pdf_bytes, force_ocr)
+    return await loop.run_in_executor(executor, _render_pdf_pages_sync, pdf_bytes, page_indices, force_ocr)
 
 
 async def ensure_hf_inference_support(
@@ -520,9 +529,9 @@ async def process_ocr_pipeline(
 ):
     """
     Main background OCR execution pipeline.
-    1. Extracts all pages to in-memory JPEG at 96 DPI.
-    2. Groups into non-blocking batches of 16 pages.
-    3. Runs concurrent async calls to Hugging Face Inference API.
+    1. Extracts total page count.
+    2. Batches pages, renders them in-memory, and runs OCR on the fly.
+    3. Cleans up memory immediately after each batch.
     4. Streams real-time page updates via SSE.
     """
     async with jobs_lock:
@@ -530,27 +539,32 @@ async def process_ocr_pipeline(
     if not job:
         return
 
-    rendered_pages: List[Dict[str, Any]] = []
     try:
-        # Step 1: Render pages in parallel in memory
-        rendered_pages = await render_pdf_pages_async(pdf_bytes)
-        job.total_pages = len(rendered_pages)
+        total_pages = await asyncio.get_running_loop().run_in_executor(executor, get_pdf_page_count, pdf_bytes)
+        job.total_pages = total_pages
         await notify_subscribers(job, "status", {"status": "processing", "total_pages": job.total_pages})
 
         limits = httpx.Limits(max_keepalive_connections=batch_size, max_connections=batch_size * 2)
         async with httpx.AsyncClient(timeout=60.0, limits=limits) as http_client:
-            if any(not page.get("is_native", False) for page in rendered_pages) and not PADDLEOCR_URL:
-                await ensure_hf_inference_support(http_client, model_id, api_key)
+            # Note: We now check HF support conditionally during the first image OCR,
+            # or preflight it here if we assume non-native presence.
+            if not PADDLEOCR_URL:
+                try:
+                    await ensure_hf_inference_support(http_client, model_id, api_key)
+                except Exception as e:
+                    # If this fails, it might be fine if all pages are native, but if not, OCR will fail.
+                    logger.warning(f"Failed HF preflight check: {e}")
 
-            for batch_start in range(0, len(rendered_pages), batch_size):
+            for batch_start in range(0, total_pages, batch_size):
                 if job.status == "canceled":
-                    for page in rendered_pages:
-                        page["image_b64"] = None
                     return
 
-                batch = rendered_pages[batch_start : batch_start + batch_size]
+                page_indices = list(range(batch_start, min(batch_start + batch_size, total_pages)))
+
+                # Render only this batch of pages
+                batch_rendered = await render_pdf_pages_async(pdf_bytes, page_indices)
     
-                # Execute the 16 pages in this batch concurrently
+                # Execute the pages in this batch concurrently
                 tasks = [
                     call_ocr_with_retry(
                         client=http_client,
@@ -562,13 +576,11 @@ async def process_ocr_pipeline(
                         api_key=api_key,
                         ocr_profile=ocr_profile,
                     )
-                    for p in batch
+                    for p in batch_rendered
                 ]
                 batch_results: List[PageData] = await asyncio.gather(*tasks)
 
                 if job.status == "canceled":
-                    for page in rendered_pages:
-                        page["image_b64"] = None
                     return
     
                 for res in batch_results:
@@ -585,8 +597,10 @@ async def process_ocr_pipeline(
                     job.pages.append(page_dict)
                     await notify_subscribers(job, "progress")
 
-                for page in batch:
+                # Explicitly clear the large image data from memory
+                for page in batch_rendered:
                     page["image_b64"] = None
+                del batch_rendered
 
         failed_pages = [page for page in job.pages if not page["success"]]
         if failed_pages:
@@ -635,9 +649,6 @@ async def process_ocr_pipeline(
             "status": "failed",
             "error": str(exc),
         })
-    finally:
-        for page in rendered_pages:
-            page["image_b64"] = None
 
 
 async def prune_stale_jobs(ttl_seconds: float = 3600.0) -> None:

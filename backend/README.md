@@ -4,7 +4,7 @@ Python backend for Bookflow providing document parsing, text segmentation, readi
 
 ## Features
 
-- **OCR routing**: Uses a self-hosted PaddleOCR-compatible service first when `PADDLEOCR_URL` is configured, then can fall back to the Hugging Face OpenAI-compatible vision route.
+- **OCR routing**: Uses a self-hosted PaddleOCR-compatible service first when `PADDLEOCR_URL` is configured, then can fall back to the Hugging Face OpenAI-compatible vision route. It uses batch-based on-the-fly rendering (instead of loading all image bytes into memory at once) to cap memory usage during large document scans.
 - **Document Processing**: Parses PDF, EPUB, Markdown, and TXT documents into normalized Bookflow book structures.
 - **Text & Reading Metrics**: Abbreviation-aware sentence segmentation, paragraph normalization, and reading time estimation.
 - **Notes & Bookmarks Exchange**: Validated import and export pipelines for reader notes and reading states.
