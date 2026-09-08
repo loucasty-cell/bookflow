@@ -50,14 +50,10 @@ export function ocrDpiForScale(scale) {
   return Math.round(Math.max(144, Math.min(300, scale * 72)));
 }
 
-function localOcrUrl(path) {
-  return new URL(`/ocr/${path}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost').href;
-}
-
 export async function createPdfOcrScheduler(reportProgress) {
   const { createWorker, createScheduler } = await import("tesseract.js");
   const scheduler = createScheduler();
-  const workerCount = Math.min(8, navigator.hardwareConcurrency || 2);
+  const workerCount = Math.min(4, navigator.hardwareConcurrency || 2);
 
   for (let i = 0; i < workerCount; i++) {
     const worker = await createWorker("eng", 1, {
@@ -70,6 +66,50 @@ export async function createPdfOcrScheduler(reportProgress) {
   }
 
   return scheduler;
+}
+
+export async function renderPdfPageForOcr(page) {
+  const scale = renderScaleForPage(page);
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.ceil(viewport.width));
+  canvas.height = Math.max(1, Math.ceil(viewport.height));
+  const canvasContext = canvas.getContext("2d", {
+    alpha: false,
+    willReadFrequently: true,
+  });
+  if (!canvasContext)
+    throw new Error("This browser could not prepare a scanned PDF page for OCR.");
+
+  await page.render({
+    canvasContext,
+    viewport,
+    background: "#ffffff",
+  }).promise;
+  normalizeScanContrast(canvasContext, canvas.width, canvas.height);
+  return { canvas, dpi: ocrDpiForScale(scale) };
+}
+
+export async function recognizePdfPage(scheduler, page) {
+  const { canvas, dpi } = await renderPdfPageForOcr(page);
+  try {
+    const result = await scheduler.addJob('recognize', canvas, {
+      preserve_interword_spaces: "1",
+      tessedit_pageseg_mode: "3",
+      user_defined_dpi: String(dpi),
+    });
+    return {
+      confidence: Number(result.data.confidence) || 0,
+      paragraphs: ocrTextToParagraphs(result.data.text),
+    };
+  } finally {
+    canvas.width = 1;
+    canvas.height = 1;
+  }
+}
+
+function localOcrUrl(path) {
+  return new URL(`/ocr/${path}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost').href;
 }
 
 function renderScaleForPage(page) {
@@ -113,44 +153,4 @@ function normalizeScanContrast(context, width, height) {
     pixels[index + 2] = adjusted;
   }
   context.putImageData(image, 0, 0);
-}
-
-export async function renderPdfPageForOcr(page) {
-  const scale = renderScaleForPage(page);
-  const viewport = page.getViewport({ scale });
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.ceil(viewport.width));
-  canvas.height = Math.max(1, Math.ceil(viewport.height));
-  const canvasContext = canvas.getContext("2d", {
-    alpha: false,
-    willReadFrequently: true,
-  });
-  if (!canvasContext)
-    throw new Error("This browser could not prepare a scanned PDF page for OCR.");
-
-  await page.render({
-    canvasContext,
-    viewport,
-    background: "#ffffff",
-  }).promise;
-  normalizeScanContrast(canvasContext, canvas.width, canvas.height);
-  return { canvas, dpi: ocrDpiForScale(scale) };
-}
-
-export async function recognizePdfPage(scheduler, page) {
-  const { canvas, dpi } = await renderPdfPageForOcr(page);
-  try {
-    const result = await scheduler.addJob('recognize', canvas, {
-      preserve_interword_spaces: "1",
-      tessedit_pageseg_mode: "3",
-      user_defined_dpi: String(dpi),
-    });
-    return {
-      confidence: Number(result.data.confidence) || 0,
-      paragraphs: ocrTextToParagraphs(result.data.text),
-    };
-  } finally {
-    canvas.width = 1;
-    canvas.height = 1;
-  }
 }
