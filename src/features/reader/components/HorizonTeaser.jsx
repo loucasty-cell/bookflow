@@ -1,22 +1,25 @@
-import { Sparkles, ArrowRight } from "lucide-react";
+import { BookOpen, ArrowRight } from "lucide-react";
 
-/**
- * Zeigarnik Curiosity Horizon Teaser.
- * Renders at the bottom of a chapter to smoothly bridge the reader into the next chapter,
- * reducing the drop-off rate between chapter transitions.
- */
 export function HorizonTeaser({ nextChapter, onJumpToNext, estimatedMinutes = 3 }) {
   if (!nextChapter) return null;
 
-  // Extract first opening sentence as an intrigue hook
-  const firstParagraph = nextChapter.paragraphs?.[0] || "";
-  const firstSentence = firstParagraph.split(/[.!?…]["'’”)]?\s+/)[0] || "";
+  // Extract first opening sentence as a preview
+  const rawParagraph =
+    nextChapter.paragraphs?.[0] ??
+    nextChapter.sections?.[0]?.paragraphs?.[0];
+  const firstParagraphText =
+    typeof rawParagraph === "string"
+      ? rawParagraph
+      : (typeof rawParagraph?.text === "string" ? rawParagraph.text : "");
+  const firstSentence = firstParagraphText
+    ? firstParagraphText.split(/[.!?…]["'’”)]?\s+/)[0]?.trim() || ""
+    : "";
 
   return (
     <aside className="horizon-teaser" aria-label="Upcoming chapter preview">
       <div className="horizon-badge">
-        <Sparkles size={13} />
-        <span>Next Chapter • ~{estimatedMinutes} min read</span>
+        <BookOpen size={13} />
+        <span>Next chapter • ~{estimatedMinutes} min read</span>
       </div>
       <h3 className="horizon-title">{nextChapter.title}</h3>
       {firstSentence && (
@@ -26,7 +29,7 @@ export function HorizonTeaser({ nextChapter, onJumpToNext, estimatedMinutes = 3 
       )}
       <button
         type="button"
-        className="horizon-action-btn btn-3d-tactile"
+        className="horizon-action-btn"
         onClick={onJumpToNext}
       >
         <span>Continue to {nextChapter.title}</span>

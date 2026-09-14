@@ -56,8 +56,7 @@ export function LandingPage({
 
   return (
     <main className="landing-shell relative overflow-hidden" data-theme={theme}>
-      {/* Low-CPU Ambient Volumetric Dust & Light Shader */}
-      <AmbientDustCanvas active={true} />
+      <AmbientDustCanvas active={true} theme={theme} />
 
       <nav className="landing-nav relative z-10" aria-label="Primary navigation">
         <Brand />
@@ -79,7 +78,7 @@ export function LandingPage({
       <section className="hero relative z-10">
         <div className="hero-copy-column">
           <div className="eyebrow">
-            <Sparkles size={14} /> Your private reading sanctuary
+            Focused Reading Environment
           </div>
           <h1>
             Read deeper.
@@ -209,17 +208,14 @@ export function LandingPage({
 
       <section className="feature-strip relative z-10" aria-label="Bookflow features">
         <article>
-          <span>01</span>
           <h2>Calm by default</h2>
           <p>Content leads. Controls stay quiet until you need them.</p>
         </article>
         <article>
-          <span>02</span>
           <h2>Find your pace</h2>
           <p>Adjust type, spacing, width, focus depth, and atmosphere.</p>
         </article>
         <article>
-          <span>03</span>
           <h2>Private by default</h2>
           <p>Keep bookmarks, notes, and progress on this device.</p>
         </article>

@@ -1,4 +1,5 @@
-import { Plus, Sparkles } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { BookOpen, Plus } from "lucide-react";
 import { ThreeDBookCard } from "./ThreeDBookCard.jsx";
 import { SAMPLE_BOOK } from "../sampleBook.js";
 
@@ -67,17 +68,139 @@ const CURATED_LIBRARY = [
 ];
 
 export function LivingShelf({ onOpenBook, onUploadClick }) {
+  const plankRef = useRef(null);
+  const [shadowDepth, setShadowDepth] = useState(() => {
+    try {
+      return localStorage.getItem("bookflow_shelf_shadow") || "medium";
+    } catch {
+      return "medium";
+    }
+  });
+
+  const handleShadowChange = (mode) => {
+    setShadowDepth(mode);
+    try {
+      localStorage.setItem("bookflow_shelf_shadow", mode);
+    } catch {
+      // Ignore storage errors
+    }
+  };
+
+  useEffect(() => {
+    const plank = plankRef.current;
+    if (!plank || typeof window === "undefined") return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion) return;
+
+    let rafId = null;
+    let targetProximity = 0;
+    let currentProximity = 0;
+
+    const updateProximityStyles = () => {
+      // Fluid spring restitution towards pointer proximity
+      currentProximity += (targetProximity - currentProximity) * 0.12;
+
+      // Dynamically shifts shadow intensity by 5-10% (from 1.00 up to 1.08 max)
+      const intensityShift = 1 + currentProximity * 0.08;
+      const blurShift = (currentProximity * 1.8).toFixed(2);
+      const spreadShift = (1 + currentProximity * 0.04).toFixed(3);
+      const yShift = (currentProximity * 1.4).toFixed(2);
+      const plankLift = (-currentProximity * 1.5).toFixed(2);
+
+      plank.style.setProperty("--shelf-proximity-intensity", intensityShift.toFixed(3));
+      plank.style.setProperty("--shelf-proximity-blur-shift", `${blurShift}px`);
+      plank.style.setProperty("--shelf-proximity-spread", spreadShift);
+      plank.style.setProperty("--shelf-proximity-y", `${yShift}px`);
+      plank.style.setProperty("--shelf-plank-lift", `${plankLift}px`);
+
+      if (Math.abs(targetProximity - currentProximity) > 0.002 || targetProximity > 0.005) {
+        rafId = requestAnimationFrame(updateProximityStyles);
+      } else {
+        currentProximity = targetProximity;
+        const finalIntensity = 1 + currentProximity * 0.08;
+        plank.style.setProperty("--shelf-proximity-intensity", finalIntensity.toFixed(3));
+        plank.style.setProperty("--shelf-proximity-blur-shift", `${(currentProximity * 1.8).toFixed(2)}px`);
+        plank.style.setProperty("--shelf-proximity-spread", (1 + currentProximity * 0.04).toFixed(3));
+        plank.style.setProperty("--shelf-proximity-y", `${(currentProximity * 1.4).toFixed(2)}px`);
+        plank.style.setProperty("--shelf-plank-lift", `${(-currentProximity * 1.5).toFixed(2)}px`);
+        rafId = null;
+      }
+    };
+
+    const handlePointerMove = (e) => {
+      const rect = plank.getBoundingClientRect();
+      const plankCenterY = rect.top + rect.height / 2;
+      const plankCenterX = rect.left + rect.width / 2;
+
+      const distX = Math.abs(e.clientX - plankCenterX);
+      const distY = Math.abs(e.clientY - plankCenterY);
+
+      // Vertical proximity influence zone (covering book grid above and space below)
+      const maxDistY = 320;
+      const maxDistX = rect.width / 2 + 120;
+
+      if (distY < maxDistY && distX < maxDistX) {
+        const normY = 1 - distY / maxDistY;
+        const normX = 1 - Math.min(1, distX / maxDistX);
+        const rawProx = Math.max(0, Math.min(1, normY * normX));
+        // Smoothstep curve for natural tactile tactile response
+        targetProximity = rawProx * rawProx * (3 - 2 * rawProx);
+      } else {
+        targetProximity = 0;
+      }
+
+      if (!rafId) {
+        rafId = requestAnimationFrame(updateProximityStyles);
+      }
+    };
+
+    const handlePointerLeave = () => {
+      targetProximity = 0;
+      if (!rafId) {
+        rafId = requestAnimationFrame(updateProximityStyles);
+      }
+    };
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    document.addEventListener("mouseleave", handlePointerLeave);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      document.removeEventListener("mouseleave", handlePointerLeave);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, []);
+
   return (
-    <section className="living-shelf-section" aria-label="Interactive 3D Bookshelf">
+    <section className="living-shelf-section" aria-label="Curated Library Shelf">
       <div className="living-shelf-header">
         <div className="shelf-eyebrow">
-          <Sparkles size={14} />
-          <span>Interactive 3D Living Library</span>
+          <BookOpen size={14} />
+          <span>Curated Editions</span>
         </div>
-        <h2 className="shelf-title">Pick a volume or drop your own</h2>
+        <h2 className="shelf-title">Select a volume or import your own</h2>
         <p className="shelf-subtitle">
-          Hover to explore tactile depth. All documents open instantly and remain 100% private to your device.
+          Open a classic instantly, or bring your own manuscript. All documents stay safely on your device.
         </p>
+        <div className="shelf-controls-bar">
+          <div className="shelf-shadow-control" role="group" aria-label="Shelf plank shadow mode">
+            <span className="shadow-control-label">Shelf Depth:</span>
+            <div className="shadow-segmented-pill">
+              {["soft", "medium", "deep"].map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={`shadow-pill-opt ${shadowDepth === mode ? "is-active" : ""}`}
+                  onClick={() => handleShadowChange(mode)}
+                  aria-pressed={shadowDepth === mode}
+                >
+                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="living-shelf-grid">
@@ -92,9 +215,13 @@ export function LivingShelf({ onOpenBook, onUploadClick }) {
         ))}
 
         {/* 3D Add Custom Book Card */}
-        <div className="book-3d-scene" style={{ perspective: "1200px" }}>
+        <div
+          className="book-3d-scene book-3d-add-scene"
+          style={{ perspective: "1200px", margin: "0 auto" }}
+        >
           <div
             className="book-3d-prism book-3d-add-card"
+            style={{ margin: "0 auto" }}
             onClick={onUploadClick}
             role="button"
             tabIndex={0}
@@ -119,10 +246,20 @@ export function LivingShelf({ onOpenBook, onUploadClick }) {
       </div>
 
       {/* Physical 3D Wooden/Linen Shelf Plank */}
-      <div className="living-shelf-plank" aria-hidden="true">
+      <div
+        ref={plankRef}
+        className="living-shelf-plank"
+        data-shadow={shadowDepth}
+        data-depth={shadowDepth}
+        aria-hidden="true"
+      >
         <div className="shelf-plank-top" />
         <div className="shelf-plank-edge" />
-        <div className="shelf-plank-shadow" />
+        <div
+          className="shelf-plank-shadow"
+          data-shadow={shadowDepth}
+          data-depth={shadowDepth}
+        />
       </div>
     </section>
   );

@@ -16,8 +16,6 @@ import { SelectionTooltip } from "./SelectionTooltip.jsx";
 import { formatReadingTime } from "../lib/readingTime.js";
 import { useScrollPosition } from "../lib/useScrollPosition.js";
 import { formatParagraphText } from "../lib/textFormatter.js";
-import { VariableRewardCapsule } from "../../../components/VariableRewardCapsule.jsx";
-import { SaccadicGuide } from "./SaccadicGuide.jsx";
 import { HorizonTeaser } from "./HorizonTeaser.jsx";
 
 export function ReaderPage({
@@ -90,7 +88,7 @@ export function ReaderPage({
       <header className="reader-topbar">
         <button
           className="icon-button navigator-toggle desktop-only"
-          onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           aria-label={navigatorLabel}
           aria-expanded={!sidebarCollapsed}
           aria-controls="book-navigator"
@@ -193,12 +191,6 @@ export function ReaderPage({
           <span key={focusId || "idle"} />
           <i />
         </div>
-
-        <SaccadicGuide
-          readerRef={readerRef}
-          activeParagraphId={focusId}
-          visible={safeSettings.mode === "focus" && !isStaticFocusRegion}
-        />
 
         <main
           ref={readerRef}
@@ -303,10 +295,6 @@ export function ReaderPage({
                     ))}
                   </div>
                 ))}
-                
-                {chapter.focusEligible && (
-                  <VariableRewardCapsule chapterTitle={chapter.title} />
-                )}
 
                 {chapter.focusEligible && chapterIndex < chapters.length - 1 && (
                   <HorizonTeaser

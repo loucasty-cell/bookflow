@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Bookmark,
   BookmarkCheck,
@@ -6,9 +7,9 @@ import {
   ChevronRight,
   Copy,
   Focus,
+  X,
 } from "lucide-react";
 import { triggerHaptic, HAPTIC_PATTERNS } from "../../../shared/lib/index.js";
-import "./resonance.css";
 
 export function FocusCard({
   focusedParagraph,
@@ -19,7 +20,37 @@ export function FocusCard({
   moveFocus,
   resumeFlow,
 }) {
+  const [isHidden, setIsHidden] = useState(false);
+
   if (!focusedParagraph) return null;
+
+  if (isHidden) {
+    return (
+      <section
+        className="focus-card is-collapsed"
+        data-reader-bottom-overlay
+        aria-label="Paragraph in focus"
+      >
+        <button
+          type="button"
+          className="focus-card-pill-btn"
+          onClick={() => {
+            triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+            setIsHidden(false);
+          }}
+          aria-label="Show focus card"
+          title="Show focus card"
+        >
+          <span
+            className={`focus-status-indicator ${pinnedId ? "is-paused" : "is-live"}`}
+            aria-hidden="true"
+          />
+          <Focus size={13} />
+          <span>Focus</span>
+        </button>
+      </section>
+    );
+  }
 
   return (
     <section
@@ -28,9 +59,25 @@ export function FocusCard({
       aria-label="Paragraph in focus"
     >
       <div className="focus-card-label">
-        <Focus size={14} />
+        <span
+          className={`focus-status-indicator ${pinnedId ? "is-paused" : "is-live"}`}
+          aria-hidden="true"
+        />
+        <Focus size={13} />
         <span>{pinnedId ? "Held in focus" : "In focus"}</span>
         <small>{pinnedId ? "Paused" : "Live"}</small>
+        <button
+          type="button"
+          className="focus-card-dismiss-btn"
+          onClick={() => {
+            triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+            setIsHidden(true);
+          }}
+          aria-label="Hide focus card"
+          title="Hide focus card"
+        >
+          <X size={13} />
+        </button>
       </div>
       <p>{focusedParagraph.text}</p>
       <div className="focus-card-actions">
@@ -85,14 +132,6 @@ export function FocusCard({
             <Check size={16} /> Resume flow
           </button>
         )}
-        <button
-          className="resonance-indicator"
-          title="2 thoughtful reflections from the community"
-          onClick={() => triggerHaptic(HAPTIC_PATTERNS.SELECTION)}
-        >
-          <span className="resonance-dot"></span>
-          Resonance
-        </button>
       </div>
     </section>
   );
