@@ -24,9 +24,14 @@ export function ContentsPanel({
         aria-label="Book navigator"
       >
         <div className="contents-shell">
-          <div className="panel-heading">
-            <span>
-              <Library size={16} /> Navigator
+          <div className="panel-heading macos-panel-heading">
+            <div className="macos-traffic-lights" aria-hidden="true">
+              <span className="traffic-dot traffic-close" />
+              <span className="traffic-dot traffic-minimize" />
+              <span className="traffic-dot traffic-maximize" />
+            </div>
+            <span className="navigator-title">
+              <Library size={15} /> Navigator
             </span>
             <div className="navigator-heading-actions">
               <button
@@ -79,6 +84,10 @@ export function ContentsPanel({
             <i><b style={{ width: `${progress}%` }} /></i>
             <small>{chapters[activeChapter]?.title ?? "Start at the beginning"}</small>
           </div>
+          <div className="contents-category-header">
+            <span>Sections</span>
+            <small>{chapters.length}</small>
+          </div>
           <nav className="contents-list" aria-label="Chapter navigation">
             {chapters.map((chapter, index) => (
               <button
@@ -90,11 +99,13 @@ export function ContentsPanel({
                 }}
                 aria-current={activeChapter === index ? "page" : undefined}
               >
-                <div>
-                  <span>{index + 1}</span>
+                <div className="contents-item-leading">
+                  <span className="contents-item-index">{index + 1}</span>
                   <strong title={chapter.title}>{chapter.title}</strong>
                 </div>
-                <small>{chapter.paragraphs.length} {chapter.paragraphs.length === 1 ? "paragraph" : "paragraphs"}</small>
+                <small className="contents-item-detail">
+                  {chapter.paragraphs.length} {chapter.paragraphs.length === 1 ? "par" : "pars"}
+                </small>
               </button>
             ))}
           </nav>

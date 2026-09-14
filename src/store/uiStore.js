@@ -14,10 +14,23 @@ export const createUIStore = (initialState = {}) => create((set) => ({
   error: "",
   ...initialState,
   
-  setSettingsOpen: (open) => set({ settingsOpen: open }),
-  setSidebarOpen: (open) => set({ sidebarOpen: open }),
-  setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
-  setNotesOpen: (open) => set({ notesOpen: open }),
+  setSettingsOpen: (open) =>
+    set((state) => ({
+      settingsOpen: typeof open === "function" ? Boolean(open(state.settingsOpen)) : Boolean(open),
+    })),
+  setSidebarOpen: (open) =>
+    set((state) => ({
+      sidebarOpen: typeof open === "function" ? Boolean(open(state.sidebarOpen)) : Boolean(open),
+    })),
+  setSidebarCollapsed: (collapsed) =>
+    set((state) => ({
+      sidebarCollapsed:
+        typeof collapsed === "function" ? Boolean(collapsed(state.sidebarCollapsed)) : Boolean(collapsed),
+    })),
+  setNotesOpen: (open) =>
+    set((state) => ({
+      notesOpen: typeof open === "function" ? Boolean(open(state.notesOpen)) : Boolean(open),
+    })),
   setOcrOpen: (open) => set({ ocrOpen: open }),
   setShowIntervention: (show) => set({ showIntervention: show }),
   setShowEntryIntro: (show) => set({ showEntryIntro: show }),
