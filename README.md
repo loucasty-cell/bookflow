@@ -91,3 +91,8 @@ npm run build   # Production Vite build
 ## 🛡 Privacy Invariant
 
 Bookflow processes standard text extraction and local English OCR on-device by default. The optional accelerated flow sends scanned page images to the configured backend only when the user explicitly starts a scan. The provided PaddleOCR container stays self-hosted and needs no token; an independently configured Hugging Face fallback may require a token.
+
+### Recent Architecture Updates
+
+- Restructured local parser and backend engine layers to be easily readable top-to-bottom.
+- Deployed strict memory bounds across both the JS environment and Python process scaling to explicitly address memory leak risk on large 500+ page books, using asynchronous bounded batch chunks and manual cache cleanup calls.
