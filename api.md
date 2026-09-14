@@ -34,9 +34,9 @@ ACCEPTED_FILES;
 
 Returns a promise that resolves to a normalized book object.
 
-| Parameter | Type | Meaning |
-| --- | --- | --- |
-| `file` | Browser `File` | Local document selected by the user |
+| Parameter    | Type              | Meaning                                     |
+| ------------ | ----------------- | ------------------------------------------- |
+| `file`       | Browser `File`    | Local document selected by the user         |
 | `onProgress` | Optional function | Receives `(percent, label)` parsing updates |
 
 #### Supported Extensions & Limits
@@ -62,16 +62,11 @@ All document parsers (frontend and backend) return data conforming to the **Norm
     {
       "title": "Chapter 1",
       "focusEligible": true,
-      "paragraphs": [
-        "First complete paragraph text.",
-        "Second complete paragraph text."
-      ],
+      "paragraphs": ["First complete paragraph text.", "Second complete paragraph text."],
       "subheadings": [
         {
           "title": "Subheading Title",
-          "paragraphs": [
-            "Paragraph within subheading."
-          ]
+          "paragraphs": ["Paragraph within subheading."]
         }
       ]
     }
@@ -114,7 +109,7 @@ Paragraph identifiers follow `paragraph-{chapterIndex}-{paragraphIndex}` and are
 ```
 
 - `focus`: `"off"` | `"soft"` | `"deep"`
-- `theme`: `"paper"` | `"dusk"`
+- `theme`: `"paper"` | `"dusk"` | `"kyoto"` | `"monocodex"` | `"remix"`
 
 ### Per-Document Reading State
 
@@ -147,9 +142,11 @@ Base URL: `http://127.0.0.1:8000`
 ### 5.1 System & Health
 
 #### `GET /api/health`
+
 Returns system status, service version, and server timestamp.
 
 **Response** (`200 OK`):
+
 ```json
 {
   "status": "healthy",
@@ -161,9 +158,11 @@ Returns system status, service version, and server timestamp.
 ```
 
 #### `GET /api/info`
+
 Returns server capabilities, supported file formats, and OCR model configuration.
 
 **Response** (`200 OK`):
+
 ```json
 {
   "app": "Bookflow Backend",
@@ -183,9 +182,11 @@ Returns server capabilities, supported file formats, and OCR model configuration
 ### 5.2 OCR & Vision Endpoints
 
 #### `GET /api/ocr/models`
+
 Returns the single model configured through `OCR_MODEL`, or an empty list when remote OCR is disabled.
 
 **Response** (`200 OK`):
+
 ```json
 {
   "defaultModel": "<configured-model-or-empty>",
@@ -195,6 +196,7 @@ Returns the single model configured through `OCR_MODEL`, or an empty list when r
 ```
 
 #### `POST /api/ocr/image`
+
 Performs fast OCR extraction on a single uploaded image. The backend calls PaddleOCR when configured, then falls back to the configured Hugging Face chat-completions model.
 
 - **Content-Type**: `multipart/form-data`
@@ -204,13 +206,12 @@ Performs fast OCR extraction on a single uploaded image. The backend calls Paddl
   - `model_id` (Optional): Specific Hugging Face model identifier
 
 **Response** (`200 OK`):
+
 ```json
 {
   "pageNumber": 1,
   "text": "Extracted text from image.",
-  "paragraphs": [
-    "Extracted text from image."
-  ],
+  "paragraphs": ["Extracted text from image."],
   "confidence": null,
   "modelUsed": "<configured-model>",
   "latencyMs": 142.5,
@@ -220,6 +221,7 @@ Performs fast OCR extraction on a single uploaded image. The backend calls Paddl
 ```
 
 #### `POST /api/ocr/batch`
+
 Performs concurrent OCR text extraction on multiple image files.
 
 - **Content-Type**: `multipart/form-data`
@@ -228,6 +230,7 @@ Performs concurrent OCR text extraction on multiple image files.
   - `model_id` (Optional): Hugging Face model identifier
 
 **Response** (`200 OK`):
+
 ```json
 {
   "success": true,
@@ -249,6 +252,7 @@ Performs concurrent OCR text extraction on multiple image files.
 ```
 
 #### `POST /api/ocr/pdf`
+
 Processes a scanned PDF document: uses native text when available, and dispatches scanned/image pages to PaddleOCR or the model configured in `OCR_MODEL`.
 
 - **Content-Type**: `multipart/form-data`
@@ -258,6 +262,7 @@ Processes a scanned PDF document: uses native text when available, and dispatche
   - `model_id` (Optional): Hugging Face model identifier
 
 **Response** (`200 OK`):
+
 ```json
 {
   "success": true,
@@ -288,12 +293,14 @@ Processes a scanned PDF document: uses native text when available, and dispatche
 ### 5.3 Document Parsing Endpoints
 
 #### `POST /api/documents/validate`
+
 Validates file extension and size constraints.
 
 - **Content-Type**: `application/x-www-form-urlencoded`
 - **Parameters**: `file_name` (string), `file_size_bytes` (integer)
 
 **Response** (`200 OK`):
+
 ```json
 {
   "valid": true,
@@ -305,12 +312,14 @@ Validates file extension and size constraints.
 ```
 
 #### `POST /api/documents/parse`
+
 Parses a document file on the server and returns the Normalized Book structure.
 
 - **Content-Type**: `multipart/form-data`
 - **Form Fields**: `file` (binary)
 
 **Response** (`200 OK`):
+
 ```json
 {
   "success": true,
@@ -338,9 +347,11 @@ Parses a document file on the server and returns the Normalized Book structure.
 ### 5.4 Reader Utilities Endpoints
 
 #### `POST /api/reader/segment`
+
 Segments text into normalized paragraphs and abbreviation-aware sentences.
 
 - **Request Body**:
+
 ```json
 {
   "text": "Dr. Smith arrived at 3.14 Baker St. The door opened immediately.",
@@ -349,24 +360,22 @@ Segments text into normalized paragraphs and abbreviation-aware sentences.
 ```
 
 - **Response** (`200 OK`):
+
 ```json
 {
-  "paragraphs": [
-    "Dr. Smith arrived at 3.14 Baker St. The door opened immediately."
-  ],
-  "sentences": [
-    "Dr. Smith arrived at 3.14 Baker St.",
-    "The door opened immediately."
-  ],
+  "paragraphs": ["Dr. Smith arrived at 3.14 Baker St. The door opened immediately."],
+  "sentences": ["Dr. Smith arrived at 3.14 Baker St.", "The door opened immediately."],
   "wordCount": 11,
   "estimatedReadingSeconds": 3
 }
 ```
 
 #### `POST /api/reader/reading-time`
+
 Calculates reading time estimation for a given word count or text sample.
 
 - **Request Body**:
+
 ```json
 {
   "wordCount": 440,
@@ -375,6 +384,7 @@ Calculates reading time estimation for a given word count or text sample.
 ```
 
 - **Response** (`200 OK`):
+
 ```json
 {
   "wordCount": 440,
@@ -386,4 +396,5 @@ Calculates reading time estimation for a given word count or text sample.
 ```
 
 #### `POST /api/reader/notes/export` & `POST /api/reader/notes/import`
+
 Validates user notes and bookmark export bundles for cross-device portability.

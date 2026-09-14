@@ -7,7 +7,7 @@ Safe code editing practices, surgical modifications, and non-destructive refacto
 ## 1. Surgical Modification Rules
 
 1. **Always Read Before Write**:
-   - Use `view_file` to read the exact line range and surrounding context before proposing edits.
+   - Use the `Read` tool to read the exact line range and surrounding context before proposing edits.
    - Note indentation, line endings, and import order.
 
 2. **Single Contiguous Replacements**:

@@ -115,8 +115,8 @@ bookflow/
 |-- goals.md                       # Product roadmap and goal verification
 |-- pyrightconfig.json             # Pyright type checking config targeting backend/.venv
 |-- eslint.config.js               # Frontend linting rules (ignores .venv, __pycache__)
-|-- package.json                   # Frontend dependencies and Next.js scripts
-`-- next.config.mjs                # Next.js build configuration
+|-- package.json                   # Frontend dependencies and Vite scripts
+`-- vite.config.js                 # Vite build configuration and OCR asset proxy
 ```
 
 ---
@@ -164,18 +164,18 @@ bookflow/
 
 ## 4. Placement Rules for Future Changes
 
-| Change | Target Location |
-| --- | --- |
-| New client-side file parser | `src/features/document-import/lib/` |
-| New server-side file parser | `backend/app/services/document_service.py` |
-| Change remote OCR model or endpoint | `.env` (`OCR_MODEL`, `HF_INFERENCE_URL`) |
-| New Hugging Face Vision/OCR model integration | `backend/app/services/huggingface_ocr.py` |
-| New backend API route | `backend/app/routers/` |
-| Reader visual theme or CSS variable | `src/styles.css` |
-| Reader-specific React component | `src/features/reader/components/` |
-| Reusable UI widget used in 2+ features | `src/shared/components/` |
-| Frontend unit tests | Beside tested file (`*.test.js`) |
-| Backend unit tests | `backend/tests/test_*.py` |
+| Change                                        | Target Location                            |
+| --------------------------------------------- | ------------------------------------------ |
+| New client-side file parser                   | `src/features/document-import/lib/`        |
+| New server-side file parser                   | `backend/app/services/document_service.py` |
+| Change remote OCR model or endpoint           | `.env` (`OCR_MODEL`, `HF_INFERENCE_URL`)   |
+| New Hugging Face Vision/OCR model integration | `backend/app/services/huggingface_ocr.py`  |
+| New backend API route                         | `backend/app/routers/`                     |
+| Reader visual theme or CSS variable           | `src/styles.css`                           |
+| Reader-specific React component               | `src/features/reader/components/`          |
+| Reusable UI widget used in 2+ features        | `src/shared/components/`                   |
+| Frontend unit tests                           | Beside tested file (`*.test.js`)           |
+| Backend unit tests                            | `backend/tests/test_*.py`                  |
 
 ---
 

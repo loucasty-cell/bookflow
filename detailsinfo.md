@@ -52,13 +52,13 @@ When the same file is opened again, Bookflow uses its name, size, and last-modif
 
 ## Current visual system
 
-| Role | Value | Usage |
-| --- | --- | --- |
-| Main surface | Soft white | Low-fatigue reader background |
-| Primary filler | `#507B9C` | Brand, controls, and blue structure |
-| Focus color | `#C2DCFF` | Paragraph highlight and calm supporting surfaces |
-| Interaction accent | `#E3242B` | Focus edge, progress, and important active details |
-| Typography | DM Sans and Newsreader | Interface clarity and long-form readability |
+| Role               | Value                  | Usage                                              |
+| ------------------ | ---------------------- | -------------------------------------------------- |
+| Main surface       | Soft white             | Low-fatigue reader background                      |
+| Primary filler     | `#507B9C`              | Brand, controls, and blue structure                |
+| Focus color        | `#C2DCFF`              | Paragraph highlight and calm supporting surfaces   |
+| Interaction accent | `#E3242B`              | Focus edge, progress, and important active details |
+| Typography         | DM Sans and Newsreader | Interface clarity and long-form readability        |
 
 Buttons use smooth color, border, shadow, and movement transitions. Motion must remain subtle and should respect reduced-motion preferences as that support is expanded.
 
@@ -119,17 +119,17 @@ Accessibility still needs broader screen-reader, zoom, reduced-motion, high-cont
 
 ## Known limitations
 
-| Area | Current limitation |
-| --- | --- |
-| Scanned PDFs | No OCR; image-only pages have no selectable text |
-| PDF layout | Complex columns, tables, headers, and footers may reconstruct imperfectly |
-| EPUB styling | Bookflow extracts readable text rather than reproducing publisher layout |
-| Matter detection | Heuristic and may classify unusual books incorrectly |
-| Document identity | A changed filename, size, or modified time creates a different saved-state key |
-| Persistence | State is limited to one browser profile and device |
-| Notes | No export, import, search, or jump-to-quote yet |
-| Library | No persistent book library or recent-books screen yet |
-| Testing | Structure helpers and focus eligibility have automated coverage; full parser and reader integration coverage should grow |
+| Area              | Current limitation                                                                                                          |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Scanned PDFs      | Local Tesseract.js WASM fallback on-device; complex multi-column scanned layouts benefit from optional backend OCR pipeline |
+| PDF layout        | Complex columns, tables, headers, and footers may reconstruct imperfectly                                                   |
+| EPUB styling      | Bookflow extracts readable text rather than reproducing publisher layout                                                    |
+| Matter detection  | Heuristic and may classify unusual books incorrectly                                                                        |
+| Document identity | A changed filename, size, or modified time creates a different saved-state key                                              |
+| Persistence       | State is limited to one browser profile and device                                                                          |
+| Notes             | No export, import, search, or jump-to-quote yet                                                                             |
+| Library           | No persistent book library or recent-books screen yet                                                                       |
+| Testing           | Structure helpers and focus eligibility have automated coverage; full parser and reader integration coverage should grow    |
 
 ### Structure and identifier limitation
 
@@ -137,20 +137,20 @@ Markdown and EPUB structure is intentionally limited to one subheading level. Re
 
 ## Current technology
 
-| Technology | Current responsibility |
-| --- | --- |
-| React 18 | Components and application state |
-| Next.js 16 (App Router) | Development, routing, and production builds via Turbopack |
-| PDF.js | Local PDF text extraction |
-| JSZip | Local EPUB archive reading |
-| Lucide React | Interface icons |
-| Zustand | Lightweight global state management |
-| Framer Motion | Spring-physics animations and transitions |
-| SWR | Reactive data fetching and caching |
-| `Intl.Segmenter` | Sentence segmentation with fallback |
-| `localStorage` | Local settings and reading state |
-| Vitest | Automated unit tests |
-| ESLint | Static code-quality checks |
+| Technology       | Current responsibility                                   |
+| ---------------- | -------------------------------------------------------- |
+| React 19         | Components and application state                         |
+| Vite 8           | Fast development server, bundling, and production builds |
+| PDF.js           | Local PDF text extraction                                |
+| JSZip            | Local EPUB archive reading                               |
+| Lucide React     | Interface icons                                          |
+| Zustand          | Lightweight global state management                      |
+| Framer Motion    | Spring-physics animations and transitions                |
+| SWR              | Reactive data fetching and caching                       |
+| `Intl.Segmenter` | Sentence segmentation with fallback                      |
+| `localStorage`   | Local settings and reading state                         |
+| Vitest           | Automated unit tests                                     |
+| ESLint           | Static code-quality checks                               |
 
 ## Future implementation principles
 

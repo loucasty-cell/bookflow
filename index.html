@@ -5,12 +5,12 @@
     <script id="window-protection-init">
       (() => {
         try {
-          if (typeof window !== 'undefined') {
+          if (typeof window !== "undefined") {
             let currentFetch = window.fetch ? window.fetch.bind(window) : undefined;
-            const desc = Object.getOwnPropertyDescriptor(window, 'fetch');
+            const desc = Object.getOwnPropertyDescriptor(window, "fetch");
             if (!desc || !desc.set || !desc.writable) {
               try {
-                Object.defineProperty(window, 'fetch', {
+                Object.defineProperty(window, "fetch", {
                   get() {
                     return currentFetch;
                   },
@@ -22,7 +22,7 @@
                 });
               } catch {
                 try {
-                  Object.defineProperty(Window.prototype, 'fetch', {
+                  Object.defineProperty(Window.prototype, "fetch", {
                     get() {
                       return currentFetch;
                     },
@@ -35,6 +35,34 @@
                 } catch {}
               }
             }
+          }
+        } catch {}
+      })();
+    </script>
+    <script id="bookflow-theme-bootstrap">
+      (() => {
+        try {
+          const validThemes = new Set(["paper", "dusk", "kyoto", "monocodex", "remix"]);
+          let theme = null;
+          const rawSettings = localStorage.getItem("bookflow:settings");
+          if (rawSettings) {
+            const parsed = JSON.parse(rawSettings);
+            if (parsed && typeof parsed.theme === "string" && validThemes.has(parsed.theme)) {
+              theme = parsed.theme;
+            }
+          }
+          if (!theme) {
+            const rawStore = localStorage.getItem("bookflow-reader-storage");
+            if (rawStore) {
+              const parsed = JSON.parse(rawStore);
+              const storeTheme = parsed?.state?.settings?.theme;
+              if (typeof storeTheme === "string" && validThemes.has(storeTheme)) {
+                theme = storeTheme;
+              }
+            }
+          }
+          if (theme) {
+            document.documentElement.setAttribute("data-theme", theme);
           }
         } catch {}
       })();

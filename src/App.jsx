@@ -10,13 +10,10 @@ import {
 } from "react";
 import { X } from "lucide-react";
 import { parseDocument } from "./features/document-import/index.js";
-import {
-  BookOpeningIntro,
-  LandingPage,
-} from "./features/landing/index.js";
+import { BookOpeningIntro, LandingPage } from "./features/landing/index.js";
 import { InterventionModal } from "./components/InterventionModal.jsx";
 import { ErrorBoundary } from "./shared/components/index.js";
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from "framer-motion";
 import { useReaderStore } from "./store/readerStore.js";
 import { useUIStore } from "./store/uiStore.js";
 import {
@@ -47,7 +44,7 @@ import {
 const OcrUploader = lazy(() =>
   import("./components/OcrUploader.jsx").then((module) => ({
     default: module.OcrUploader,
-  })),
+  }))
 );
 
 const IMPORT_COMPLETE_DELAY = 480;
@@ -84,17 +81,14 @@ function sectionAtFocusRail(reader) {
 function staticRegionName(section) {
   const title = section?.querySelector("h2")?.textContent ?? "";
   return /appendix|bibliograph|references|glossary|index|credits|afterword|epilogue|about the author/i.test(
-    title,
+    title
   )
     ? "Reading the end matter"
     : "Reading the intro";
 }
 
 function startsWithStaticRegion(reader) {
-  return (
-    reader?.querySelector(".reading-section")?.dataset.focusEligible ===
-    "false"
-  );
+  return reader?.querySelector(".reading-section")?.dataset.focusEligible === "false";
 }
 
 function App() {
@@ -110,24 +104,30 @@ function App() {
   const [staticRegionLabel, setStaticRegionLabel] = useState("Reading the intro");
 
   const {
-    settingsOpen, setSettingsOpen,
-    sidebarOpen, setSidebarOpen,
-    sidebarCollapsed, setSidebarCollapsed,
-    notesOpen, setNotesOpen,
-    ocrOpen, setOcrOpen,
-    showIntervention, setShowIntervention,
-    showEntryIntro, setShowEntryIntro,
-    dragging, setDragging,
-    loading, setLoading,
-    error, setError
+    settingsOpen,
+    setSettingsOpen,
+    sidebarOpen,
+    setSidebarOpen,
+    sidebarCollapsed,
+    setSidebarCollapsed,
+    notesOpen,
+    setNotesOpen,
+    ocrOpen,
+    setOcrOpen,
+    showIntervention,
+    setShowIntervention,
+    showEntryIntro,
+    setShowEntryIntro,
+    dragging,
+    setDragging,
+    loading,
+    setLoading,
+    error,
+    setError,
   } = useUIStore();
 
-  const {
-    settings, setSettings,
-    progress, setProgress,
-    bookmarks, setBookmarks,
-    notes, setNotes
-  } = useReaderStore();
+  const { settings, setSettings, progress, setProgress, bookmarks, setBookmarks, notes, setNotes } =
+    useReaderStore();
   const fileInputRef = useRef(null);
   const readerRef = useRef(null);
   const readerSizeRef = useRef({ width: 0, height: 0 });
@@ -170,9 +170,7 @@ function App() {
   useEffect(() => {
     if (book) return undefined;
 
-    const reduceMotion = window.matchMedia?.(
-      "(prefers-reduced-motion: reduce)",
-    )?.matches;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
     let alreadySeen = false;
     try {
       alreadySeen = sessionStorage.getItem(ENTRY_INTRO_STORAGE_KEY) === "true";
@@ -197,23 +195,21 @@ function App() {
     return { isStatic, section };
   }, []);
 
-  const updateStaticScrollState = useCallback((reader, section) => {
-    if (section?.dataset.chapterIndex)
-      setActiveChapter(Number(section.dataset.chapterIndex));
-    const maximum = Math.max(0, reader.scrollHeight - reader.clientHeight);
-    setProgress(maximum ? Math.round((reader.scrollTop / maximum) * 100) : 0);
-  }, [setProgress]);
+  const updateStaticScrollState = useCallback(
+    (reader, section) => {
+      if (section?.dataset.chapterIndex) setActiveChapter(Number(section.dataset.chapterIndex));
+      const maximum = Math.max(0, reader.scrollHeight - reader.clientHeight);
+      setProgress(maximum ? Math.round((reader.scrollTop / maximum) * 100) : 0);
+    },
+    [setProgress]
+  );
 
   const chapters = useMemo(() => {
     if (!book) return [];
 
     return book.chapters.map((chapter, chapterIndex) => ({
       ...chapter,
-      focusEligible: isFocusEligibleChapter(
-        chapter,
-        chapterIndex,
-        book.chapters.length,
-      ),
+      focusEligible: isFocusEligibleChapter(chapter, chapterIndex, book.chapters.length),
       paragraphs: chapter.paragraphs.map((paragraph, paragraphIndex) => ({
         id: `paragraph-${chapterIndex}-${paragraphIndex}`,
         text: paragraph,
@@ -221,14 +217,12 @@ function App() {
         paragraphIndex,
       })),
       sections: (() => {
-        const flatParagraphs = chapter.paragraphs.map(
-          (paragraph, paragraphIndex) => ({
-            id: `paragraph-${chapterIndex}-${paragraphIndex}`,
-            text: paragraph,
-            chapterIndex,
-            paragraphIndex,
-          }),
-        );
+        const flatParagraphs = chapter.paragraphs.map((paragraph, paragraphIndex) => ({
+          id: `paragraph-${chapterIndex}-${paragraphIndex}`,
+          text: paragraph,
+          chapterIndex,
+          paragraphIndex,
+        }));
         const rawSections = chapter.subheadings?.length
           ? chapter.subheadings
           : [{ title: null, paragraphs: chapter.paragraphs }];
@@ -254,9 +248,9 @@ function App() {
     () =>
       book?.chapters.reduce(
         (total, chapter) => total + wordCount(chapter.paragraphs.join(" ")),
-        0,
+        0
       ) ?? 0,
-    [book],
+    [book]
   );
   const minutes = Math.max(1, Math.ceil(totalWords / 230));
   const focusId = pinnedId || activeParagraphId;
@@ -265,35 +259,33 @@ function App() {
 
   const clearTimers = useCallback(() => {
     if (alignTimerRef.current) window.clearTimeout(alignTimerRef.current);
-    if (scrollSettleTimerRef.current)
-      window.clearTimeout(scrollSettleTimerRef.current);
-    if (wheelIdleTimerRef.current)
-      window.clearTimeout(wheelIdleTimerRef.current);
-    if (alignmentDelayRef.current)
-      window.clearTimeout(alignmentDelayRef.current);
+    if (scrollSettleTimerRef.current) window.clearTimeout(scrollSettleTimerRef.current);
+    if (wheelIdleTimerRef.current) window.clearTimeout(wheelIdleTimerRef.current);
+    if (alignmentDelayRef.current) window.clearTimeout(alignmentDelayRef.current);
     alignTimerRef.current = null;
     scrollSettleTimerRef.current = null;
     wheelIdleTimerRef.current = null;
     alignmentDelayRef.current = null;
   }, []);
 
-  const commitFocus = useCallback((paragraph) => {
-    if (!paragraph) return;
+  const commitFocus = useCallback(
+    (paragraph) => {
+      if (!paragraph) return;
 
-    const measuredParagraph = paragraphsRef.current.find(
-      (candidate) => candidate.id === paragraph.id,
-    );
-    const chapterIndex = paragraph.chapter ?? paragraph.chapterIndex;
-    const paragraphIndex = paragraph.index ?? measuredParagraph?.index;
-    activeParagraphIdRef.current = paragraph.id;
-    setActiveParagraphId(paragraph.id);
-    if (Number.isFinite(chapterIndex)) setActiveChapter(chapterIndex);
-    if (Number.isFinite(paragraphIndex)) {
-      setProgress(
-        readingProgress(paragraphIndex, paragraphsRef.current.length),
+      const measuredParagraph = paragraphsRef.current.find(
+        (candidate) => candidate.id === paragraph.id
       );
-    }
-  }, [setProgress]);
+      const chapterIndex = paragraph.chapter ?? paragraph.chapterIndex;
+      const paragraphIndex = paragraph.index ?? measuredParagraph?.index;
+      activeParagraphIdRef.current = paragraph.id;
+      setActiveParagraphId(paragraph.id);
+      if (Number.isFinite(chapterIndex)) setActiveChapter(chapterIndex);
+      if (Number.isFinite(paragraphIndex)) {
+        setProgress(readingProgress(paragraphIndex, paragraphsRef.current.length));
+      }
+    },
+    [setProgress]
+  );
 
   const finishAlignment = useCallback(() => {
     programmaticScrollRef.current = false;
@@ -302,38 +294,19 @@ function App() {
   }, []);
 
   const alignParagraph = useCallback(
-    (
-      paragraph,
-      behavior = "smooth",
-      preserveLargePosition = false,
-      forceAlignment = false,
-    ) => {
+    (paragraph, behavior = "smooth", preserveLargePosition = false, forceAlignment = false) => {
       const reader = readerRef.current;
       if (!reader || !paragraph) return;
 
-      const paragraphElement = reader.querySelector(
-        `[data-paragraph-id="${paragraph.id}"]`,
-      );
+      const paragraphElement = reader.querySelector(`[data-paragraph-id="${paragraph.id}"]`);
       if (!paragraphElement) return;
 
-      const bottomOverlay = reader.parentElement?.querySelector(
-        "[data-reader-bottom-overlay]",
-      );
-      const alignment = ensureSelectedSegmentVisible(
-        paragraphElement,
-        reader,
-        bottomOverlay,
-      );
+      const bottomOverlay = reader.parentElement?.querySelector("[data-reader-bottom-overlay]");
+      const alignment = ensureSelectedSegmentVisible(paragraphElement, reader, bottomOverlay);
       activeParagraphIsLargeRef.current = alignment.isLarge;
       setActiveParagraphIsLarge(alignment.isLarge);
-      reader.style.setProperty(
-        "--reader-safe-top",
-        `${alignment.safeTop}px`,
-      );
-      reader.style.setProperty(
-        "--reader-safe-bottom",
-        `${alignment.safeBottom}px`,
-      );
+      reader.style.setProperty("--reader-safe-top", `${alignment.safeTop}px`);
+      reader.style.setProperty("--reader-safe-bottom", `${alignment.safeBottom}px`);
 
       if (userScrollingRef.current && !forceAlignment) {
         finishAlignment();
@@ -350,9 +323,7 @@ function App() {
         return;
       }
 
-      const reducedMotion = window.matchMedia?.(
-        "(prefers-reduced-motion: reduce)",
-      )?.matches;
+      const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
       const shouldAnimate = behavior === "smooth" && !reducedMotion;
 
       clearTimers();
@@ -370,30 +341,19 @@ function App() {
 
       alignTimerRef.current = window.setTimeout(finishAlignment, 360);
     },
-    [clearTimers, finishAlignment],
+    [clearTimers, finishAlignment]
   );
 
   const queueParagraphAlignment = useCallback(
-    (
-      paragraph,
-      behavior = "smooth",
-      preserveLargePosition = false,
-      forceAlignment = false,
-    ) => {
+    (paragraph, behavior = "smooth", preserveLargePosition = false, forceAlignment = false) => {
       if (!paragraph) return;
-      if (alignmentDelayRef.current)
-        window.clearTimeout(alignmentDelayRef.current);
+      if (alignmentDelayRef.current) window.clearTimeout(alignmentDelayRef.current);
       alignmentDelayRef.current = window.setTimeout(() => {
         alignmentDelayRef.current = null;
-        alignParagraph(
-          paragraph,
-          behavior,
-          preserveLargePosition,
-          forceAlignment,
-        );
+        alignParagraph(paragraph, behavior, preserveLargePosition, forceAlignment);
       }, 190);
     },
-    [alignParagraph],
+    [alignParagraph]
   );
 
   const setSelectedParagraph = useCallback(
@@ -402,7 +362,7 @@ function App() {
       commitFocus(paragraph);
       queueParagraphAlignment(paragraph, behavior, false, true);
     },
-    [commitFocus, queueParagraphAlignment],
+    [commitFocus, queueParagraphAlignment]
   );
 
   const navigateBy = useCallback(
@@ -410,23 +370,22 @@ function App() {
       if (pinnedIdRef.current) return;
 
       const currentIndex = paragraphsRef.current.findIndex(
-        (paragraph) => paragraph.id === activeParagraphIdRef.current,
+        (paragraph) => paragraph.id === activeParagraphIdRef.current
       );
       const currentParagraph =
         currentIndex >= 0
           ? paragraphsRef.current[currentIndex]
           : selectClosestParagraph(
               paragraphsRef.current,
-              readerRef.current?.scrollTop +
-                readerRef.current?.clientHeight * FOCUS_RAIL_RATIO,
-              activeParagraphIdRef.current,
+              readerRef.current?.scrollTop + readerRef.current?.clientHeight * FOCUS_RAIL_RATIO,
+              activeParagraphIdRef.current
             );
       const currentId = currentParagraph?.id ?? activeParagraphIdRef.current;
       const target = selectNextParagraph(
         paragraphsRef.current,
         currentId,
         direction,
-        options.step ?? 1,
+        options.step ?? 1
       );
 
       if (!target || target.id === currentParagraph?.id) return;
@@ -435,7 +394,7 @@ function App() {
       setReaderState(options.rapid ? "skimming" : "transitioning");
       setSelectedParagraph(target);
     },
-    [setSelectedParagraph],
+    [setSelectedParagraph]
   );
 
   const moveFocus = useCallback(
@@ -445,15 +404,13 @@ function App() {
       setPinnedId("");
       navigateBy(direction, { step: 1, rapid: true, source: "focus-card" });
     },
-    [navigateBy],
+    [navigateBy]
   );
 
   useEffect(() => {
     navigationRef.current = navigateBy;
     alignParagraphRef.current = (paragraphId, behavior = "smooth") => {
-      const paragraph = paragraphsRef.current.find(
-        (candidate) => candidate.id === paragraphId,
-      );
+      const paragraph = paragraphsRef.current.find((candidate) => candidate.id === paragraphId);
       if (paragraph) queueParagraphAlignment(paragraph, behavior);
     };
 
@@ -463,14 +420,13 @@ function App() {
     };
   }, [navigateBy, queueParagraphAlignment, setSelectedParagraph]);
 
-
   useEffect(() => {
     if (!book) return;
     const interval = setInterval(() => {
       if (lastNavigationAtRef.current && performance.now() - lastNavigationAtRef.current > 240000) {
         if (!showIntervention) {
-           setShowIntervention(true);
-           lastNavigationAtRef.current = performance.now();
+          setShowIntervention(true);
+          lastNavigationAtRef.current = performance.now();
         }
       }
     }, 10000);
@@ -479,6 +435,9 @@ function App() {
 
   useEffect(() => {
     setStorageItem("bookflow:settings", settings);
+    if (settings?.theme) {
+      document.documentElement.setAttribute("data-theme", settings.theme);
+    }
   }, [settings]);
 
   useEffect(() => {
@@ -492,7 +451,7 @@ function App() {
         progress,
         activeParagraphId,
         scrollTop: readerRef.current?.scrollTop ?? 0,
-      }),
+      })
     );
   }, [activeParagraphId, bookId, bookmarks, notes, progress]);
 
@@ -523,19 +482,19 @@ function App() {
         width: reader.clientWidth,
         height: reader.clientHeight,
       };
-      const nextParagraphs = [
-        ...reader.querySelectorAll("[data-paragraph-id]"),
-      ].map((element, index) => {
-        const bounds = element.getBoundingClientRect();
-        return {
-          id: element.dataset.paragraphId,
-          chapter: Number(element.dataset.chapter),
-          index,
-          top: bounds.top - readerBounds.top + reader.scrollTop,
-          bottom: bounds.bottom - readerBounds.top + reader.scrollTop,
-          left: bounds.left,
-        };
-      });
+      const nextParagraphs = [...reader.querySelectorAll("[data-paragraph-id]")].map(
+        (element, index) => {
+          const bounds = element.getBoundingClientRect();
+          return {
+            id: element.dataset.paragraphId,
+            chapter: Number(element.dataset.chapter),
+            index,
+            top: bounds.top - readerBounds.top + reader.scrollTop,
+            bottom: bounds.bottom - readerBounds.top + reader.scrollTop,
+            left: bounds.left,
+          };
+        }
+      );
 
       paragraphsRef.current = nextParagraphs;
       hasMeasuredBookRef.current = true;
@@ -551,35 +510,21 @@ function App() {
       }
 
       const restored = nextParagraphs.find(
-        (paragraph) => paragraph.id === pendingRestoreParagraphRef.current,
+        (paragraph) => paragraph.id === pendingRestoreParagraphRef.current
       );
       const existing = nextParagraphs.find(
-        (paragraph) => paragraph.id === activeParagraphIdRef.current,
+        (paragraph) => paragraph.id === activeParagraphIdRef.current
       );
       const target = restored ?? existing ?? nextParagraphs[0];
-      const targetElement = reader.querySelector(
-        `[data-paragraph-id="${target.id}"]`,
-      );
+      const targetElement = reader.querySelector(`[data-paragraph-id="${target.id}"]`);
 
       if (targetElement) {
-        const bottomOverlay = reader.parentElement?.querySelector(
-          "[data-reader-bottom-overlay]",
-        );
-        const alignment = ensureSelectedSegmentVisible(
-          targetElement,
-          reader,
-          bottomOverlay,
-        );
+        const bottomOverlay = reader.parentElement?.querySelector("[data-reader-bottom-overlay]");
+        const alignment = ensureSelectedSegmentVisible(targetElement, reader, bottomOverlay);
         activeParagraphIsLargeRef.current = alignment.isLarge;
         setActiveParagraphIsLarge(alignment.isLarge);
-        reader.style.setProperty(
-          "--reader-safe-top",
-          `${alignment.safeTop}px`,
-        );
-        reader.style.setProperty(
-          "--reader-safe-bottom",
-          `${alignment.safeBottom}px`,
-        );
+        reader.style.setProperty("--reader-safe-top", `${alignment.safeTop}px`);
+        reader.style.setProperty("--reader-safe-bottom", `${alignment.safeBottom}px`);
       }
 
       pendingRestoreParagraphRef.current = "";
@@ -656,21 +601,15 @@ function App() {
         const target = selectClosestParagraph(
           paragraphsRef.current,
           anchorY,
-          activeParagraphIdRef.current,
+          activeParagraphIdRef.current
         );
         if (target) {
-          const targetElement = reader.querySelector(
-            `[data-paragraph-id="${target.id}"]`,
-          );
+          const targetElement = reader.querySelector(`[data-paragraph-id="${target.id}"]`);
           if (targetElement) {
             const bottomOverlay = reader.parentElement?.querySelector(
-              "[data-reader-bottom-overlay]",
+              "[data-reader-bottom-overlay]"
             );
-            const alignment = ensureSelectedSegmentVisible(
-              targetElement,
-              reader,
-              bottomOverlay,
-            );
+            const alignment = ensureSelectedSegmentVisible(targetElement, reader, bottomOverlay);
             activeParagraphIsLargeRef.current = alignment.isLarge;
             setActiveParagraphIsLarge(alignment.isLarge);
           }
@@ -683,7 +622,7 @@ function App() {
           const target = selectClosestParagraph(
             paragraphsRef.current,
             anchorY,
-            activeParagraphIdRef.current,
+            activeParagraphIdRef.current
           );
           if (target) commitFocus(target);
         }
@@ -697,22 +636,20 @@ function App() {
         return;
 
       if (pinnedIdRef.current) {
-        if (scrollSettleTimerRef.current)
-          window.clearTimeout(scrollSettleTimerRef.current);
+        if (scrollSettleTimerRef.current) window.clearTimeout(scrollSettleTimerRef.current);
         scrollSettleTimerRef.current = window.setTimeout(() => {
           userScrollingRef.current = false;
         }, 180);
         return;
       }
 
-      if (scrollSettleTimerRef.current)
-        window.clearTimeout(scrollSettleTimerRef.current);
+      if (scrollSettleTimerRef.current) window.clearTimeout(scrollSettleTimerRef.current);
       scrollSettleTimerRef.current = window.setTimeout(() => {
         userScrollingRef.current = false;
         const target = selectClosestParagraph(
           paragraphsRef.current,
           reader.scrollTop + reader.clientHeight * FOCUS_RAIL_RATIO,
-          activeParagraphIdRef.current,
+          activeParagraphIdRef.current
         );
         if (target && target.id !== activeParagraphIdRef.current) {
           setReaderState("snapping");
@@ -741,10 +678,7 @@ function App() {
 
       const now = performance.now();
       const elapsed = now - wheelRef.current.lastAt;
-      const delta = Math.max(
-        -MAX_SCROLL_INPUT,
-        Math.min(MAX_SCROLL_INPUT, event.deltaY),
-      );
+      const delta = Math.max(-MAX_SCROLL_INPUT, Math.min(MAX_SCROLL_INPUT, event.deltaY));
       const direction = Math.sign(delta);
       if (!direction) return;
 
@@ -756,17 +690,13 @@ function App() {
       const burstCount = elapsed < 420 ? wheelRef.current.burstCount + 1 : 1;
 
       wheelRef.current = {
-        accumulated: accumulateScrollIntent(
-          wheelRef.current.accumulated,
-          delta,
-        ),
+        accumulated: accumulateScrollIntent(wheelRef.current.accumulated, delta),
         burstCount,
         rollCount,
         lastAt: now,
       };
 
-      if (wheelIdleTimerRef.current)
-        window.clearTimeout(wheelIdleTimerRef.current);
+      if (wheelIdleTimerRef.current) window.clearTimeout(wheelIdleTimerRef.current);
       wheelIdleTimerRef.current = window.setTimeout(() => {
         wheelRef.current = {
           accumulated: 0,
@@ -779,7 +709,7 @@ function App() {
 
       const intentDirection = getIntentDirection(
         wheelRef.current.accumulated,
-        SCROLL_INTENT_THRESHOLD,
+        SCROLL_INTENT_THRESHOLD
       );
       if (
         !intentDirection ||
@@ -798,10 +728,7 @@ function App() {
     };
 
     const handleKeyDown = (event) => {
-      if (
-        settings.mode !== "focus" ||
-        event.target.closest("button, input, textarea, select")
-      )
+      if (settings.mode !== "focus" || event.target.closest("button, input, textarea, select"))
         return;
 
       const keyActions = {
@@ -865,10 +792,7 @@ function App() {
         setReaderState("reading");
         return;
       }
-      if (
-        settings.mode === "focus" &&
-        activeParagraphIsLargeRef.current
-      )
+      if (settings.mode === "focus" && activeParagraphIsLargeRef.current)
         userScrollingRef.current = true;
     };
 
@@ -889,8 +813,7 @@ function App() {
       touchStartRef.current = null;
       if (Math.abs(distance) < 36) return;
 
-      const step =
-        Math.abs(distance) > 180 ? 3 : Math.abs(distance) > 90 ? 2 : 1;
+      const step = Math.abs(distance) > 180 ? 3 : Math.abs(distance) > 90 ? 2 : 1;
       navigationRef.current?.(distance > 0 ? 1 : -1, {
         step,
         rapid: step > 1,
@@ -928,19 +851,15 @@ function App() {
   ]);
 
   useEffect(() => {
-    if (settings.mode !== "focus" || !activeParagraphIdRef.current)
-      return undefined;
-    const align = window.setTimeout(
-      () => {
-        if (updateStaticRegion().isStatic) {
-          userScrollingRef.current = true;
-          setReaderState("reading");
-          return;
-        }
-        alignParagraphRef.current?.(activeParagraphIdRef.current, "auto");
-      },
-      0,
-    );
+    if (settings.mode !== "focus" || !activeParagraphIdRef.current) return undefined;
+    const align = window.setTimeout(() => {
+      if (updateStaticRegion().isStatic) {
+        userScrollingRef.current = true;
+        setReaderState("reading");
+        return;
+      }
+      alignParagraphRef.current?.(activeParagraphIdRef.current, "auto");
+    }, 0);
     return () => window.clearTimeout(align);
   }, [settings.mode, updateStaticRegion]);
 
@@ -948,15 +867,12 @@ function App() {
     (nextBook, id) => {
       const saved = safeParse(getStorageItem(documentStorageKey(id)), {});
       clearTimers();
-      const fallbackParagraph = String(saved.activeId ?? "").match(
-        /^(\d+)-(\d+)-\d+$/,
-      )
+      const fallbackParagraph = String(saved.activeId ?? "").match(/^(\d+)-(\d+)-\d+$/)
         ? `paragraph-${RegExp.$1}-${RegExp.$2}`
         : "";
-      pendingRestoreParagraphRef.current =
-        saved.activeParagraphId ?? fallbackParagraph;
+      pendingRestoreParagraphRef.current = saved.activeParagraphId ?? fallbackParagraph;
       hasRestorePositionRef.current = Boolean(
-        saved.activeParagraphId || fallbackParagraph || Number(saved.scrollTop) > 0,
+        saved.activeParagraphId || fallbackParagraph || Number(saved.scrollTop) > 0
       );
       const restoredActive = saved.activeParagraphId ?? fallbackParagraph;
       setBook(nextBook);
@@ -980,7 +896,15 @@ function App() {
       setError("");
       document.title = `${nextBook.title} - Bookflow`;
     },
-    [clearTimers, setBookmarks, setError, setNotes, setProgress, setSidebarCollapsed, setSidebarOpen],
+    [
+      clearTimers,
+      setBookmarks,
+      setError,
+      setNotes,
+      setProgress,
+      setSidebarCollapsed,
+      setSidebarOpen,
+    ]
   );
 
   const handleFile = useCallback(
@@ -1012,22 +936,18 @@ function App() {
             ? `${parsed.ocrPageCount} ${parsed.ocrPageCount === 1 ? "scanned page" : "scanned pages"} recovered privately and kept in the original page order.`
             : `${parsed.chapters.length} ${parsed.chapters.length === 1 ? "section" : "sections"} checked and ready to read.`,
         });
-        await new Promise((resolve) =>
-          window.setTimeout(resolve, IMPORT_COMPLETE_DELAY),
-        );
+        await new Promise((resolve) => window.setTimeout(resolve, IMPORT_COMPLETE_DELAY));
         openBook(parsed, documentId(file));
       } catch (caught) {
         setError(
-          caught instanceof Error
-            ? caught.message
-            : "Bookflow could not open this document.",
+          caught instanceof Error ? caught.message : "Bookflow could not open this document."
         );
       } finally {
         setLoading(null);
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     },
-    [openBook, setError, setLoading],
+    [openBook, setError, setLoading]
   );
 
   const closeBook = () => {
@@ -1055,9 +975,7 @@ function App() {
   };
 
   const jumpToChapter = (index) => {
-    const targetParagraph = paragraphsRef.current.find(
-      (paragraph) => paragraph.chapter === index,
-    );
+    const targetParagraph = paragraphsRef.current.find((paragraph) => paragraph.chapter === index);
     if (settings.mode === "focus" && targetParagraph) {
       setSelectedParagraph(targetParagraph, "smooth");
     } else {
@@ -1070,9 +988,7 @@ function App() {
   };
 
   const focusParagraph = (id) => {
-    const targetParagraph = paragraphsRef.current.find(
-      (paragraph) => paragraph.id === id,
-    );
+    const targetParagraph = paragraphsRef.current.find((paragraph) => paragraph.id === id);
     if (targetParagraph) setSelectedParagraph(targetParagraph, "smooth");
 
     const nextPinnedId = pinnedIdRef.current === id ? "" : id;
@@ -1093,9 +1009,7 @@ function App() {
   const toggleBookmark = () => {
     if (!focusId) return;
     setBookmarks((current) =>
-      current.includes(focusId)
-        ? current.filter((id) => id !== focusId)
-        : [...current, focusId],
+      current.includes(focusId) ? current.filter((id) => id !== focusId) : [...current, focusId]
     );
   };
 
@@ -1159,7 +1073,7 @@ function App() {
       setOcrOpen(false);
       openBook(bookDoc, `ocr-${Date.now()}`);
     },
-    [openBook, setOcrOpen],
+    [openBook, setOcrOpen]
   );
 
   if (!book) {
