@@ -149,16 +149,29 @@ async def scan_pdf_endpoint(
             detail="Uploaded PDF file is empty.",
         )
 
-    # Quickly read page count with PyMuPDF
+    # Quickly read page count with PyMuPDF, tolerating broken page trees
+    # from tools like calibre that leave dangling /Count references.
+    temp_doc = None
     try:
-        temp_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        try:
+            temp_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid or corrupted PDF file: {e}",
+            )
         page_count = len(temp_doc)
-        temp_doc.close()
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid or corrupted PDF file: {e}",
-        )
+        if page_count < 1:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or corrupted PDF file: no loadable pages found.",
+            )
+    finally:
+        if temp_doc is not None:
+            try:
+                temp_doc.close()
+            except Exception:
+                pass
 
     job_id = str(uuid.uuid4())
     active_model = (model_id or OCR_MODEL).strip()
@@ -415,45 +428,72 @@ def _render_pdf_pages_sync(pdf_bytes: bytes, start_idx: int, end_idx: int, force
     Eliminates disk I/O bottlenecks.
     """
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    rendered_pages = []
-    matrix = fitz.Matrix(RENDER_SCALE, RENDER_SCALE)
+    try:
+        total_pages = len(doc)
+        rendered_pages = []
+        matrix = fitz.Matrix(RENDER_SCALE, RENDER_SCALE)
 
-    for idx in range(start_idx, min(end_idx, len(doc))):
-        page = doc.load_page(idx)
-        # Extract native blocks / text with structure preservation
-        blocks = page.get_text("blocks")
-        native_paragraphs = []
-        for b in blocks:
-            text = (b[4] or "").strip()
-            if text and len(text) > 2:
-                native_paragraphs.append(text)
-        
-        native_text = "\n\n".join(native_paragraphs).strip()
-        word_count = len(native_text.split())
+        for idx in range(start_idx, min(end_idx, total_pages)):
+            try:
+                page = doc.load_page(idx)
+            except Exception as exc:
+                logger.warning(f"[Page {idx + 1}] Skipping unloadable page: {exc}")
+                rendered_pages.append({
+                    "page_number": idx + 1,
+                    "image_b64": None,
+                    "native_text": "",
+                    "is_native": False,
+                    "unreadable": True,
+                })
+                continue
+            try:
+                # Extract native blocks / text with structure preservation
+                blocks = page.get_text("blocks")
+                native_paragraphs = []
+                for b in blocks:
+                    text = (b[4] or "").strip()
+                    if text and len(text) > 2:
+                        native_paragraphs.append(text)
 
-        # If page has sufficient native selectable text (> 15 words) and force_ocr is False,
-        # we can skip costly pixmap rasterization to process 600 pages in < 1 second.
-        if word_count >= 15 and not force_ocr:
-            rendered_pages.append({
-                "page_number": idx + 1,
-                "image_b64": None,
-                "native_text": native_text,
-                "is_native": True,
-            })
-        else:
-            # Render visual page to pixmap at 96 DPI in memory
-            pix = page.get_pixmap(matrix=matrix, alpha=False)
-            jpeg_bytes = pix.tobytes("jpeg", jpg_quality=85)
-            b64_str = base64.b64encode(jpeg_bytes).decode("utf-8")
-            rendered_pages.append({
-                "page_number": idx + 1,
-                "image_b64": b64_str,
-                "native_text": native_text,
-                "is_native": False,
-            })
+                native_text = "\n\n".join(native_paragraphs).strip()
+                word_count = len(native_text.split())
 
-    doc.close()
-    return rendered_pages
+                # If page has sufficient native selectable text (> 15 words) and force_ocr is False,
+                # we can skip costly pixmap rasterization to process 600 pages in < 1 second.
+                if word_count >= 15 and not force_ocr:
+                    rendered_pages.append({
+                        "page_number": idx + 1,
+                        "image_b64": None,
+                        "native_text": native_text,
+                        "is_native": True,
+                    })
+                else:
+                    # Render visual page to pixmap at 96 DPI in memory
+                    pix = page.get_pixmap(matrix=matrix, alpha=False)
+                    jpeg_bytes = pix.tobytes("jpeg", jpg_quality=85)
+                    b64_str = base64.b64encode(jpeg_bytes).decode("utf-8")
+                    rendered_pages.append({
+                        "page_number": idx + 1,
+                        "image_b64": b64_str,
+                        "native_text": native_text,
+                        "is_native": False,
+                    })
+            except Exception as exc:
+                logger.warning(f"[Page {idx + 1}] Skipping unreadable page: {exc}")
+                rendered_pages.append({
+                    "page_number": idx + 1,
+                    "image_b64": None,
+                    "native_text": "",
+                    "is_native": False,
+                    "unreadable": True,
+                })
+
+        return rendered_pages
+    finally:
+        try:
+            doc.close()
+        except Exception:
+            pass
 
 
 async def render_pdf_pages_async(pdf_bytes: bytes, start_idx: int, end_idx: int, force_ocr: bool = False) -> List[Dict[str, Any]]:
@@ -835,7 +875,12 @@ async def process_ocr_pipeline(
                 batch = await render_pdf_pages_async(pdf_bytes, batch_start, batch_end, force_ocr=False)
 
                 if not hf_checked and any(not page.get("is_native", False) for page in batch) and not PADDLEOCR_URL:
-                    await ensure_hf_inference_support(http_client, model_id, api_key)
+                    try:
+                        await ensure_hf_inference_support(http_client, model_id, api_key)
+                    except Exception as exc:
+                        logger.warning(
+                            f"Remote OCR preflight failed; image pages will use native-text fallback: {exc}"
+                        )
                     hf_checked = True
     
                 # Execute the 16 pages in this batch concurrently
@@ -875,9 +920,16 @@ async def process_ocr_pipeline(
                     page["image_b64"] = None
 
         failed_pages = [page for page in job.pages if not page["success"]]
-        if failed_pages:
+        successful_pages = [page for page in job.pages if page["success"]]
+        if not successful_pages:
             page_numbers = ", ".join(str(page["page_number"]) for page in failed_pages[:10])
             raise ValueError(f"OCR could not read page(s): {page_numbers}.")
+        if failed_pages:
+            skipped = ", ".join(str(page["page_number"]) for page in failed_pages)
+            logger.warning(
+                f"Job {job_id}: {len(successful_pages)}/{job.total_pages} pages readable; "
+                f"skipped unreadable page(s): {skipped}."
+            )
 
         # Sort pages by page_number
         job.pages.sort(key=lambda x: x["page_number"])
@@ -902,7 +954,7 @@ async def process_ocr_pipeline(
             "total_words": job.total_words,
             "pages_per_second": pps,
             "elapsed_seconds": elapsed,
-
+            "failed_pages": [page["page_number"] for page in failed_pages],
             "markdown": job.markdown,
             "pages": job.pages,
         }

@@ -1,5 +1,7 @@
 import { normalizeText, splitParagraphs } from "../../../shared/lib/text.js";
 import { cleanTitle } from "./textParser.js";
+import { mark } from "../../../shared/lib/perfMarks.js";
+import { openPdfDocument } from "./pdfDocument.js";
 import {
   createPdfOcrScheduler,
   pageNeedsOcr,
@@ -30,13 +32,17 @@ export async function parsePdf(file, onProgress) {
 
   // Pass 2: Run OCR if needed
   if (totalPagesForOcr > 0) {
+    mark("ocr-start");
     ocrPageCount = await performLocalOcr(pagesNeedingOcr, totalPagesForOcr, pdf.numPages, reportProgress);
+    mark("ocr-done");
   } else {
     reportProgress(85, "Structuring chapters and sections...", "Preparing native text layout");
   }
 
   // Pass 3: Assemble Chapters in order
+  mark("native-text-done");
   const chapters = assembleChapters(pagesData, reportProgress);
+  mark("chapters-done");
 
   if (!chapters.length) {
     throw new Error(
@@ -55,14 +61,9 @@ export async function parsePdf(file, onProgress) {
 
 async function loadPdfDocument(file) {
   const [pdfjs] = await Promise.all([import("pdfjs-dist")]);
-  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
 
   const data = new Uint8Array(await file.arrayBuffer());
-  try {
-    return await pdfjs.getDocument({ data }).promise;
-  } catch {
-    throw new Error("This PDF is encrypted, damaged, or cannot be read.");
-  }
+  return openPdfDocument(pdfjs, data);
 }
 
 async function extractNativeText(pdf, documentTitle, startTime, reportProgress) {

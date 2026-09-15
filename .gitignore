@@ -13,3 +13,5 @@ __pycache__/
 .next/
 public/ocr/
 public/pdf.worker.min.mjs
+/*.pdf
+feismo.com-*.pdf
