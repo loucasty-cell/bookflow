@@ -195,7 +195,8 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
         return;
       }
 
-      const dpr = Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, 2);
+      const isMobile = typeof window !== "undefined" && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+      const dpr = Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, isMobile ? 1.5 : 2);
       renderer.setPixelRatio(dpr);
 
       const width = container.offsetWidth || window.innerWidth || 1200;
@@ -210,6 +211,20 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
       canvasElement.style.pointerEvents = "none";
       canvasElement.style.zIndex = "0";
       container.appendChild(canvasElement);
+
+      const handleContextLost = (event) => {
+        event.preventDefault();
+        if (animId) cancelAnimationFrame(animId);
+      };
+
+      const handleContextRestored = () => {
+        if (!reducedMotion) {
+          animId = requestAnimationFrame(animate);
+        }
+      };
+
+      canvasElement.addEventListener("webglcontextlost", handleContextLost, false);
+      canvasElement.addEventListener("webglcontextrestored", handleContextRestored, false);
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
@@ -631,7 +646,27 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
         pointerNDC.y = targetMouse.y;
       };
 
+      const handlePointerDown = (e) => {
+        const w = window.innerWidth || 1;
+        const h = window.innerHeight || 1;
+        targetMouse.x = (e.clientX / w - 0.5) * 2;
+        targetMouse.y = -(e.clientY / h - 0.5) * 2;
+        pointerNDC.x = targetMouse.x;
+        pointerNDC.y = targetMouse.y;
+      };
+
+      const handlePointerUp = (e) => {
+        const w = window.innerWidth || 1;
+        const h = window.innerHeight || 1;
+        targetMouse.x = (e.clientX / w - 0.5) * 2;
+        targetMouse.y = -(e.clientY / h - 0.5) * 2;
+        pointerNDC.x = targetMouse.x;
+        pointerNDC.y = targetMouse.y;
+      };
+
       window.addEventListener("pointermove", handlePointerMove, { passive: true });
+      window.addEventListener("pointerdown", handlePointerDown, { passive: true });
+      window.addEventListener("pointerup", handlePointerUp, { passive: true });
 
       // Resize handling
       const handleResize = () => {
@@ -944,10 +979,14 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
       // Cleanup registration
       return () => {
         window.removeEventListener("pointermove", handlePointerMove);
+        window.removeEventListener("pointerdown", handlePointerDown);
+        window.removeEventListener("pointerup", handlePointerUp);
         document.removeEventListener("visibilitychange", handleVisibilityChange);
         if (resizeObserver) resizeObserver.disconnect();
         else window.removeEventListener("resize", handleResize);
         if (intersectionObserver) intersectionObserver.disconnect();
+        canvasElement.removeEventListener("webglcontextlost", handleContextLost);
+        canvasElement.removeEventListener("webglcontextrestored", handleContextRestored);
       };
     }
 
@@ -964,12 +1003,17 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
       if (intersectionObserver) intersectionObserver.disconnect();
 
       disposables.forEach((item) => {
-        if (item && typeof item.dispose === "function") {
-          item.dispose();
+        if (item) {
+           if (typeof item.dispose === "function") {
+               item.dispose();
+           } else if (item.texture && typeof item.texture.dispose === "function") {
+               item.texture.dispose();
+           }
         }
       });
 
       if (renderer) {
+        if (renderer.forceContextLoss) renderer.forceContextLoss();
         renderer.dispose();
         if (renderer.domElement && renderer.domElement.parentNode) {
           renderer.domElement.parentNode.removeChild(renderer.domElement);

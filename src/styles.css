@@ -259,7 +259,7 @@ img {
   width: min(1180px, calc(100% - 48px));
   min-height: calc(100dvh - 188px);
   margin: 0 auto;
-  padding: clamp(48px, 8vh, 92px) 0 clamp(64px, 10vh, 112px);
+  padding: clamp(48px, 8dvh, 92px) 0 clamp(64px, 10dvh, 112px);
   display: grid;
   grid-template-columns: minmax(0, 0.92fr) minmax(400px, 1.08fr);
   align-items: center;
@@ -1415,7 +1415,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-
   width: min(var(--reader-width), 100%);
   min-height: 100%;
   margin: 0 auto;
-  padding: clamp(64px, 8vw, 96px) clamp(32px, 5vw, 72px) max(170px, 54vh);
+  padding: clamp(64px, 8vw, 96px) clamp(32px, 5vw, 72px) max(170px, 54dvh);
   background: transparent;
   border-inline: none;
   box-shadow: none;
@@ -3556,7 +3556,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 
 .active-page-viewport {
   min-height: 380px;
-  max-height: 60vh;
+  max-height: 60dvh;
   overflow-y: auto;
   padding: var(--space-4);
   background: var(--reader-bg, #faf9f7);
@@ -3693,7 +3693,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 
 .ocr-modal-card {
   width: min(960px, 98vw);
-  max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
   background: var(--landing-surface-strong, #ffffff);
   border: 1px solid var(--landing-line, rgba(80, 123, 156, 0.25));
