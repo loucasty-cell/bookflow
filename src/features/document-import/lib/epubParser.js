@@ -1,5 +1,6 @@
 import { normalizeText, splitParagraphs } from "../../../shared/lib/text.js";
 import { cleanTitle } from "./textParser.js";
+import { mark } from "../../../shared/lib/perfMarks.js";
 import {
   parseXml,
   xmlElements,
@@ -93,5 +94,6 @@ export async function parseEpub(file, onProgress) {
 
   if (!chapters.length)
     throw new Error("No readable chapters were found in this EPUB.");
+  mark("chapters-done");
   return { title, author, kind: "EPUB", chapters };
 }

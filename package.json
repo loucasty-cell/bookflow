@@ -9,7 +9,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "check:vault": "node scripts/check-vault.mjs"
   },
   "dependencies": {
     "@tesseract.js-data/eng": "^1.0.0",
