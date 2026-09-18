@@ -107,7 +107,10 @@ Bookflow is a private, browser-based reading application that turns PDFs, EPUB e
 - Prevent horizontal overflow at all mobile widths (`320px` to `430px`).
 - Give focus, notes, and settings controls accessible names (`aria-label`, `aria-modal`).
 - Respect `prefers-reduced-motion: reduce`.
-- Avoid noisy animations, badges, popups, or gamification that competes with reading.
+- The default reader must be calm: only resume, chapter, progress, reader text, bookmark/note, and settings visible.
+- Reward capsules and retention modals are opt-in only, disabled by default, never blocking reading, and must respect reduced-motion.
+- Bionic/salience formatting is opt-in, not the default.
+- Use deterministic progress, not variable-ratio rewards.
 
 ---
 

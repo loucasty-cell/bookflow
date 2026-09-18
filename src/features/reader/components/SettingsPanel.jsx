@@ -236,6 +236,64 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
           </div>
           <p>Reduces visual crowding across lines for neurodivergent reading comfort.</p>
         </section>
+
+        <section className="setting-group">
+          <label>Optional polish (opt-in, never blocking)</label>
+          <div className="segmented" role="group" aria-label="Chapter complete capsules">
+            <button
+              className={!safeSettings.showRewardCapsules ? "active" : ""}
+              onClick={() => update("showRewardCapsules", false)}
+              aria-pressed={!safeSettings.showRewardCapsules}
+            >
+              Capsules off
+            </button>
+            <button
+              className={safeSettings.showRewardCapsules ? "active" : ""}
+              onClick={() => update("showRewardCapsules", true)}
+              aria-pressed={!!safeSettings.showRewardCapsules}
+            >
+              Capsules on
+            </button>
+          </div>
+          <div className="segmented" role="group" aria-label="Gentle return reminders" style={{ marginTop: 8 }}>
+            <button
+              className={!safeSettings.showInterventionModals ? "active" : ""}
+              onClick={() => update("showInterventionModals", false)}
+              aria-pressed={!safeSettings.showInterventionModals}
+            >
+              Reminders off
+            </button>
+            <button
+              className={safeSettings.showInterventionModals ? "active" : ""}
+              onClick={() => update("showInterventionModals", true)}
+              aria-pressed={!!safeSettings.showInterventionModals}
+            >
+              Reminders on
+            </button>
+          </div>
+          <p>Calm by default. Capsules and return reminders only appear when you enable them.</p>
+        </section>
+
+        <section className="setting-group">
+          <label>Import mode</label>
+          <div className="segmented" role="group" aria-label="Progressive import">
+            <button
+              className={safeSettings.useProgressiveImport !== false ? "active" : ""}
+              onClick={() => update("useProgressiveImport", true)}
+              aria-pressed={safeSettings.useProgressiveImport !== false}
+            >
+              Progressive
+            </button>
+            <button
+              className={safeSettings.useProgressiveImport === false ? "active" : ""}
+              onClick={() => update("useProgressiveImport", false)}
+              aria-pressed={safeSettings.useProgressiveImport === false}
+            >
+              Full wait
+            </button>
+          </div>
+          <p>Progressive opens the first page immediately and prepares the rest in the background.</p>
+        </section>
       </div>
     </aside>
   );

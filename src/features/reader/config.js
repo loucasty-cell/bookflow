@@ -12,4 +12,7 @@ export const DEFAULT_SETTINGS = {
   bionic: false,
   fontFamily: 'serif',
   letterSpacing: 'normal',
+  showRewardCapsules: false,
+  showInterventionModals: false,
+  useProgressiveImport: true,
 }
