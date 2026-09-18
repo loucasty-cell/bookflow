@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Backend OCR Scan Sequence",
+    "output": "ocr-scan-sequence.html",
+    "viewBox": [880, 520],
+    "column_fit": "spread",
+    "quality_profile": "showcase",
+    "views": [
+      { "id": "submit", "label": "Submit scan", "focus": ["app-shell", "backend-fallback", "fastapi"], "note": "Local parsing failed, job submitted to the backend." },
+      { "id": "stream", "label": "Stream progress", "focus": ["sse", "backend-fallback"], "note": "SSE frames carry page-level progress until completion." },
+      { "id": "cancel-path", "label": "Cancel path", "focus": ["backend-fallback", "fastapi"], "note": "Abort closes the stream and cancels the server job." }
+    ]
+  },
+  "participants": [
+    { "id": "app-shell", "type": "frontend", "label": "App Shell", "sublabel": "handleFile" },
+    { "id": "backend-fallback", "type": "frontend", "label": "Backend Fallback", "sublabel": "scanPdfViaBackend" },
+    { "id": "fastapi", "type": "backend", "label": "FastAPI", "sublabel": "OCR router" },
+    { "id": "sse", "type": "messagebus", "label": "SSE Stream", "sublabel": "progress events" },
+    { "id": "reader-engine", "type": "frontend", "label": "Reader Engine", "sublabel": "openBook" }
+  ],
+  "segments": [
+    { "from": 150, "to": 224, "label": "Submit" },
+    { "from": 234, "to": 336, "label": "Stream" },
+    { "from": 346, "to": 420, "label": "Assemble and cancel" }
+  ],
+  "messages": [
+    { "id": "start-fallback", "from": "app-shell", "to": "backend-fallback", "y": 160, "label": "start fallback scan", "variant": "default" },
+    { "id": "post-scan", "from": "backend-fallback", "to": "fastapi", "y": 188, "label": "POST /api/ocr/scan", "variant": "emphasis" },
+    { "id": "job-accepted", "from": "fastapi", "to": "backend-fallback", "y": 216, "label": "202 job_id pages", "variant": "return" },
+    { "id": "open-stream", "from": "backend-fallback", "to": "sse", "y": 244, "label": "GET /progress/{job}", "variant": "default" },
+    { "id": "initial-frame", "from": "sse", "to": "backend-fallback", "y": 272, "label": "initial percent", "variant": "return" },
+    { "id": "progress-frame", "from": "sse", "to": "backend-fallback", "y": 300, "label": "progress page x of n", "variant": "return" },
+    { "id": "completed-frame", "from": "sse", "to": "backend-fallback", "y": 328, "label": "completed pages", "variant": "return" },
+    { "id": "chapters-ready", "from": "backend-fallback", "to": "reader-engine", "y": 356, "label": "chapters assembled", "variant": "emphasis" },
+    { "id": "cancel-job", "from": "backend-fallback", "to": "fastapi", "y": 384, "label": "POST /cancel/{job}", "variant": "dashed" },
+    { "id": "error-frame", "from": "sse", "to": "backend-fallback", "y": 412, "label": "error failed", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "backend-fallback", "from": 160, "to": 364, "type": "frontend" },
+    { "participant": "fastapi", "from": 188, "to": 392, "type": "backend" },
+    { "participant": "sse", "from": 244, "to": 420, "type": "messagebus" }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Submit", "items": ["Multipart upload with batch size 16 and small profile", "Server answers 202 with job id and page count"] },
+    { "dot": "emerald", "title": "Stream", "items": ["EventSource carries initial, progress, completed frames", "Empty chapters still reject so failures stay visible"] },
+    { "dot": "amber", "title": "Cancel", "items": ["Abort closes the stream first, then posts cancel", "Settled guard prevents double resolve paths"] }
+  ]
+}

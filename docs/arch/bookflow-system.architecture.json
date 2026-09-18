@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Bookflow System Overview",
+    "output": "bookflow-system.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/loucasty-cell/bookflow",
+      "provider": "github",
+      "link_mode": "web",
+      "revision": "a9ece9b15c57308164015790e40d38f855c0a513"
+    },
+    "views": [
+      { "id": "reading-path", "label": "Primary reading path", "focus": ["user", "landing", "app-shell", "import-coord", "reader-engine"], "note": "From file drop to stable sentence-focused reading." },
+      { "id": "state-path", "label": "State and persistence", "focus": ["reader-engine", "stores"], "note": "Settings persist, UI stays transient." },
+      { "id": "ocr-fallback", "label": "OCR fallback path", "focus": ["import-coord", "backend-ocr", "ocr-providers", "sse-stream"], "note": "Images leave the device only on explicit fallback." }
+    ]
+  },
+  "components": [
+    { "id": "user", "type": "external", "label": "Reader", "sublabel": "Browser", "pos": [40, 280], "size": [120, 60] },
+    { "id": "landing", "type": "frontend", "label": "Landing", "sublabel": "Drop zone + samples", "pos": [230, 280], "size": [140, 60], "sources": [{ "path": "src/features/landing/index.js" }] },
+    { "id": "app-shell", "type": "frontend", "label": "App Orchestrator", "sublabel": "App.jsx handleFile", "pos": [440, 280], "size": [150, 60], "sources": [{ "path": "src/App.jsx", "line": 533 }] },
+    { "id": "import-coord", "type": "frontend", "label": "Import Coordinator", "sublabel": "Manifest + scheduler", "pos": [660, 280], "size": [150, 60], "sources": [{ "path": "src/features/document-import/lib/importCoordinator.js" }] },
+    { "id": "reader-engine", "type": "frontend", "label": "Reader Engine", "sublabel": "Focus rail 0.42", "pos": [920, 280], "size": [150, 60], "sources": [{ "path": "src/features/reader/index.js" }] },
+    { "id": "stores", "type": "database", "label": "Zustand Stores", "sublabel": "persist settings", "pos": [920, 120], "size": [150, 60], "sources": [{ "path": "src/store/readerStore.js" }] },
+    { "id": "local-parsers", "type": "frontend", "label": "Local Parsers", "sublabel": "pdfjs jszip tesseract", "pos": [660, 430], "size": [150, 60], "sources": [{ "path": "src/features/document-import/lib/pdfParser.js" }] },
+    { "id": "backend-ocr", "type": "backend", "label": "Backend OCR", "sublabel": "FastAPI SSE", "pos": [440, 430], "size": [150, 60], "sources": [{ "path": "backend/main.py", "line": 121 }] },
+    { "id": "ocr-providers", "type": "external", "label": "OCR Providers", "sublabel": "Paddle HF vLLM", "pos": [230, 430], "size": [150, 60], "sources": [{ "path": "backend/app/services/paddle_ocr.py" }] },
+    { "id": "sse-stream", "type": "messagebus", "label": "SSE Progress", "sublabel": "progress cancel", "pos": [440, 550], "size": [150, 60], "sources": [{ "path": "backend/main.py", "line": 220 }] }
+  ],
+  "boundaries": [
+    { "kind": "security-group", "label": "Device boundary: book bytes stay local", "wraps": ["landing", "app-shell", "import-coord", "reader-engine", "stores", "local-parsers"] }
+  ],
+  "connections": [
+    { "id": "user-to-landing", "from": "user", "to": "landing", "label": "drop file" },
+    { "id": "landing-to-app", "from": "landing", "to": "app-shell", "label": "selected file" },
+    { "id": "app-to-import", "from": "app-shell", "to": "import-coord", "label": "parse document", "variant": "emphasis", "labelDy": -20 },
+    { "id": "import-to-reader", "from": "import-coord", "to": "reader-engine", "label": "chapters ready", "variant": "emphasis", "labelDy": -20 },
+    { "id": "reader-to-stores", "from": "reader-engine", "to": "stores", "label": "persist settings", "variant": "dashed" },
+    { "id": "import-to-parsers", "from": "import-coord", "to": "local-parsers", "label": "native text first", "labelDy": 30 },
+    { "id": "import-to-backend", "from": "import-coord", "to": "backend-ocr", "label": "fallback scan", "variant": "dashed" },
+    { "id": "backend-to-providers", "from": "backend-ocr", "to": "ocr-providers", "label": "batched OCR" },
+    { "id": "backend-to-sse", "from": "backend-ocr", "to": "sse-stream", "label": "SSE progress", "labelDy": 30 }
+  ],
+  "cards": [
+    { "dot": "cyan", "title": "Local-first", "items": ["Native PDF text is source of truth", "OCR only for pages without selectable text"] },
+    { "dot": "emerald", "title": "Reading", "items": ["Focus rail pulls active sentence to 0.42", "Settings persist, UI state stays transient"] },
+    { "dot": "amber", "title": "Fallback", "items": ["Image bytes leave device only on fallback", "SSE streams progress with cancel support"] }
+  ]
+}
