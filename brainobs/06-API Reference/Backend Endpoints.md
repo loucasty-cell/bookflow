@@ -1,0 +1,168 @@
+---
+title: Backend Endpoints
+type: reference
+status: verified
+updated: 2026-09-18
+tags: [bookflow, api, backend, endpoints]
+source-files: [backend/main.py, backend/app/routers/health.py, backend/app/routers/ocr.py, backend/app/routers/documents.py, backend/app/routers/reader.py, api.md]
+---
+
+# Backend Endpoints
+
+Complete route reference. All routes are optional: the app reads documents without the backend.
+
+Base URL in development: `http://127.0.0.1:8000`, reached through the Vite `/api` proxy.
+
+## OCR scan and streaming
+
+### `POST /api/ocr/scan`
+
+Starts a scanned-PDF job. Returns immediately with a job id.
+
+- Content-Type: `multipart/form-data`
+- Fields: `file` (PDF), `batch_size` (default 16), `ocr_profile` (`small` or `medium`)
+
+```json
+{ "job_id": "8b1c...", "total_pages": 240 }
+```
+
+### `GET /api/ocr/progress/{job_id}`
+
+Server-Sent Events stream. Events: `initial`, `progress`, `completed`, `error`. Emits
+`: keepalive` every 8 seconds.
+
+Progress payload:
+
+```json
+{ "current_page": 42, "total_pages": 240, "percent": 17.5, "total_words": 12480 }
+```
+
+Completion payload adds `status`, `filename`, `total_words`, `pages_per_second`,
+`elapsed_seconds`, `failed_pages`, `markdown`, and `pages`.
+
+Detail: [[SSE Progress Streaming]].
+
+### `POST /api/ocr/cancel/{job_id}`
+
+Aborts the job and frees in-memory buffers.
+
+### `POST /api/ocr/image`
+
+Scans a single image.
+
+### `POST /api/ocr/batch`
+
+Scans a bounded batch of images.
+
+### `POST /api/ocr/pdf`
+
+Processes a PDF synchronously, using native text where available.
+
+- Fields: `file`, `force_ocr` (optional boolean), `model_id` (optional)
+
+Returns `success`, `title`, `pages`, `totalPages`, `successfulPages`, `failedPages`,
+`totalWordCount`, `totalLatencyMs`, `modelUsed`.
+
+### `GET /api/ocr/models`
+
+Lists available OCR models and profiles.
+
+## Documents
+
+### `POST /api/documents/validate`
+
+Validates extension and size without parsing.
+
+- Content-Type: `application/x-www-form-urlencoded`
+- Parameters: `file_name`, `file_size_bytes`
+
+```json
+{ "valid": true, "kind": "PDF", "fileName": "book.pdf", "fileSizeBytes": 1048576, "error": null }
+```
+
+### `POST /api/documents/parse`
+
+Parses a document server-side and returns the normalized book.
+
+- Content-Type: `multipart/form-data`, field `file`
+
+```json
+{
+  "success": true,
+  "book": { "title": "...", "author": null, "kind": "MARKDOWN", "chapters": [] },
+  "message": "Document parsed successfully",
+  "pageCount": 1,
+  "wordCount": 180
+}
+```
+
+Detail: [[Normalized Book Contract]].
+
+## Reader utilities
+
+### `POST /api/reader/segment`
+
+Segments text into paragraphs and abbreviation-aware sentences.
+
+Request: `{ "text": "...", "language": "en" }`
+
+Response: `{ "paragraphs": [], "sentences": [], "wordCount": 11, "estimatedReadingSeconds": 3 }`
+
+### `POST /api/reader/reading-time`
+
+Request: `{ "wordCount": 440, "wordsPerMinute": 220 }`
+
+Response: `{ "wordCount": 440, "wordsPerMinute": 220, "minutes": 2, "seconds": 0, "formattedLabel": "2 min read" }`
+
+### `POST /api/reader/notes/export` and `POST /api/reader/notes/import`
+
+Validate note and bookmark bundles for cross-device portability.
+
+## System
+
+### `GET /api/health`
+
+Service health check.
+
+### `GET /api/info`
+
+Configuration and model information.
+
+## Planned
+
+| Route | Purpose | Status |
+| --- | --- | --- |
+| `GET /api/social/resonance/{hash}` | Aggregated reflections for a paragraph hash | Planned |
+| `POST /api/social/reactions` | Record a reaction against a hash | Planned |
+| `POST /api/ai/intervention` | Drop-off detection micro-intervention | Planned |
+
+Detail: [[Social Resonance]], [[Intervention Engine]].
+
+## Error behaviour
+
+| Status | Meaning |
+| --- | --- |
+| `200` | Success |
+| `400` | Invalid request or unreadable document |
+| `422` | Validation failure with a `detail` payload |
+| `500` | Internal failure |
+
+The frontend surfaces `detail` when present so the user sees the real cause rather than a generic
+failure.
+
+Detail: [[OCR Decision Tree]].
+
+## Aliasing convention
+
+Every model uses Pydantic v2 `serialization_alias` and `validation_alias` with
+`populate_by_name=True`, so Python snake_case maps to JSON camelCase on the wire without
+duplicating models.
+
+Detail: [[Backend Architecture]], [[Invariants]].
+
+## CORS
+
+Allowed origins come from `CORS_ORIGINS`, defaulting to ports 5173 and 3000 on localhost and
+127.0.0.1. Add any other deployment origin explicitly.
+
+Related: [[Environment Config]], [[Dev Setup]], [[Frontend Public APIs]].
