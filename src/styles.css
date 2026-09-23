@@ -1271,7 +1271,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 
 .contents-item {
   width: 100%;
-  min-height: 38px;
+  min-height: 44px;
   padding: 7px 10px;
   display: flex;
   align-items: center;
@@ -1821,17 +1821,6 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-
   box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
 }
 
-@keyframes pulseLive {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.2);
-    opacity: 0.75;
-  }
-}
-
 .focus-card-label small {
   margin-left: auto;
   padding: 2px 7px;
@@ -1845,9 +1834,9 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-
 }
 
 .focus-card-dismiss-btn {
-  width: 22px;
-  height: 22px;
-  min-height: 22px !important;
+  width: 44px;
+  height: 44px;
+  min-height: 44px !important;
   padding: 0 !important;
   margin-left: 2px;
   display: inline-flex;
@@ -1894,9 +1883,8 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
 }
 
 .focus-card button:not(.focus-card-dismiss-btn):not(.focus-card-pill-btn) {
-  min-height: 30px;
-  height: 30px;
-  padding: 0 10px;
+  min-height: 44px;
+  padding: 6px 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1924,11 +1912,11 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
 }
 
 .focus-card-step {
-  width: 30px !important;
-  height: 30px !important;
-  min-height: 30px !important;
+  width: 44px !important;
+  height: 44px !important;
+  min-height: 44px !important;
   padding: 0 !important;
-  flex: 0 0 30px;
+  flex: 0 0 44px;
   border-radius: 8px !important;
 }
 
@@ -1982,8 +1970,8 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-height: 32px;
-  padding: 0 10px;
+  min-height: 44px;
+  padding: 0 12px;
   border: none;
   background: transparent;
   color: var(--reader-ink);
@@ -2901,9 +2889,9 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > header:nth-of-type(1) > button:nt
 }
 
 .contents-collapse-button {
-  width: 36px;
-  height: 36px;
-  flex-basis: 36px;
+  width: 44px;
+  height: 44px;
+  flex-basis: 44px;
   color: var(--sidebar-muted);
   background: transparent;
   border-color: transparent;
@@ -3033,9 +3021,9 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 }
 
 .contents-item {
-  min-height: 38px;
+  min-height: 44px;
   padding: 8px 10px;
-  border-radius: 9px;
+  border-radius: var(--radius-xs);
 }
 
 .contents-item.is-active {
@@ -3881,6 +3869,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   align-items: center;
   justify-content: center;
   gap: 5px;
+  min-height: 44px;
   padding: 8px 6px;
   font-size: 12px;
   font-weight: 500;
@@ -4636,6 +4625,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   margin-top: var(--space-2);
   background: var(--app-accent, #8b5e34);
   color: #ffffff;
+  min-height: 44px;
   padding: 8px 18px;
   font-size: 14px;
 }
