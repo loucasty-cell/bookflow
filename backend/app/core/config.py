@@ -65,7 +65,7 @@ class Settings(BaseSettings):
 
 
     # Processing Limits
-    max_upload_size_mb: int = 500
+    max_upload_size_mb: int = 50
     max_batch_images: int = 32
     max_pdf_pages_ocr: int = 1000
 

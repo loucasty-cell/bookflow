@@ -1,6 +1,6 @@
 """Document data models matching Bookflow frontend normalization schemas."""
 
-from typing import List, Optional
+from typing import List, Literal, Optional
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -56,7 +56,7 @@ class NormalizedBook(BaseModel):
 
     title: str
     author: Optional[str] = None
-    kind: str = Field(description="Document kind: PDF, EPUB, TEXT, or MARKDOWN")
+    kind: Literal["PDF", "EPUB", "TEXT", "MARKDOWN"] = Field(description="Document kind: PDF, EPUB, TEXT, or MARKDOWN")
     chapters: List[Chapter] = Field(default_factory=list)
 
 

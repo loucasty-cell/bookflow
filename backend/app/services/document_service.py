@@ -9,6 +9,11 @@ from bs4 import BeautifulSoup
 import pypdf
 from fastapi import Depends
 
+try:
+    import defusedxml.ElementTree as defused_ET
+except ImportError:
+    defused_ET = None
+
 from ..models.document import (
     NormalizedBook,
     Chapter,
@@ -272,81 +277,104 @@ class DocumentService:
         author = None
         chapters: List[Chapter] = []
 
-        try:
-            with zipfile.ZipFile(io.BytesIO(file_bytes), "r") as zf:
-                # Find OPF file
-                container_data = zf.read("META-INF/container.xml")
-                root = ET.fromstring(container_data)
-                rootfile = root.find(".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile")
-                opf_path = rootfile.attrib["full-path"] if rootfile is not None else "content.opf"
-                opf_dir = "/".join(opf_path.split("/")[:-1])
+        MAX_EPUB_ENTRIES = 500
+        MAX_EPUB_UNCOMPRESSED_BYTES = 100 * 1024 * 1024
+        MAX_XML_BYTES = 10 * 1024 * 1024
 
-                opf_data = zf.read(opf_path)
-                opf_root = ET.fromstring(opf_data)
+        def _parse_xml(data: bytes):
+            if len(data) > MAX_XML_BYTES:
+                raise ValueError("EPUB XML entry exceeds size limit.")
+            if defused_ET is not None:
+                return defused_ET.fromstring(data)
+            # defusedxml is not installed: stdlib ET.fromstring is used with a
+            # size cap above, but billion-laughs/DTD expansion risk remains.
+            return ET.fromstring(data)
 
-                # Metadata
-                metadata = opf_root.find(".//{http://www.idpf.org/2007/opf}metadata")
-                if metadata is not None:
-                    t_el = metadata.find(".//{http://purl.org/dc/elements/1.1/}title")
-                    if t_el is not None and t_el.text:
-                        title = t_el.text.strip()
-                    a_el = metadata.find(".//{http://purl.org/dc/elements/1.1/}creator")
-                    if a_el is not None and a_el.text:
-                        author = a_el.text.strip()
+        def _safe_name(name: str) -> str:
+            if name.startswith("/") or ".." in name.split("/"):
+                raise ValueError(f"EPUB entry has unsafe path: {name}")
+            return name
 
-                # Manifest
-                manifest_items: Dict[str, str] = {}
-                for item in opf_root.findall(".//{http://www.idpf.org/2007/opf}item"):
-                    manifest_items[item.attrib["id"]] = item.attrib["href"]
+        with zipfile.ZipFile(io.BytesIO(file_bytes), "r") as zf:
+            infos = zf.infolist()
+            if len(infos) > MAX_EPUB_ENTRIES:
+                raise ValueError(
+                    f"EPUB has too many entries ({len(infos)} > {MAX_EPUB_ENTRIES})."
+                )
+            total_uncompressed = sum(info.file_size for info in infos)
+            if total_uncompressed > MAX_EPUB_UNCOMPRESSED_BYTES:
+                raise ValueError("EPUB uncompressed size exceeds 100 MB limit.")
+            names = set(zf.namelist())
+            for info in infos:
+                _safe_name(info.filename)
+            # Find OPF file
+            if "META-INF/container.xml" not in names:
+                raise ValueError("EPUB is missing META-INF/container.xml.")
+            container_data = zf.read("META-INF/container.xml")
+            root = _parse_xml(container_data)
+            rootfile = root.find(".//{urn:oasis:names:tc:opendocument:xmlns:container}rootfile")
+            opf_path = rootfile.attrib["full-path"] if rootfile is not None else "content.opf"
+            _safe_name(opf_path)
+            opf_dir = "/".join(opf_path.split("/")[:-1])
 
-                # Spine
-                spine_items: List[str] = []
-                for itemref in opf_root.findall(".//{http://www.idpf.org/2007/opf}itemref"):
-                    idref = itemref.attrib["idref"]
-                    if idref in manifest_items:
-                        spine_items.append(manifest_items[idref])
+            opf_data = zf.read(opf_path)
+            opf_root = _parse_xml(opf_data)
 
-                # Parse spine items
-                for idx, rel_path in enumerate(spine_items):
-                    full_item_path = f"{opf_dir}/{rel_path}" if opf_dir else rel_path
-                    if full_item_path not in zf.namelist():
-                        continue
+            # Metadata
+            metadata = opf_root.find(".//{http://www.idpf.org/2007/opf}metadata")
+            if metadata is not None:
+                t_el = metadata.find(".//{http://purl.org/dc/elements/1.1/}title")
+                if t_el is not None and t_el.text:
+                    title = t_el.text.strip()
+                a_el = metadata.find(".//{http://purl.org/dc/elements/1.1/}creator")
+                if a_el is not None and a_el.text:
+                    author = a_el.text.strip()
 
-                    doc_bytes = zf.read(full_item_path)
-                    soup = BeautifulSoup(doc_bytes, "html.parser")
-                    h1 = soup.find(["h1", "h2", "title"])
-                    chap_title = h1.get_text().strip() if h1 else f"Chapter {idx + 1}"
+            # Manifest
+            manifest_items: Dict[str, str] = {}
+            for item in opf_root.findall(".//{http://www.idpf.org/2007/opf}item"):
+                manifest_items[item.attrib["id"]] = item.attrib["href"]
 
-                    # Extract paragraphs
-                    p_tags = soup.find_all(["p", "div", "blockquote", "li"])
-                    paragraphs: List[str] = []
-                    for tag in p_tags:
-                        text = " ".join(tag.get_text().split())
-                        if text and len(text) > 10:
-                            paragraphs.append(text)
+            # Spine
+            spine_items: List[str] = []
+            for itemref in opf_root.findall(".//{http://www.idpf.org/2007/opf}itemref"):
+                idref = itemref.attrib["idref"]
+                if idref in manifest_items:
+                    spine_items.append(manifest_items[idref])
 
-                    if paragraphs:
-                        chapters.append(
-                            Chapter(
-                                title=chap_title,
-                                paragraphs=paragraphs,
-                                focus_eligible=not text_service.is_likely_front_or_end_matter(
-                                    chap_title, paragraphs
-                                ),
-                            )
+            # Parse spine items
+            for idx, rel_path in enumerate(spine_items):
+                full_item_path = f"{opf_dir}/{rel_path}" if opf_dir else rel_path
+                _safe_name(full_item_path)
+                if full_item_path not in names:
+                    continue
+
+                doc_bytes = zf.read(full_item_path)
+                soup = BeautifulSoup(doc_bytes, "html.parser")
+                h1 = soup.find(["h1", "h2", "title"])
+                chap_title = h1.get_text().strip() if h1 else f"Chapter {idx + 1}"
+
+                # Extract paragraphs
+                p_tags = soup.find_all(["p", "div", "blockquote", "li"])
+                paragraphs: List[str] = []
+                for tag in p_tags:
+                    text = " ".join(tag.get_text().split())
+                    if text and len(text) > 10:
+                        paragraphs.append(text)
+
+                if paragraphs:
+                    chapters.append(
+                        Chapter(
+                            title=chap_title,
+                            paragraphs=paragraphs,
+                            focus_eligible=not text_service.is_likely_front_or_end_matter(
+                                chap_title, paragraphs
+                            ),
                         )
-        except Exception as e:
-            # Fallback if EPUB is structured differently
-            pass
+                    )
 
         if not chapters:
-            chapters.append(
-                Chapter(
-                    title="Imported EPUB",
-                    paragraphs=["Document processed."],
-                    focus_eligible=True,
-                )
-            )
+            raise ValueError("EPUB contained no readable chapters.")
 
         return NormalizedBook(
             title=title,

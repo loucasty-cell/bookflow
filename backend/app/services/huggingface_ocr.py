@@ -24,6 +24,20 @@ from .text_service import text_service
 
 logger = logging.getLogger(__name__)
 
+_shared_clients: Dict[float, Any] = {}
+
+
+def get_shared_client(timeout: float = 60.0) -> Any:
+    if httpx is None:
+        return None
+    key = float(timeout)
+    client = _shared_clients.get(key)
+    if client is None:
+        limits = httpx.Limits(max_keepalive_connections=16, max_connections=32)
+        client = httpx.AsyncClient(timeout=key, limits=limits)
+        _shared_clients[key] = client
+    return client
+
 
 class HuggingFaceOCRService:
     """Client and processor for Hugging Face OpenAI-compatible vision models."""
@@ -175,7 +189,7 @@ class HuggingFaceOCRService:
                 ),
             )
 
-        processed_bytes = self.preprocess_image(image_bytes)
+        processed_bytes = await asyncio.to_thread(self.preprocess_image, image_bytes)
         img_hash = hashlib.sha256(processed_bytes).hexdigest()
         cache_key = f"{active_model}:{img_hash}"
 
@@ -211,14 +225,14 @@ class HuggingFaceOCRService:
         payload = self.build_chat_payload(active_model, processed_bytes)
 
         last_error = None
+        client = get_shared_client(self.timeout)
         for attempt in range(1, self.max_retries + 1):
             try:
-                async with httpx.AsyncClient(timeout=self.timeout) as client:
-                    response = await client.post(
-                        url,
-                        headers=headers,
-                        json=payload,
-                    )
+                response = await client.post(
+                    url,
+                    headers=headers,
+                    json=payload,
+                )
 
                 if response.status_code == 200:
                     raw_result = response.json()

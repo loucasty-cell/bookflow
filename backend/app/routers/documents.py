@@ -1,4 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, status
+import asyncio
 from ..services.document_service import DocumentService, get_document_service
 from ..models.document import ParseResponse, DocumentValidationResponse
 from ..core.config import Settings, get_settings
@@ -37,11 +38,12 @@ async def parse_document(
             detail=validation.error,
         )
 
-    # Parse
-    response = doc_service.parse_document_file(
-        file_bytes=contents,
-        file_name=file_name,
-        file_kind=validation.kind,
+    # Parse (sync CPU-bound work runs off the event loop)
+    response = await asyncio.to_thread(
+        doc_service.parse_document_file,
+        contents,
+        file_name,
+        validation.kind,
     )
 
     if not response.success:

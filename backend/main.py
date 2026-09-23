@@ -59,6 +59,8 @@ DEFAULT_BATCH_SIZE = 16
 RENDER_DPI = 96
 RENDER_SCALE = RENDER_DPI / 72.0  # 1.3333x zoom
 MAX_RETRIES = 3
+MAX_UPLOAD_MB = 50
+MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 THREAD_POOL_WORKERS = min(32, (os.cpu_count() or 4) * 4)
 
 executor = ThreadPoolExecutor(max_workers=THREAD_POOL_WORKERS)
@@ -118,6 +120,26 @@ except ImportError as e:
     logger.warning(f"Could not load social router: {e}")
 
 
+def _count_pdf_pages_sync(pdf_bytes: bytes) -> int:
+    temp_doc = None
+    try:
+        temp_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        page_count = len(temp_doc)
+        if page_count < 1:
+            raise ValueError("Invalid or corrupted PDF file: no loadable pages found.")
+        return page_count
+    except ValueError:
+        raise
+    except Exception as e:
+        raise ValueError(f"Invalid or corrupted PDF file: {e}")
+    finally:
+        if temp_doc is not None:
+            try:
+                temp_doc.close()
+            except Exception:
+                pass
+
+
 @app.post("/api/ocr/scan")
 async def scan_pdf_endpoint(
     background_tasks: BackgroundTasks,
@@ -142,36 +164,34 @@ async def scan_pdf_endpoint(
             detail="Only PDF files are supported for visual scanning.",
         )
 
+    declared_size = getattr(file, "size", None)
+    if declared_size is not None and declared_size > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Uploaded PDF exceeds maximum size of {MAX_UPLOAD_MB} MB.",
+        )
+
     pdf_bytes = await file.read()
     if not pdf_bytes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Uploaded PDF file is empty.",
         )
+    if len(pdf_bytes) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Uploaded PDF exceeds maximum size of {MAX_UPLOAD_MB} MB.",
+        )
 
-    # Quickly read page count with PyMuPDF, tolerating broken page trees
-    # from tools like calibre that leave dangling /Count references.
-    temp_doc = None
+    # Quickly read page count with PyMuPDF off the event loop, tolerating
+    # broken page trees from tools like calibre that leave dangling /Count references.
     try:
-        try:
-            temp_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid or corrupted PDF file: {e}",
-            )
-        page_count = len(temp_doc)
-        if page_count < 1:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid or corrupted PDF file: no loadable pages found.",
-            )
-    finally:
-        if temp_doc is not None:
-            try:
-                temp_doc.close()
-            except Exception:
-                pass
+        page_count = await asyncio.to_thread(_count_pdf_pages_sync, pdf_bytes)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
 
     job_id = str(uuid.uuid4())
     active_model = (model_id or OCR_MODEL).strip()
@@ -202,6 +222,7 @@ async def scan_pdf_endpoint(
         batch_size=effective_batch_size,
         api_key=token,
         ocr_profile=effective_ocr_profile,
+        force_ocr=bool(force_ocr),
     )
 
     return {
@@ -283,7 +304,7 @@ async def get_ocr_progress_sse(job_id: str):
                 except asyncio.TimeoutError:
                     # Keepalive heartbeat comment for mobile browsers
                     yield ": keepalive\n\n"
-                    if job.status in ("completed", "failed"):
+                    if job.status in ("completed", "failed", "canceled"):
                         break
         except asyncio.CancelledError:
             pass
@@ -703,7 +724,18 @@ async def call_ocr_with_retry(
 
     token = (api_key or HF_TOKEN or "").strip()
     last_error: Optional[str] = None
-    image_bytes = base64.b64decode(image_b64)
+    try:
+        image_bytes = base64.b64decode(image_b64)
+    except Exception as exc:
+        latency = round((time.perf_counter() - start_time) * 1000, 2)
+        return PageData(
+            page_number=page_number,
+            text=native_text or "",
+            word_count=len(native_text.split()) if native_text else 0,
+            latency_ms=latency,
+            success=False,
+            error=f"Invalid page image encoding: {exc}",
+        )
 
     headers = {
         "Accept": "application/json",
@@ -835,7 +867,9 @@ async def notify_subscribers(job: OCRJob, event_type: str = "progress", data_ove
 
     for queue in list(job.subscribers):
         try:
-            await queue.put(message)
+            queue.put_nowait(message)
+        except asyncio.QueueFull:
+            logger.debug("Subscriber queue full; dropping progress update.")
         except Exception as e:
             logger.debug(f"Subscriber queue error: {e}")
 
@@ -847,6 +881,7 @@ async def process_ocr_pipeline(
     batch_size: int,
     api_key: Optional[str] = None,
     ocr_profile: str = "small",
+    force_ocr: bool = False,
 ):
     """
     Main background OCR execution pipeline.
@@ -872,7 +907,7 @@ async def process_ocr_pipeline(
                     return
 
                 batch_end = min(batch_start + batch_size, job.total_pages)
-                batch = await render_pdf_pages_async(pdf_bytes, batch_start, batch_end, force_ocr=False)
+                batch = await render_pdf_pages_async(pdf_bytes, batch_start, batch_end, force_ocr=force_ocr)
 
                 if not hf_checked and any(not page.get("is_native", False) for page in batch) and not PADDLEOCR_URL:
                     try:
@@ -897,10 +932,30 @@ async def process_ocr_pipeline(
                     )
                     for p in batch
                 ]
-                batch_results: List[PageData] = await asyncio.gather(*tasks)
+                batch_results: List[PageData] = []
+                for res in await asyncio.gather(*tasks, return_exceptions=True):
+                    if isinstance(res, BaseException):
+                        logger.warning(f"OCR page task raised: {res}")
+                        batch_results.append(
+                            PageData(
+                                page_number=0,
+                                text="",
+                                word_count=0,
+                                latency_ms=0.0,
+                                success=False,
+                                error=str(res) or "OCR page task failed.",
+                            )
+                        )
+                    else:
+                        batch_results.append(res)
 
                 if job.status == "canceled":
                     return
+
+                page_numbers = [p["page_number"] for p in batch]
+                for idx, res in enumerate(batch_results):
+                    if res.page_number == 0 and page_numbers:
+                        res.page_number = page_numbers[min(idx, len(page_numbers) - 1)]
     
                 for res in batch_results:
                     job.current_page += 1

@@ -20,6 +20,63 @@ from .text_service import text_service
 
 logger = logging.getLogger(__name__)
 
+PDF_MAGIC = b"%PDF"
+MAX_PDF_BYTES = settings.max_upload_size_mb * 1024 * 1024
+
+
+def _analyze_pdf_pages_sync(
+    pdf_bytes: bytes,
+    force_ocr: bool,
+    max_pages: int,
+) -> Tuple[int, List[Tuple[int, Optional[str], Optional[bytes]]]]:
+    try:
+        import fitz
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        try:
+            total = min(len(doc), max_pages)
+            matrix = fitz.Matrix(96 / 72, 96 / 72)
+            pages: List[Tuple[int, Optional[str], Optional[bytes]]] = []
+            for idx in range(total):
+                page = doc.load_page(idx)
+                page_num = idx + 1
+                raw_text = page.get_text("text") if not force_ocr else ""
+                native_text = str(raw_text).strip() if raw_text else ""
+                word_count = text_service.count_words(native_text)
+
+                if word_count >= 15 and not force_ocr:
+                    pages.append((page_num, native_text, None))
+                else:
+                    pix = page.get_pixmap(matrix=matrix, alpha=False)
+                    img_data = pix.tobytes("jpeg", jpg_quality=85)
+                    pages.append((page_num, None, img_data))
+            return total, pages
+        finally:
+            try:
+                doc.close()
+            except Exception:
+                pass
+    except Exception:
+        reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
+        total = min(len(reader.pages), max_pages)
+        pages = []
+        for idx in range(total):
+            page = reader.pages[idx]
+            page_num = idx + 1
+            native_text = ""
+            if not force_ocr:
+                try:
+                    native_text = (page.extract_text() or "").strip()
+                except Exception:
+                    native_text = ""
+
+            word_count = text_service.count_words(native_text)
+            if word_count >= 15 and not force_ocr:
+                pages.append((page_num, native_text, None))
+            else:
+                img_data = page.images[0].data if page.images else None
+                pages.append((page_num, None, img_data))
+        return total, pages
+
 
 class OCRService:
     """Orchestrates document OCR across images, PDFs, and batch files."""
@@ -145,50 +202,27 @@ class OCRService:
         start_time = time.perf_counter()
         active_model = model_id or self.hf.default_model
 
-        reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
-        total_pages = min(len(reader.pages), settings.max_pdf_pages_ocr)
-        pages_to_process: List[Tuple[int, Optional[str], Optional[bytes]]] = []
-
-        # Analyze pages for native text vs scanned image using PyMuPDF if available
+        if not pdf_bytes or not pdf_bytes.lstrip()[:5].startswith(PDF_MAGIC):
+            raise ValueError("Invalid PDF file: missing %PDF header.")
+        if len(pdf_bytes) > MAX_PDF_BYTES:
+            raise ValueError(
+                f"PDF exceeds maximum size of {settings.max_upload_size_mb} MB."
+            )
         try:
-            import fitz
-            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-            total_pages = min(len(doc), settings.max_pdf_pages_ocr)
-            matrix = fitz.Matrix(96 / 72, 96 / 72)
-            for idx in range(total_pages):
-                page = doc.load_page(idx)
-                page_num = idx + 1
-                raw_text = page.get_text("text") if not force_ocr else ""
-                native_text = str(raw_text).strip() if raw_text else ""
-                word_count = text_service.count_words(native_text)
+            probe = pypdf.PdfReader(io.BytesIO(pdf_bytes))
+            if probe.is_encrypted:
+                raise ValueError("Encrypted PDFs are not supported.")
+        except ValueError:
+            raise
+        except Exception as exc:
+            raise ValueError(f"Invalid or corrupted PDF file: {exc}")
 
-                if word_count >= 15 and not force_ocr:
-                    pages_to_process.append((page_num, native_text, None))
-                else:
-                    pix = page.get_pixmap(matrix=matrix, alpha=False)
-                    img_data = pix.tobytes("jpeg", jpg_quality=85)
-                    pages_to_process.append((page_num, None, img_data))
-            doc.close()
-        except Exception:
-            # Fallback to pypdf
-            reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
-            total_pages = min(len(reader.pages), settings.max_pdf_pages_ocr)
-            for idx in range(total_pages):
-                page = reader.pages[idx]
-                page_num = idx + 1
-                native_text = ""
-                if not force_ocr:
-                    try:
-                        native_text = (page.extract_text() or "").strip()
-                    except Exception:
-                        native_text = ""
-
-                word_count = text_service.count_words(native_text)
-                if word_count >= 15 and not force_ocr:
-                    pages_to_process.append((page_num, native_text, None))
-                else:
-                    img_data = page.images[0].data if page.images else None
-                    pages_to_process.append((page_num, None, img_data))
+        total_pages, pages_to_process = await asyncio.to_thread(
+            _analyze_pdf_pages_sync,
+            pdf_bytes,
+            force_ocr,
+            settings.max_pdf_pages_ocr,
+        )
 
         # Perform OCR on image pages
         ocr_results: List[OCRPageResult] = []

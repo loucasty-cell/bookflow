@@ -8,6 +8,18 @@ from ..core.config import settings
 from ..models.ocr import OCRPageResult
 from .text_service import text_service
 
+_shared_clients: Dict[float, Any] = {}
+
+
+def get_shared_client(timeout: float = 60.0) -> Any:
+    key = float(timeout)
+    client = _shared_clients.get(key)
+    if client is None:
+        limits = httpx.Limits(max_keepalive_connections=16, max_connections=32)
+        client = httpx.AsyncClient(timeout=key, limits=limits)
+        _shared_clients[key] = client
+    return client
+
 
 class PaddleOCRClient:
     """HTTP adapter for an optional PaddleOCR service managed by the backend operator."""
@@ -49,34 +61,34 @@ class PaddleOCRClient:
         profiles = ["medium"] if profile == "medium" else ["small", "medium"]
         encoded_image = base64.b64encode(image_bytes).decode("ascii")
         last_error = "PaddleOCR service returned no text."
-        async with httpx.AsyncClient(timeout=self.timeout) as client:
-            for active_profile in profiles:
-                try:
-                    response = await client.post(
-                        self.url,
-                        headers={"Accept": "application/json", "Content-Type": "application/json"},
-                        json={
-                            "file": encoded_image,
-                            "fileType": 1,
-                            "profile": active_profile,
-                        },
+        client = get_shared_client(self.timeout)
+        for active_profile in profiles:
+            try:
+                response = await client.post(
+                    self.url,
+                    headers={"Accept": "application/json", "Content-Type": "application/json"},
+                    json={
+                        "file": encoded_image,
+                        "fileType": 1,
+                        "profile": active_profile,
+                    },
+                )
+                if response.status_code != 200:
+                    last_error = f"PaddleOCR service returned HTTP {response.status_code}: {response.text[:200]}"
+                    continue
+                text = self.parse_response(response.json())
+                if text:
+                    return OCRPageResult(
+                        page_number=page_number,
+                        text=text,
+                        paragraphs=text_service.extract_paragraphs(text),
+                        model_used=f"paddleocr-v6-{active_profile}",
+                        latency_ms=round((time.perf_counter() - started) * 1000, 2),
+                        success=True,
+                        error=None,
                     )
-                    if response.status_code != 200:
-                        last_error = f"PaddleOCR service returned HTTP {response.status_code}: {response.text[:200]}"
-                        continue
-                    text = self.parse_response(response.json())
-                    if text:
-                        return OCRPageResult(
-                            page_number=page_number,
-                            text=text,
-                            paragraphs=text_service.extract_paragraphs(text),
-                            model_used=f"paddleocr-v6-{active_profile}",
-                            latency_ms=round((time.perf_counter() - started) * 1000, 2),
-                            success=True,
-                            error=None,
-                        )
-                except Exception as exc:
-                    last_error = f"PaddleOCR service request failed: {exc}"
+            except Exception as exc:
+                last_error = f"PaddleOCR service request failed: {exc}"
         return OCRPageResult(
             page_number=page_number,
             text="",

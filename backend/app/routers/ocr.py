@@ -16,6 +16,55 @@ from ..models.ocr import (
 
 router = APIRouter(prefix="/api/ocr", tags=["OCR & Vision"])
 
+MAX_UPLOAD_BYTES = settings.max_upload_size_mb * 1024 * 1024
+ALLOWED_IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".tiff", ".tif", ".bmp")
+ALLOWED_IMAGE_MIME_PREFIX = "image/"
+
+
+def _reject_oversize(size_bytes: int, label: str) -> None:
+    if size_bytes > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"{label} exceeds maximum size of {settings.max_upload_size_mb} MB",
+        )
+
+
+def _validate_image_upload(file: UploadFile) -> None:
+    filename = (file.filename or "").lower()
+    if not filename.endswith(ALLOWED_IMAGE_EXTENSIONS):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file must be an image (PNG, JPG, WEBP, TIFF, BMP)",
+        )
+    content_type = (file.content_type or "").lower()
+    if content_type and not content_type.startswith(ALLOWED_IMAGE_MIME_PREFIX):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file must be an image (PNG, JPG, WEBP, TIFF, BMP)",
+        )
+    declared_size = getattr(file, "size", None)
+    if declared_size is not None:
+        _reject_oversize(declared_size, "Uploaded image")
+
+
+def _validate_pdf_upload(file: UploadFile) -> str:
+    filename = file.filename or "scanned_document.pdf"
+    if not filename.lower().endswith(".pdf"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file must be a .pdf document",
+        )
+    content_type = (file.content_type or "").lower()
+    if content_type and content_type not in ("application/pdf", "application/octet-stream"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded file must be a .pdf document",
+        )
+    declared_size = getattr(file, "size", None)
+    if declared_size is not None:
+        _reject_oversize(declared_size, "Uploaded PDF")
+    return filename
+
 
 @router.get("/models", response_model=OCRModelListResponse)
 async def list_ocr_models(
@@ -43,7 +92,9 @@ async def ocr_single_image(
     """
     token = x_hf_token or (authorization.replace("Bearer ", "") if authorization else None)
 
+    _validate_image_upload(file)
     contents = await file.read()
+    _reject_oversize(len(contents), "Uploaded image")
     if not contents:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -81,8 +132,10 @@ async def ocr_batch_images(
     image_bytes_list: List[bytes] = []
 
     for f in files:
+        _validate_image_upload(f)
         data = await f.read()
         if data:
+            _reject_oversize(len(data), "Uploaded image")
             image_bytes_list.append(data)
 
     if not image_bytes_list:
@@ -114,14 +167,10 @@ async def ocr_pdf_document(
     Extract text from a PDF document, using native extraction for text pages
     and PaddleOCR-first scanning with Hugging Face fallback for scanned/image pages.
     """
-    filename = file.filename or "scanned_document.pdf"
-    if not filename.lower().endswith(".pdf"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Uploaded file must be a .pdf document",
-        )
+    filename = _validate_pdf_upload(file)
 
     pdf_bytes = await file.read()
+    _reject_oversize(len(pdf_bytes), "Uploaded PDF")
     if not pdf_bytes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -155,14 +204,10 @@ async def stream_pdf_ocr(
     Stream OCR page results progressively via Server-Sent Events (SSE)
     for immediate first-page rendering.
     """
-    filename = file.filename or "scanned_document.pdf"
-    if not filename.lower().endswith(".pdf"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Uploaded file must be a .pdf document",
-        )
+    filename = _validate_pdf_upload(file)
 
     pdf_bytes = await file.read()
+    _reject_oversize(len(pdf_bytes), "Uploaded PDF")
     if not pdf_bytes:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

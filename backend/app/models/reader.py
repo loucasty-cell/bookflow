@@ -32,7 +32,7 @@ class ReadingProgress(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     document_id: str = Field(serialization_alias="documentId", validation_alias="documentId")
-    progress_percent: int = Field(serialization_alias="progressPercent", validation_alias="progressPercent")
+    progress_percent: int = Field(ge=0, le=100, serialization_alias="progressPercent", validation_alias="progressPercent")
     scroll_top: int = Field(serialization_alias="scrollTop", validation_alias="scrollTop")
     current_chapter_index: int = Field(default=0, serialization_alias="currentChapterIndex", validation_alias="currentChapterIndex")
     current_paragraph_id: Optional[str] = Field(default=None, serialization_alias="currentParagraphId", validation_alias="currentParagraphId")
@@ -41,7 +41,7 @@ class ReadingProgress(BaseModel):
 class SegmentRequest(BaseModel):
     """Request to segment text into paragraphs and sentences."""
 
-    text: str
+    text: str = Field(max_length=200000)
     language: Optional[str] = "en"
 
 
@@ -63,7 +63,7 @@ class ReadingTimeRequest(BaseModel):
 
     word_count: Optional[int] = Field(default=None, serialization_alias="wordCount", validation_alias="wordCount")
     text: Optional[str] = None
-    words_per_minute: int = Field(default=220, serialization_alias="wordsPerMinute", validation_alias="wordsPerMinute")
+    words_per_minute: int = Field(default=220, gt=0, serialization_alias="wordsPerMinute", validation_alias="wordsPerMinute")
 
 
 class ReadingTimeResponse(BaseModel):
@@ -72,7 +72,7 @@ class ReadingTimeResponse(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     word_count: int = Field(serialization_alias="wordCount", validation_alias="wordCount")
-    words_per_minute: int = Field(serialization_alias="wordsPerMinute", validation_alias="wordsPerMinute")
+    words_per_minute: int = Field(gt=0, serialization_alias="wordsPerMinute", validation_alias="wordsPerMinute")
     minutes: int
     seconds: int
     formatted_label: str = Field(serialization_alias="formattedLabel", validation_alias="formattedLabel")
@@ -88,5 +88,5 @@ class ExportPayload(BaseModel):
     document_id: str = Field(serialization_alias="documentId", validation_alias="documentId")
     document_title: Optional[str] = Field(default=None, serialization_alias="documentTitle", validation_alias="documentTitle")
     notes: List[Note] = Field(default_factory=list)
-    bookmarks: List[str] = Field(default_factory=list)
-    progress_percent: int = Field(default=0, serialization_alias="progressPercent", validation_alias="progressPercent")
+    bookmarks: List[Bookmark] = Field(default_factory=list)
+    progress_percent: int = Field(default=0, ge=0, le=100, serialization_alias="progressPercent", validation_alias="progressPercent")

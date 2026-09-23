@@ -38,7 +38,7 @@ def test_notes_export_import(client):
                 "text": "My note"
             }
         ],
-        "bookmarks": ["paragraph-0-0"],
+        "bookmarks": [{"paragraphId": "paragraph-0-0", "title": "Start"}],
         "progressPercent": 50
     }
 

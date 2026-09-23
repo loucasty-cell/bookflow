@@ -17,6 +17,8 @@ class OCRPageResult(BaseModel):
     )
     confidence: Optional[float] = Field(
         default=None,
+        ge=0.0,
+        le=1.0,
         description="Confidence score if provided by model (0.0 - 1.0)",
     )
     model_used: str = Field(serialization_alias="modelUsed", validation_alias="modelUsed", description="Model ID used for inference")
@@ -82,7 +84,7 @@ class OCRStatusResponse(BaseModel):
 
     task_id: str = Field(serialization_alias="taskId", validation_alias="taskId")
     status: str = Field(description="pending, processing, completed, or failed")
-    progress_percent: int = Field(default=0, serialization_alias="progressPercent", validation_alias="progressPercent")
+    progress_percent: int = Field(default=0, ge=0, le=100, serialization_alias="progressPercent", validation_alias="progressPercent")
     current_page: int = Field(default=0, serialization_alias="currentPage", validation_alias="currentPage")
     total_pages: int = Field(default=0, serialization_alias="totalPages", validation_alias="totalPages")
     result: Optional[OCRDocumentResponse] = None
