@@ -27,7 +27,7 @@ import {
   splitParagraphs,
 } from "../../../shared/lib/text.js";
 import { pageNeedsOcr, createPdfOcrScheduler, recognizePdfPage } from "./pdfOcr.js";
-import { openPdfDocument } from "./pdfDocument.js";
+import { classifyPdfOpenError, openPdfDocument } from "./pdfDocument.js";
 import {
   parseXml,
   xmlElements,
@@ -37,12 +37,18 @@ import {
   chapterFromSections,
 } from "./epubUtils.js";
 import { cleanTitle as cleanT, parseTextDocument } from "./textParser.js";
-import { markReady as markUnitReady } from "./documentManifest.js";
+import { markReady as markUnitReady, markFailed as markUnitFailed } from "./documentManifest.js";
+import { validateBookFile, MAX_FILE_SIZE } from "./fileValidation.js";
+
+const MAX_ARCHIVE_ENTRIES = 3000;
+const MAX_ENTRY_BYTES = 20 * 1024 * 1024;
+const MAX_TOTAL_TEXT_BYTES = 50 * 1024 * 1024;
 
 // --- PDF progressive import ---
 
 export async function progressivePdfImport(file, onProgress) {
   mark("import-selected");
+  await validateBookFile(file);
 
   const [pdfjs] = await Promise.all([import("pdfjs-dist")]);
 
@@ -50,14 +56,14 @@ export async function progressivePdfImport(file, onProgress) {
   let pdf;
   try {
     pdf = await openPdfDocument(pdfjs, data);
-  } catch {
-    throw new Error(
+  } catch (error) {
+    throw classifyPdfOpenError(error) ?? new Error(
       "This PDF looks damaged, but the accelerated backend scan may still read it.",
     );
   }
 
   const metadata = await pdf.getMetadata().catch(() => null);
-  const documentTitle = normalizeText(metadata?.info?.Title) || cleanTitleFallback(file.name);
+  const documentTitle = normalizeText(metadata?.info?.Title) || cleanT(file.name);
   const documentId = `${file.name}:${file.size}:${file.lastModified}`;
 
   mark("validation-done");
@@ -105,8 +111,24 @@ export async function progressivePdfImport(file, onProgress) {
         sharedOcrScheduler = s;
         return s;
       });
+      sharedOcrReady.catch(() => {
+        sharedOcrReady = null;
+        sharedOcrScheduler = null;
+      });
     }
     return sharedOcrReady;
+  };
+
+  const terminateSharedOcr = () => {
+    if (sharedOcrScheduler) {
+      sharedOcrScheduler.terminate().catch(() => undefined);
+      sharedOcrScheduler = null;
+      sharedOcrReady = null;
+    }
+  };
+
+  const maybeFinishSharedOcr = () => {
+    if (readyCount + failedCount >= totalUnits) terminateSharedOcr();
   };
 
   const scheduler = createImportScheduler({
@@ -118,10 +140,12 @@ export async function progressivePdfImport(file, onProgress) {
         firstReadyResolve = null;
         firstReadyReject = null;
       }
+      maybeFinishSharedOcr();
     },
     onUnitFailed: (unit) => {
       failedCount += 1;
       onProgress?.({ manifest, phase: "unit-failed", unit, progress: manifestProgress(manifest) });
+      maybeFinishSharedOcr();
       if (readyCount === 0 && failedCount >= totalUnits && firstReadyReject) {
         firstReadyReject(
           new Error("Local OCR could not find readable English text in this PDF. Try a clearer, upright scan or an OCR-ready copy."),
@@ -149,7 +173,14 @@ export async function progressivePdfImport(file, onProgress) {
 
       scheduler.enqueue(unit, priority, async (u, abortSignal) => {
         const page = await pdf.getPage(u.sourcePage);
-        if (abortSignal.aborted) { page.cleanup(); return; }
+        if (abortSignal.aborted) {
+          try {
+            await page.cleanup();
+          } catch (cleanupError) {
+            void cleanupError;
+          }
+          throw new DOMException("Import cancelled", "AbortError");
+        }
 
         // Try native text first
         const content = await page.getTextContent({ normalizeWhitespace: true });
@@ -197,10 +228,23 @@ export async function progressivePdfImport(file, onProgress) {
           const tessScheduler = await getSharedOcrScheduler();
 
           if (abortSignal.aborted) {
-            return;
+            try {
+              await page.cleanup();
+            } catch (cleanupError) {
+              void cleanupError;
+            }
+            throw new DOMException("Import cancelled", "AbortError");
           }
 
-          const recognized = await recognizePdfPage(tessScheduler, page);
+          let recognized;
+          try {
+            recognized = await recognizePdfPage(tessScheduler, page);
+          } catch (ocrError) {
+            if (/timed out/i.test(ocrError?.message ?? "")) {
+              terminateSharedOcr();
+            }
+            throw ocrError;
+          }
           page.cleanup();
 
           return {
@@ -210,7 +254,11 @@ export async function progressivePdfImport(file, onProgress) {
             ocrStatus: "ocr-ready",
           };
         } catch (err) {
-          page.cleanup();
+          try {
+            page.cleanup();
+          } catch (cleanupError) {
+            void cleanupError;
+          }
           throw err;
         }
       });
@@ -236,20 +284,12 @@ export async function progressivePdfImport(file, onProgress) {
 
   const cancel = () => {
     scheduler.cancelAll();
-    if (sharedOcrScheduler) {
-      sharedOcrScheduler.terminate().catch(() => undefined);
-      sharedOcrScheduler = null;
-      sharedOcrReady = null;
-    }
+    terminateSharedOcr();
   };
 
   const dispose = () => {
     scheduler.cancelAll();
-    if (sharedOcrScheduler) {
-      sharedOcrScheduler.terminate().catch(() => undefined);
-      sharedOcrScheduler = null;
-      sharedOcrReady = null;
-    }
+    terminateSharedOcr();
   };
 
   return {
@@ -270,6 +310,7 @@ export async function progressivePdfImport(file, onProgress) {
 export async function progressiveEpubImport(file, onProgress, options = {}) {
   const { signal } = options;
   mark("import-selected");
+  await validateBookFile(file);
 
   const { default: JSZip } = await import("jszip");
   let zip;
@@ -277,6 +318,17 @@ export async function progressiveEpubImport(file, onProgress, options = {}) {
     zip = await JSZip.loadAsync(await file.arrayBuffer());
   } catch {
     throw new Error("This EPUB is damaged or cannot be opened.");
+  }
+
+  const archiveEntries = Object.values(zip.files);
+  if (archiveEntries.length > MAX_ARCHIVE_ENTRIES) {
+    throw new Error("This EPUB contains too many files to open safely.");
+  }
+  const oversizedEntry = archiveEntries.find(
+    (entry) => !entry.dir && typeof entry._data?.uncompressedSize === "number" && entry._data.uncompressedSize > MAX_ENTRY_BYTES,
+  );
+  if (oversizedEntry) {
+    throw new Error("This EPUB contains a file that is too large to open safely.");
   }
 
   const containerSource = await zip.file("META-INF/container.xml")?.async("text");
@@ -329,15 +381,35 @@ export async function progressiveEpubImport(file, onProgress, options = {}) {
   onProgress?.({ manifest, phase: "manifest-ready" });
 
   // For EPUB, parse all spine items (they're small and fast)
+  let totalTextBytes = 0;
   for (const { unit, spineIndex } of unitEntries) {
     if (signal?.aborted) break;
     if (unit.status !== UnitStatus.UNSEEN) continue;
 
+    const failUnit = (message) => {
+      markUnitFailed(unit, new Error(message));
+      onProgress?.({ manifest, phase: "unit-failed", unit, progress: manifestProgress(manifest) });
+    };
+
     const href = manifestMap.get(spine[spineIndex]);
-    if (!href) continue;
+    if (!href) {
+      failUnit("This EPUB chapter is missing from the archive and was skipped.");
+      continue;
+    }
     const archivePath = resolveArchivePath(rootfile, href.split("#")[0]);
     const source = await zip.file(archivePath)?.async("text");
-    if (!source) continue;
+    if (!source) {
+      failUnit("This EPUB chapter could not be read and was skipped.");
+      continue;
+    }
+    if (source.length > MAX_ENTRY_BYTES) {
+      failUnit("This EPUB chapter is too large to open safely and was skipped.");
+      continue;
+    }
+    totalTextBytes += source.length;
+    if (totalTextBytes > MAX_TOTAL_TEXT_BYTES) {
+      throw new Error("This EPUB contains more text than Bookflow can open safely (50 MB limit).");
+    }
 
     const chapterDoc = parseXml(source, "application/xhtml+xml");
     const body = chapterDoc.body ?? chapterDoc.documentElement;
@@ -359,9 +431,9 @@ export async function progressiveEpubImport(file, onProgress, options = {}) {
         ocrStatus: "native",
       });
       onProgress?.({ manifest, phase: "unit-ready", unit, progress: manifestProgress(manifest) });
+    } else {
+      failUnit("This EPUB chapter has no readable text and was skipped.");
     }
-
-    onProgress?.({ manifest, phase: "unit-ready", unit, progress: Math.round(((spineIndex + 1) / spine.length) * 100) });
   }
 
   return {
@@ -379,6 +451,10 @@ export async function progressiveEpubImport(file, onProgress, options = {}) {
 
 export async function progressiveTextImport(file, onProgress) {
   mark("import-selected");
+  await validateBookFile(file);
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error("Please choose a file smaller than 50 MB.");
+  }
   const source = await file.text();
   mark("validation-done");
 
@@ -418,15 +494,6 @@ export async function progressiveTextImport(file, onProgress) {
     getStats: () => ({ active: 0, queued: 0, maxConcurrency: 0, total: 0 }),
     getReadyUnits: () => getUnitsByStatus(manifest, UnitStatus.READY),
   };
-}
-
-// Fallback title cleaning (avoids circular dep on textParser)
-function cleanTitleFallback(filename) {
-  return String(filename)
-    .replace(/\.[^.]+$/, "")
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 export { UnitStatus } from "./documentManifest.js";

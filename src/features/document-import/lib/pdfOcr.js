@@ -50,26 +50,56 @@ export function ocrDpiForScale(scale) {
   return Math.round(Math.max(144, Math.min(300, scale * 72)));
 }
 
+const OCR_JOB_TIMEOUT_MS = 120000;
+
+function ocrWorkerCount() {
+  const cores = typeof navigator !== "undefined" && Number(navigator.hardwareConcurrency) > 0
+    ? navigator.hardwareConcurrency
+    : 2;
+  const isMobile = typeof navigator !== "undefined" && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent ?? "");
+  return Math.min(isMobile ? 4 : 8, Math.max(1, Math.floor(cores / 2)));
+}
+
 function localOcrUrl(path) {
-  return new URL(`/ocr/${path}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost').href;
+  if (typeof window !== "undefined" && window.location?.href) {
+    return new URL(`ocr/${path}`, window.location.href).href;
+  }
+  return new URL(`/ocr/${path}`, "http://localhost").href;
 }
 
 export async function createPdfOcrScheduler(reportProgress) {
   const { createWorker, createScheduler } = await import("tesseract.js");
   const scheduler = createScheduler();
-  const workerCount = Math.min(8, navigator.hardwareConcurrency || 2);
+  const workerCount = ocrWorkerCount();
+  const created = [];
 
-  for (let i = 0; i < workerCount; i++) {
-    const worker = await createWorker("eng", 1, {
-      workerPath: localOcrUrl("worker.min.js"),
-      corePath: localOcrUrl("core"),
-      langPath: localOcrUrl("lang"),
-      logger: (message) => reportProgress?.(message),
-    });
-    scheduler.addWorker(worker);
+  try {
+    for (let i = 0; i < workerCount; i++) {
+      const worker = await createWorker("eng", 1, {
+        workerPath: localOcrUrl("worker.min.js"),
+        corePath: localOcrUrl("core"),
+        langPath: localOcrUrl("lang"),
+        logger: (message) => reportProgress?.(message),
+      });
+      created.push(worker);
+      scheduler.addWorker(worker);
+    }
+  } catch (error) {
+    await Promise.all(created.map((worker) => worker.terminate().catch(() => undefined)));
+    throw error;
   }
 
   return scheduler;
+}
+
+export function withOcrTimeout(promise, timeoutMs = OCR_JOB_TIMEOUT_MS) {
+  let timer = null;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error("Local OCR timed out on this page. Try a clearer scan.")), timeoutMs);
+  });
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
 }
 
 function renderScaleForPage(page) {
@@ -116,6 +146,9 @@ function normalizeScanContrast(context, width, height) {
 }
 
 export async function renderPdfPageForOcr(page) {
+  if (typeof document === "undefined") {
+    throw new Error("Local OCR needs a browser page to render scanned content.");
+  }
   const scale = renderScaleForPage(page);
   const viewport = page.getViewport({ scale });
   const canvas = document.createElement("canvas");
@@ -137,14 +170,14 @@ export async function renderPdfPageForOcr(page) {
   return { canvas, dpi: ocrDpiForScale(scale) };
 }
 
-export async function recognizePdfPage(scheduler, page) {
+export async function recognizePdfPage(scheduler, page, options = {}) {
   const { canvas, dpi } = await renderPdfPageForOcr(page);
   try {
-    const result = await scheduler.addJob('recognize', canvas, {
+    const result = await withOcrTimeout(scheduler.addJob('recognize', canvas, {
       preserve_interword_spaces: "1",
       tessedit_pageseg_mode: "3",
       user_defined_dpi: String(dpi),
-    });
+    }), options.timeoutMs);
     return {
       confidence: Number(result.data.confidence) || 0,
       paragraphs: ocrTextToParagraphs(result.data.text),

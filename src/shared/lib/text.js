@@ -1,5 +1,5 @@
 export function normalizeText(value = '') {
-  return value
+  return String(value ?? '')
     .replace(/\u00ad/g, '')
     .replace(/\r\n?/g, '\n')
     .replace(/[ \t]+/g, ' ')
@@ -9,7 +9,7 @@ export function normalizeText(value = '') {
 }
 
 export function splitSentences(text, locale = 'en') {
-  const clean = text.trim()
+  const clean = String(text ?? '').trim()
   if (!clean) return []
 
   if (typeof Intl !== 'undefined' && Intl.Segmenter) {
@@ -42,21 +42,25 @@ export function wordCount(text) {
 }
 
 export function stripMarkdown(markdown) {
-  return markdown
+  return String(markdown ?? '')
     .replace(/^#{1,6}\s+/gm, '')
     .replace(/^\s*[-*+]\s+/gm, '')
     .replace(/^\s*\d+\.\s+/gm, '')
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/(`{1,3}|\*{1,2}|_{1,2}|~~)/g, '')
+    .replace(/`{1,3}/g, '')
+    .replace(/\*{1,2}/g, '')
+    .replace(/~~/g, '')
+    .replace(/(^|\W)_{1,2}(?=\S)|(?<=\S)_{1,2}($|\W)/g, '$1')
 }
 
 export function documentId(file) {
-  return `${file.name}:${file.size}:${file.lastModified}`
+  if (!file || typeof file !== 'object') return `unknown:0:0`;
+  return `${file.name ?? 'unknown'}:${file.size ?? 0}:${file.lastModified ?? 0}`
 }
 
 export function formatClassification(index, text, classification) {
-  const words = text.split(/\s+/).slice(0, 7).join(' ');
+  const words = String(text ?? '').split(/\s+/).slice(0, 7).join(' ');
   return `Paragraph [${index}]: "${words}..."\n- Type: ${classification.type}\n- Variant: ${classification.variant}\n- Logic: ${classification.logic}`;
 }
 
@@ -88,7 +92,10 @@ export function classifyParagraph(text) {
     return { type: 'TRANSITIONAL', variant: 'None', logic: 'Bridges time, location, or scene perspective.' };
   }
 
-  const isInternal = clean.match(/\?(?:\w+\s){2,}\?/g) || clean.includes(' thought ') || clean.includes(' wondered ');
+  const isInternal = clean.match(/\?(?:\w+\s){2,}\?/g)
+    || clean.includes(' thought ')
+    || clean.includes(' wondered ')
+    || (clean.includes('?') && /\b(what|why|how|who|when|where|whether|whatever|could|should|would|might)\b/i.test(clean));
   if (isInternal && !quoteMatch) {
     return { type: 'INTERNAL_MONOLOGUE', variant: 'None', logic: 'Displays character inner thoughts or direct questions.' };
   }

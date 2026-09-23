@@ -11,19 +11,30 @@ function displayBase() {
   return apiBase() || "http://localhost:8000";
 }
 
+const SCAN_TIMEOUT_MS = 10 * 60 * 1000;
+
 function toChapters(pages) {
-  const sorted = [...(pages ?? [])].sort(
-    (a, b) => (a.page_number ?? 0) - (b.page_number ?? 0),
-  );
+  const sorted = [...(pages ?? [])].sort((a, b) => {
+    const aNum = Number(a?.page_number);
+    const bNum = Number(b?.page_number);
+    const aKey = Number.isFinite(aNum) ? aNum : Number.MAX_SAFE_INTEGER;
+    const bKey = Number.isFinite(bNum) ? bNum : Number.MAX_SAFE_INTEGER;
+    return aKey - bKey;
+  });
   const chapters = [];
+  const seen = new Set();
   for (const page of sorted) {
-    if (!page?.success || !page?.text?.trim()) continue;
+    if (!page?.success || !String(page?.text ?? '').trim()) continue;
+    const numericLabel = Number(page.page_number);
+    const label = Number.isFinite(numericLabel) ? numericLabel : chapters.length + 1;
+    if (seen.has(label)) continue;
+    seen.add(label);
     const paragraphs = splitParagraphs(page.text).filter(
       (paragraph) => paragraph.length > 0,
     );
     if (!paragraphs.length) continue;
     chapters.push({
-      title: `Page ${page.page_number}`,
+      title: `Page ${label}`,
       paragraphs,
     });
   }
@@ -50,6 +61,7 @@ export function scanPdfViaBackend(file, onProgress, options = {}) {
       // EventSource already closed.
     }
     eventSource = null;
+    if (signal) signal.removeEventListener("abort", cancel);
   };
 
   const cancel = () => {
@@ -101,14 +113,27 @@ export function scanPdfViaBackend(file, onProgress, options = {}) {
       );
     }
 
-    const job = await started.json();
+    let job = null;
+    try {
+      job = await started.json();
+    } catch {
+      throw new Error("Backend scan returned an unreadable response.");
+    }
+    if (!job?.job_id) {
+      throw new Error("Backend scan did not return a job. Try again.");
+    }
     activeJobId = job.job_id;
     const totalPages = job.total_pages || 0;
 
     return await new Promise((resolve, reject) => {
+      const timeoutId = globalThis.setTimeout(() => {
+        fail("Backend scan timed out after 10 minutes. Try a smaller file or retry.");
+      }, SCAN_TIMEOUT_MS);
+      const clearScanTimeout = () => globalThis.clearTimeout(timeoutId);
       const fail = (message) => {
         if (settled) return;
         settled = true;
+        clearScanTimeout();
         cleanup();
         reject(new Error(message));
       };
@@ -116,6 +141,7 @@ export function scanPdfViaBackend(file, onProgress, options = {}) {
       const done = (pages, totalWords, failedPages = []) => {
         if (settled) return;
         settled = true;
+        clearScanTimeout();
         cleanup();
         const chapters = toChapters(pages);
         if (!chapters.length) {

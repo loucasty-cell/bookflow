@@ -50,8 +50,11 @@ function validateTextSample(sample, extension) {
 
 export function validateFileDescriptor({ name, size, headerBytes, textSample }) {
   if (!name) throw new Error("Choose a document first.");
-  if (!size) throw new Error("This file is empty and cannot be opened as a book.");
-  if (size > MAX_FILE_SIZE)
+  const byteSize = Number(size);
+  if (!Number.isFinite(byteSize) || byteSize <= 0) {
+    throw new Error("This file is empty and cannot be opened as a book.");
+  }
+  if (byteSize > MAX_FILE_SIZE)
     throw new Error("Please choose a file smaller than 50 MB.");
 
   const extension = extensionOf(name);
@@ -61,9 +64,11 @@ export function validateFileDescriptor({ name, size, headerBytes, textSample }) 
     );
   }
 
-  const bytes = [...(headerBytes ?? [])];
+  const bytes = headerBytes ? [...headerBytes] : null;
   if (
     extension === "pdf" &&
+    bytes &&
+    bytes.length >= 5 &&
     !startsWith(bytes, [0x25, 0x50, 0x44, 0x46, 0x2d])
   ) {
     throw new Error(
@@ -71,13 +76,23 @@ export function validateFileDescriptor({ name, size, headerBytes, textSample }) 
     );
   }
 
-  if (extension === "epub" && !hasZipSignature(bytes)) {
+  if (extension === "epub" && bytes && bytes.length >= 4 && !hasZipSignature(bytes)) {
     throw new Error(
       "This file has an .epub name but is not a valid EPUB book. Choose the original EPUB file.",
     );
   }
 
   if (["txt", "md", "markdown"].includes(extension)) {
+    if (bytes && bytes.length >= 5 && startsWith(bytes, [0x25, 0x50, 0x44, 0x46, 0x2d])) {
+      throw new Error(
+        `This file has a .${extension} name but contains PDF data. Rename it with a .pdf extension.`,
+      );
+    }
+    if (bytes && bytes.length >= 4 && hasZipSignature(bytes)) {
+      throw new Error(
+        `This file has a .${extension} name but is a ZIP archive. Choose the original book file.`,
+      );
+    }
     validateTextSample(textSample, extension);
   }
 

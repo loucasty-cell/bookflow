@@ -24,8 +24,13 @@ export function classifyPdfOpenError(error) {
   return null;
 }
 
+let cachedWorkerSrc = null;
+
 export async function openPdfDocument(pdfjs, data) {
-  pdfjs.GlobalWorkerOptions.workerSrc = resolvePdfWorkerSrc();
+  if (!cachedWorkerSrc) cachedWorkerSrc = resolvePdfWorkerSrc();
+  if (pdfjs.GlobalWorkerOptions.workerSrc !== cachedWorkerSrc) {
+    pdfjs.GlobalWorkerOptions.workerSrc = cachedWorkerSrc;
+  }
   const strictOptions = {
     data,
     isEvalSupported: false,
@@ -39,9 +44,10 @@ export async function openPdfDocument(pdfjs, data) {
     try {
       return await pdfjs.getDocument({ ...strictOptions, ignoreErrors: true })
         .promise;
-    } catch {
+    } catch (secondError) {
       throw new Error(
         "This PDF looks damaged, but the accelerated backend scan may still read it.",
+        { cause: secondError?.message ?? firstError?.message ?? secondError ?? firstError },
       );
     }
   }

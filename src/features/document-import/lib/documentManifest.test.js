@@ -104,6 +104,21 @@ describe('documentManifest', () => {
     expect(getFirstReadyUnit(m)).toBe(u1); // added first
   });
 
+  it('ignores stale completions for terminal units', () => {
+    const m = createManifest({ documentId: 'd', kind: 'PDF', totalUnits: 0 });
+    const cancelled = addUnit(m, { label: 'P1' });
+    markQueued(cancelled);
+    markCancelled(cancelled);
+    markReady(cancelled, { text: 'late' });
+    expect(cancelled.status).toBe(UnitStatus.CANCELLED);
+    expect(cancelled.text).toBeNull();
+
+    const failed = addUnit(m, { label: 'P2' });
+    markFailed(failed, 'boom');
+    markReady(failed, { text: 'late' });
+    expect(failed.status).toBe(UnitStatus.FAILED);
+  });
+
   it('created units are UNSEEN by default when no text', () => {
     const m = createManifest({ documentId: 'd', kind: 'PDF', totalUnits: 0 });
     const u = addUnit(m, { label: 'P1' });

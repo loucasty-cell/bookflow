@@ -32,6 +32,33 @@ describe("book file validation", () => {
     ).toThrow(/supported book file/i);
   });
 
+  it("validates PDFs without header bytes and rejects non-numeric sizes", () => {
+    expect(
+      validateFileDescriptor({ name: "novel.pdf", size: 1200 }),
+    ).toBe("pdf");
+    expect(() => validateFileDescriptor({ name: "novel.pdf" })).toThrow(/empty/i);
+    expect(() => validateFileDescriptor({ name: "novel.pdf", size: "big" })).toThrow(/empty/i);
+  });
+
+  it("rejects binary content wearing a text extension", () => {
+    expect(() =>
+      validateFileDescriptor({
+        name: "sneaky.txt",
+        size: 1200,
+        headerBytes: [0x25, 0x50, 0x44, 0x46, 0x2d],
+        textSample: "A reader opened the quiet book and followed the first line into a patient new world.",
+      }),
+    ).toThrow(/PDF data/i);
+    expect(() =>
+      validateFileDescriptor({
+        name: "sneaky.md",
+        size: 1200,
+        headerBytes: [0x50, 0x4b, 0x03, 0x04],
+        textSample: "A reader opened the quiet book and followed the first line into a patient new world.",
+      }),
+    ).toThrow(/ZIP archive/i);
+  });
+
   it("accepts readable prose and rejects binary or HTML text", () => {
     expect(
       validateFileDescriptor({

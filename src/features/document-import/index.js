@@ -1,4 +1,5 @@
 export { ACCEPTED_FILES, parseDocument } from './lib/documentParsers.js'
+export { validateBookFile, validateFileDescriptor, MAX_FILE_SIZE, SUPPORTED_EXTENSIONS } from './lib/fileValidation.js'
 export {
   createManifest,
   addUnit,
@@ -7,6 +8,7 @@ export {
   markReady,
   markFailed,
   markCancelled,
+  requeueUnit,
   getUnitById,
   getUnitsByStatus,
   getFirstReadyUnit,

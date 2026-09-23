@@ -46,4 +46,20 @@ describe('reader text helpers', () => {
     expect(classifyParagraph('### Section 2').type).toBe('STRUCTURAL_MARKER')
     expect(classifyParagraph('---').type).toBe('STRUCTURAL_MARKER')
   })
+
+  it('tolerates null and non-string input without throwing', () => {
+    expect(normalizeText(null)).toBe('')
+    expect(normalizeText(42)).toBe('42')
+    expect(splitSentences(null)).toEqual([])
+    expect(splitParagraphs(undefined)).toEqual([])
+    expect(wordCount(null)).toBe(0)
+    expect(stripMarkdown(null)).toBe('')
+    expect(documentId(null)).toBe('unknown:0:0')
+    expect(documentId({})).toBe('unknown:0:0')
+  })
+
+  it('preserves intra-word underscores when stripping markdown', () => {
+    expect(stripMarkdown('my_variable stays intact')).toBe('my_variable stays intact')
+    expect(stripMarkdown('**bold** and _em_')).toBe('bold and em')
+  })
 })

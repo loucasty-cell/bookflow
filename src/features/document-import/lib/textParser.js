@@ -6,26 +6,70 @@ import {
 import { extensionOf } from "./fileValidation.js";
 
 export function cleanTitle(filename) {
-  return filename
+  return String(filename ?? "Untitled document")
     .replace(/\.[^.]+$/, "")
     .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ")
-    .trim();
+    .trim() || "Untitled document";
+}
+
+function stripFrontMatter(source) {
+  if (!source.startsWith("---")) return source;
+  const end = source.indexOf("\n---", 3);
+  if (end === -1) return source;
+  return source.slice(end + 4).replace(/^\s*\n/, "");
+}
+
+function setextHeadings(source) {
+  return [...source.matchAll(/^(.+)\n(=+|-{3,})[ \t]*$/gm)]
+    .filter((match) => !inFencedRange(source, match.index))
+    .map((match) => ({
+      level: match[2].startsWith("=") ? 1 : 2,
+      title: markdownHeadingText(match[1]),
+      index: match.index,
+      end: match.index + match[0].length,
+    }));
+}
+
+function inFencedRange(source, index) {
+  return fencedRanges(source).some(([start, end]) => index >= start && index < end);
 }
 
 function markdownHeadingText(value) {
   return stripMarkdown(value.replace(/\s+#+\s*$/, "")).trim();
 }
 
+function fencedRanges(source) {
+  const ranges = [];
+  let open = null;
+  let match;
+  const pattern = /^ {0,3}(`{3,}|~{3,})/gm;
+  while ((match = pattern.exec(source)) !== null) {
+    if (open === null) {
+      open = match.index;
+    } else {
+      ranges.push([open, match.index + match[0].length]);
+      open = null;
+    }
+  }
+  if (open !== null) ranges.push([open, source.length]);
+  return ranges;
+}
+
+function inRanges(ranges, index) {
+  return ranges.some(([start, end]) => index >= start && index < end);
+}
+
 function markdownHeadingBlocks(source) {
-  return [...source.matchAll(/^ {0,3}(#{1,6})[ \t]+(.+?)\s*$/gm)].map(
-    (match) => ({
+  const fenced = fencedRanges(source);
+  return [...source.matchAll(/^ {0,3}(#{1,6})[ \t]+(.+?)\s*$/gm)]
+    .filter((match) => !inRanges(fenced, match.index))
+    .map((match) => ({
       level: match[1].length,
       title: markdownHeadingText(match[2]),
       index: match.index,
       end: match.index + match[0].length,
-    }),
-  );
+    }));
 }
 
 function markdownContent(source, inlineHeadingLevel) {
@@ -49,8 +93,10 @@ function nextLineStart(source, index) {
   return index;
 }
 
-export function buildMarkdownChapters(source) {
-  const headings = markdownHeadingBlocks(source);
+export function buildMarkdownChapters(rawSource) {
+  const source = stripFrontMatter(String(rawSource ?? ""));
+  const headings = [...markdownHeadingBlocks(source), ...setextHeadings(source)]
+    .sort((a, b) => a.index - b.index);
   if (!headings.length) return null;
 
   const chapterLevel = Math.min(...headings.map((heading) => heading.level));
@@ -128,7 +174,7 @@ export function buildMarkdownChapters(source) {
 }
 
 export function parseTextDocument(file, source) {
-  const isMarkdown = ["md", "markdown"].includes(extensionOf(file.name));
+  const isMarkdown = ["md", "markdown"].includes(extensionOf(file?.name ?? ""));
   const raw = isMarkdown ? stripMarkdown(source) : source;
   const normalized = normalizeText(raw);
 

@@ -6,7 +6,7 @@
  * Stale jobs are cancelled when the user jumps to a different reading position.
  */
 
-import { JobPriority, UnitStatus, markQueued, markProcessing, markReady, markFailed, markCancelled } from "./documentManifest.js";
+import { JobPriority, UnitStatus, markQueued, markProcessing, markReady, markFailed, markCancelled, requeueUnit } from "./documentManifest.js";
 
 const isMobileDevice = () =>
   typeof navigator !== "undefined" &&
@@ -29,6 +29,7 @@ export function createImportScheduler({ concurrency, onUnitReady, onUnitFailed, 
   function enqueue(unit, priority, processFn) {
     if (disposed) return;
     if (unit.status === UnitStatus.READY || unit.status === UnitStatus.FAILED) return;
+    requeueUnit(unit);
 
     // Remove existing entry for same unit (re-enqueue at higher priority)
     const existingIdx = jobQueue.findIndex((j) => j.unit.id === unit.id);
@@ -55,7 +56,7 @@ export function createImportScheduler({ concurrency, onUnitReady, onUnitFailed, 
       if (job.unit.status === UnitStatus.CANCELLED || job.unit.status === UnitStatus.READY) {
         continue;
       }
-      runJob(job);
+      runJob(job).catch(() => undefined);
     }
   }
 
@@ -63,18 +64,30 @@ export function createImportScheduler({ concurrency, onUnitReady, onUnitFailed, 
     activeCount += 1;
     const { unit, processFn } = job;
     const controller = new AbortController();
-    abortControllers.set(unit.id, controller);
+    abortControllers.set(unit.id, { controller, unit });
 
     markProcessing(unit);
 
+    const settleCancelled = () => {
+      if (unit.status === UnitStatus.QUEUED) return;
+      markCancelled(unit);
+    };
+
     try {
       const result = await processFn(unit, controller.signal);
-      if (!controller.signal.aborted) {
+      if (controller.signal.aborted || unit.status === UnitStatus.CANCELLED) {
+        settleCancelled();
+      } else if (result == null) {
+        markFailed(unit, new Error("Processing produced no readable content."));
+        onUnitFailed?.(unit);
+      } else {
         markReady(unit, result);
         onUnitReady?.(unit);
       }
     } catch (err) {
-      if (!controller.signal.aborted) {
+      if (controller.signal.aborted || unit.status === UnitStatus.CANCELLED) {
+        settleCancelled();
+      } else {
         markFailed(unit, err);
         onUnitFailed?.(unit);
       }
@@ -87,12 +100,12 @@ export function createImportScheduler({ concurrency, onUnitReady, onUnitFailed, 
   }
 
   function cancelUnit(unitId) {
-    const controller = abortControllers.get(unitId);
-    if (controller) {
-      controller.abort();
+    const active = abortControllers.get(unitId);
+    if (active) {
+      active.controller.abort();
+      markCancelled(active.unit);
       abortControllers.delete(unitId);
     }
-    // Remove from queue if still queued
     const idx = jobQueue.findIndex((j) => j.unit.id === unitId);
     if (idx !== -1) {
       const [removed] = jobQueue.splice(idx, 1);
@@ -101,8 +114,8 @@ export function createImportScheduler({ concurrency, onUnitReady, onUnitFailed, 
   }
 
   function cancelAll() {
-    for (const [, controller] of abortControllers) {
-      controller.abort();
+    for (const [, active] of abortControllers) {
+      active.controller.abort();
     }
     abortControllers.clear();
     for (const job of jobQueue) {

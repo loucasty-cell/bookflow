@@ -1,5 +1,19 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { ocrRequestErrorMessage, API_BASE } from './ocrErrors.js';
+import { MAX_FILE_SIZE } from '../features/document-import/index.js';
+
+const MAX_BACKEND_BYTES = MAX_FILE_SIZE;
+
+function isPdfFile(file) {
+  if (!file) return false;
+  if (typeof file.name === 'string' && /\.pdf$/i.test(file.name)) return true;
+  return file.type === 'application/pdf' || file.type === 'application/x-pdf';
+}
+
+function baseName(name, fallback) {
+  if (typeof name !== 'string' || !name) return fallback;
+  return name.replace(/\.pdf$/i, '');
+}
 import {
   UploadCloud,
   FileText,
@@ -49,12 +63,19 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
 
   const eventSourceRef = useRef(null);
   const fileInputRef = useRef(null);
+  const uploadAbortRef = useRef(null);
+  const cancelledRef = useRef(false);
 
-  // Cleanup EventSource on unmount
+  // Cleanup EventSource and in-flight upload on unmount
   useEffect(() => {
     return () => {
+      if (uploadAbortRef.current) {
+        uploadAbortRef.current.abort();
+        uploadAbortRef.current = null;
+      }
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
+        eventSourceRef.current = null;
       }
     };
   }, []);
@@ -68,34 +89,40 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
     setIsDragging(false);
   };
 
+  const acceptPdfFile = (candidate) => {
+    if (!candidate) return;
+    if (!isPdfFile(candidate)) {
+      setError('Please upload a valid PDF document.');
+      return;
+    }
+    if (candidate.size > MAX_BACKEND_BYTES) {
+      setError('Please choose a PDF smaller than 50 MB.');
+      return;
+    }
+    setFile(candidate);
+    setError(null);
+  };
+
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && droppedFile.type === 'application/pdf') {
-      setFile(droppedFile);
-      setError(null);
-    } else {
-      setError('Please upload a valid PDF document.');
-    }
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile) acceptPdfFile(droppedFile);
   };
 
   const handleFileSelect = (e) => {
-    const selectedFile = e.target.files[0];
-    if (selectedFile && selectedFile.type === 'application/pdf') {
-      setFile(selectedFile);
-      setError(null);
-    } else if (selectedFile) {
-      setError('Please select a PDF document.');
-    }
+    const selectedFile = e.target.files?.[0];
+    if (selectedFile) acceptPdfFile(selectedFile);
   };
 
   const startScan = async () => {
     if (!file) return;
 
+    cancelledRef.current = false;
     setStatus('uploading');
     setError(null);
     setPages([]);
+    setActivePageIndex(0);
     setProgress({
       currentPage: 0,
       totalPages: 0,
@@ -110,10 +137,13 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
     formData.append('batch_size', '16');
     formData.append('ocr_profile', ocrProfile);
 
+    const controller = new AbortController();
+    uploadAbortRef.current = controller;
     try {
       const response = await fetch(`${API_BASE}/api/ocr/scan`, {
         method: 'POST',
         body: formData,
+        signal: controller.signal,
       });
 
       if (!response.ok) {
@@ -123,6 +153,8 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
 
       const data = await response.json();
       const newJobId = data.job_id;
+      if (!newJobId) throw new Error('The scan service did not return a job. Try again.');
+      if (cancelledRef.current || controller.signal.aborted) return;
       setJobId(newJobId);
       setProgress((prev) => ({
         ...prev,
@@ -133,8 +165,11 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
       // Connect to Server-Sent Events (SSE) stream
       connectEventSource(newJobId);
     } catch (err) {
+      if (controller.signal.aborted || cancelledRef.current) return;
       setError(ocrRequestErrorMessage(err));
       setStatus('failed');
+    } finally {
+      if (uploadAbortRef.current === controller) uploadAbortRef.current = null;
     }
   };
 
@@ -212,7 +247,7 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
 
         if (onDocumentLoaded && data.markdown) {
           onDocumentLoaded({
-            title: file ? file.name.replace('.pdf', '') : 'OCR Document',
+            title: baseName(file?.name, 'OCR Document'),
             content: data.markdown,
             totalPages: data.total_pages,
             pages: data.pages,
@@ -224,27 +259,28 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
     });
 
     es.addEventListener('error', (e) => {
-      if (e.data) {
-        try {
-          const data = JSON.parse(e.data);
-          setError(data.error || 'OCR processing encountered an error.');
-        } catch {
-          // ignore parsing error
-        }
+      if (!e.data) return;
+      try {
+        const data = JSON.parse(e.data);
+        setError(data.error || 'OCR processing encountered an error.');
+      } catch {
+        setError('OCR processing encountered an error.');
       }
       setStatus('failed');
       es.close();
     });
 
     es.onerror = () => {
-      // EventSource network dropout handler
-      if (status === 'processing') {
-        // es will auto-reconnect or fail gracefully
-      }
+      if (cancelledRef.current) es.close();
     };
   };
 
   const handleCancelScan = async () => {
+    cancelledRef.current = true;
+    if (uploadAbortRef.current) {
+      uploadAbortRef.current.abort();
+      uploadAbortRef.current = null;
+    }
     if (jobId) {
       try {
         await fetch(`${API_BASE}/api/ocr/cancel/${jobId}`, { method: 'POST' });
@@ -254,6 +290,7 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
     }
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
+      eventSourceRef.current = null;
     }
     setStatus('idle');
     setError('Scan was canceled.');
@@ -286,10 +323,16 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
     const query = searchQuery.toLowerCase();
     return pages.filter(
       (p) =>
-        p.text.toLowerCase().includes(query) ||
+        String(p.text ?? '').toLowerCase().includes(query) ||
         `page ${p.page_number}`.includes(query)
     );
   }, [pages, searchQuery]);
+
+  useEffect(() => {
+    if (activePageIndex >= pages.length) {
+      setActivePageIndex(pages.length ? pages.length - 1 : 0);
+    }
+  }, [pages.length, activePageIndex]);
 
   // Predicted remaining time estimation
   const predictedRemainingSeconds = useMemo(() => {
@@ -319,26 +362,43 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
   // Active page selection
   const activePage = pages[activePageIndex] || pages[0] || null;
 
+  const [jumpError, setJumpError] = useState('');
   const handleJumpPage = (e) => {
     e.preventDefault();
     const pageNum = parseInt(jumpPageInput, 10);
-    if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= pages.length) {
-      const targetIndex = pages.findIndex((p) => p.page_number === pageNum);
-      if (targetIndex !== -1) {
-        setActivePageIndex(targetIndex);
-        setJumpPageInput('');
-      }
+    if (isNaN(pageNum) || pageNum < 1) {
+      setJumpError('Enter a page number of 1 or higher.');
+      return;
     }
+    const targetIndex = pages.findIndex((p) => p.page_number === pageNum);
+    if (targetIndex === -1) {
+      setJumpError(`Page ${pageNum} is not available. Some pages may have failed to scan.`);
+      return;
+    }
+    setJumpError('');
+    setActivePageIndex(targetIndex);
+    setJumpPageInput('');
   };
 
   const copyToClipboard = async (text, type) => {
     try {
+      if (!navigator.clipboard) throw new Error('clipboard unavailable');
       await navigator.clipboard.writeText(text);
       setCopiedType(type);
       setTimeout(() => setCopiedType(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+    } catch {
+      setError('Copy is unavailable in this browser. Select the text manually to copy it.');
     }
+  };
+
+  const triggerDownload = (url, filename) => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const downloadMarkdown = () => {
@@ -347,21 +407,13 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
       .join('\n\n---\n\n');
     const blob = new Blob([fullMarkdown], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${file ? file.name.replace('.pdf', '') : 'document'}_ocr.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+    triggerDownload(url, `${baseName(file?.name, 'document')}_ocr.md`);
   };
 
   const downloadJson = () => {
     const blob = new Blob([JSON.stringify(pages, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${file ? file.name.replace('.pdf', '') : 'document'}_ocr_pages.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    triggerDownload(url, `${baseName(file?.name, 'document')}_ocr_pages.json`);
   };
 
   return (
@@ -386,12 +438,22 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label="Select a PDF to scan"
         >
           <input
             type="file"
             ref={fileInputRef}
             onChange={handleFileSelect}
             accept=".pdf,application/pdf"
+            aria-label="PDF file to scan"
             className="hidden-file-input"
           />
           <div className="dropzone-content">
@@ -540,7 +602,7 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
                 onClick={() => {
                   const fullMarkdown = pages.map((p) => `<!-- Page ${p.page_number} -->\n\n${p.text}`).join('\n\n---\n\n');
                   onDocumentLoaded({
-                    title: file ? file.name.replace('.pdf', '') : 'OCR Document',
+                    title: baseName(file?.name, 'OCR Document'),
                     content: fullMarkdown,
                     totalPages: pages.length,
                     pages: pages,
@@ -620,8 +682,12 @@ export function OcrUploader({ onDocumentLoaded, onUseLocalOcr }) {
                   value={jumpPageInput}
                   onChange={(e) => setJumpPageInput(e.target.value)}
                   className="jump-input"
+                  aria-label="Jump to page number"
                 />
               </form>
+              {jumpError && (
+                <span className="jump-error" role="status">{jumpError}</span>
+              )}
             </div>
 
             {/* Search and view toggle */}

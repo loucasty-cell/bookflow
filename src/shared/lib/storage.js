@@ -52,8 +52,10 @@ export function removeStorageItem(key) {
 }
 
 export function safeParse(value, fallback) {
+  if (value === null || value === undefined || value === '') return fallback
+  if (typeof value === 'object') return value
   try {
-    return value ? JSON.parse(value) : fallback
+    return JSON.parse(value)
   } catch {
     return fallback
   }

@@ -10,6 +10,9 @@ import {
   chapterFromSections,
 } from "./epubUtils.js";
 
+const MAX_ARCHIVE_ENTRIES = 3000;
+const MAX_ENTRY_BYTES = 20 * 1024 * 1024;
+
 export async function parseEpub(file, onProgress) {
   const { default: JSZip } = await import("jszip");
   let zip;
@@ -17,6 +20,11 @@ export async function parseEpub(file, onProgress) {
     zip = await JSZip.loadAsync(await file.arrayBuffer());
   } catch {
     throw new Error("This EPUB is damaged or cannot be opened.");
+  }
+
+  const archiveEntries = Object.values(zip.files);
+  if (archiveEntries.length > MAX_ARCHIVE_ENTRIES) {
+    throw new Error("This EPUB contains too many files to open safely.");
   }
 
   const containerSource = await zip
@@ -59,8 +67,10 @@ export async function parseEpub(file, onProgress) {
     const href = manifest.get(spine[index]);
     if (!href) continue;
     const path = resolveArchivePath(rootfile, href.split("#")[0]);
-    const source = await zip.file(path)?.async("text");
-    if (!source) continue;
+    const entry = zip.file(path);
+    if (!entry || (typeof entry._data?.uncompressedSize === "number" && entry._data.uncompressedSize > MAX_ENTRY_BYTES)) continue;
+    const source = await entry.async("text");
+    if (!source || source.length > MAX_ENTRY_BYTES) continue;
 
     const chapterDoc = parseXml(source, "application/xhtml+xml");
     const body = chapterDoc.body ?? chapterDoc.documentElement;
@@ -84,8 +94,16 @@ export async function parseEpub(file, onProgress) {
       structured.title || fallbackTitle || `Chapter ${chapters.length + 1}`,
       structured.sections,
     );
-    if (chapter.paragraphs.length || chapter.subheadings?.length)
+    if (chapter.paragraphs.length || chapter.subheadings?.length) {
       chapters.push(chapter);
+    } else {
+      const rawParagraphs = splitParagraphs(normalizeText(body.textContent));
+      chapters.push({
+        title: fallbackTitle || `Chapter ${chapters.length + 1}`,
+        paragraphs: rawParagraphs.length ? rawParagraphs : ["This chapter has no readable text."],
+        subheadings: [],
+      });
+    }
     onProgress?.(
       Math.round(((index + 1) / spine.length) * 100),
       `Opening chapter ${index + 1} of ${spine.length}`,

@@ -4,13 +4,18 @@
  */
 
 export function triggerHaptic(pattern = 30) {
+  const valid = Array.isArray(pattern)
+    ? pattern.every((value) => Number.isFinite(value) && value >= 0)
+    : Number.isFinite(pattern) && pattern >= 0;
+  if (!valid) return false;
   if (typeof window !== 'undefined' && typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
     try {
-      navigator.vibrate(pattern);
+      return navigator.vibrate(pattern);
     } catch {
-      // Haptics fail silently on unsupported platforms or when blocked by permissions
+      return false;
     }
   }
+  return false;
 }
 
 export const HAPTIC_PATTERNS = {

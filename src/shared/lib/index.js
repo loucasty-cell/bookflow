@@ -12,7 +12,11 @@ export {
   classifyParagraph,
   documentId,
   formatClassification,
+  normalizeText,
+  splitParagraphs,
   splitSentences,
+  stripMarkdown,
   wordCount,
 } from './text.js'
+export { clearMarks, clearMeasures, getMarks, getMeasures, mark, measure } from './perfMarks.js'
 

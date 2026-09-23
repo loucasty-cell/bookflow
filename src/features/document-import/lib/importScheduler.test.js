@@ -113,6 +113,46 @@ describe('importScheduler', () => {
     expect(scheduler.isIdle).toBe(true);
   });
 
+  it('fails units whose work returns no content instead of marking ready', async () => {
+    const ready = [];
+    const failed = [];
+    const scheduler = createImportScheduler({
+      concurrency: 1,
+      onUnitReady: (u) => ready.push(u),
+      onUnitFailed: (u) => failed.push(u),
+    });
+
+    const m = createManifest({ documentId: 'd', kind: 'PDF', totalUnits: 0 });
+    const unit = addUnit(m, { label: 'P1' });
+    scheduler.enqueue(unit, 0, async () => undefined);
+
+    await vi.waitFor(() => expect(failed.length).toBe(1));
+    expect(ready.length).toBe(0);
+    expect(unit.status).toBe(UnitStatus.FAILED);
+    scheduler.cancelAll();
+  });
+
+  it('re-queues cancelled units when they are enqueued again', async () => {
+    const ready = [];
+    const scheduler = createImportScheduler({
+      concurrency: 1,
+      onUnitReady: (u) => ready.push(u),
+    });
+
+    const m = createManifest({ documentId: 'd', kind: 'PDF', totalUnits: 0 });
+    const unit = addUnit(m, { label: 'P1' });
+    const work = async () => ({ text: 'hello', paragraphs: ['hello'], ocrStatus: 'native' });
+
+    scheduler.enqueue(unit, 0, work);
+    scheduler.cancelUnit(unit.id);
+    expect(unit.status).toBe(UnitStatus.CANCELLED);
+    scheduler.enqueue(unit, 0, work);
+
+    await vi.waitFor(() => expect(ready.length).toBe(1));
+    expect(unit.status).toBe(UnitStatus.READY);
+    scheduler.cancelAll();
+  });
+
   it('reports stats correctly', () => {
     const scheduler = createImportScheduler({ concurrency: 2 });
     const stats = scheduler.stats();

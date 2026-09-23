@@ -10,7 +10,13 @@ export function resolveArchivePath(baseFile, relativePath) {
   const base = baseFile.includes("/")
     ? baseFile.slice(0, baseFile.lastIndexOf("/") + 1)
     : "";
-  const stack = `${base}${decodeURIComponent(relativePath)}`.split("/");
+  let decoded = relativePath;
+  try {
+    decoded = decodeURIComponent(relativePath);
+  } catch {
+    decoded = relativePath;
+  }
+  const stack = `${base}${decoded}`.split("/");
   const result = [];
   for (const part of stack) {
     if (!part || part === ".") continue;
@@ -36,7 +42,7 @@ export function collectContentBlocks(element) {
     const text = normalizeText(node.textContent);
     const tag = node.tagName.toLowerCase();
     if (tag === "p" || tag === "blockquote" || tag === "li") {
-      if (text.length > 20) blocks.push({ type: "content", text });
+      if (text.length > 0) blocks.push({ type: "content", text });
     } else if (text.length > 0) {
       blocks.push({ type: "heading", level: Number(tag[1]), text });
     }
@@ -114,7 +120,10 @@ export function chapterFromSections(title, sections) {
 }
 
 export function parseXml(source, type = "application/xml") {
-  const document = new DOMParser().parseFromString(source, type);
+  if (typeof DOMParser === "undefined") {
+    throw new Error("This ebook cannot be parsed in this environment.");
+  }
+  const document = new DOMParser().parseFromString(String(source ?? ""), type);
   if (document.querySelector("parsererror"))
     throw new Error("This ebook contains invalid XML.");
   return document;

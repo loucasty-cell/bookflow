@@ -81,6 +81,13 @@ export function markProcessing(unit) {
 }
 
 export function markReady(unit, { text, paragraphs, confidence, ocrStatus } = {}) {
+  if (
+    unit.status === UnitStatus.READY ||
+    unit.status === UnitStatus.CANCELLED ||
+    unit.status === UnitStatus.FAILED
+  ) {
+    return;
+  }
   unit.status = UnitStatus.READY;
   if (text != null) unit.text = text;
   if (paragraphs != null) unit.paragraphs = paragraphs;
@@ -97,6 +104,13 @@ export function markFailed(unit, error) {
 export function markCancelled(unit) {
   if (unit.status === UnitStatus.QUEUED || unit.status === UnitStatus.PROCESSING) {
     unit.status = UnitStatus.CANCELLED;
+  }
+}
+
+export function requeueUnit(unit) {
+  if (unit.status === UnitStatus.CANCELLED) {
+    unit.status = UnitStatus.UNSEEN;
+    unit.error = null;
   }
 }
 
@@ -118,8 +132,14 @@ export function getFirstReadyUnit(manifest) {
 
 export function manifestProgress(manifest) {
   if (!manifest.units.length) return 0;
-  const ready = manifest.units.filter(
-    (u) => u.status === UnitStatus.READY || u.status === UnitStatus.FAILED,
+  const settled = manifest.units.filter(
+    (u) => u.status === UnitStatus.READY || u.status === UnitStatus.FAILED || u.status === UnitStatus.CANCELLED,
   ).length;
+  return Math.round((settled / manifest.units.length) * 100);
+}
+
+export function manifestReadiness(manifest) {
+  if (!manifest.units.length) return 0;
+  const ready = manifest.units.filter((u) => u.status === UnitStatus.READY).length;
   return Math.round((ready / manifest.units.length) * 100);
 }

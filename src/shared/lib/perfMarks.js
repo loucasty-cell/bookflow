@@ -48,6 +48,13 @@ export function clearMarks() {
       .getEntriesByType("mark")
       .filter((e) => e.name.startsWith(MARK_PREFIX))
       .forEach((e) => performance.clearMarks(e.name));
+  } catch {
+    // no-op
+  }
+}
+
+export function clearMeasures() {
+  try {
     performance
       .getEntriesByType("measure")
       .filter((e) => e.name.startsWith(MARK_PREFIX))

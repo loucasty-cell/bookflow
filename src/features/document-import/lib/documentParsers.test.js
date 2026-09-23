@@ -55,6 +55,27 @@ describe("Markdown structure parsing", () => {
   });
 });
 
+describe("Markdown code fences", () => {
+  it("ignores headings inside fenced code blocks", () => {
+    const chapters = buildMarkdownChapters(
+      [
+        "# Real chapter",
+        "",
+        "Some prose here.",
+        "",
+        "```js",
+        "# Not a chapter",
+        "const x = 1;",
+        "```",
+        "",
+        "More prose here.",
+      ].join("\n"),
+    );
+    expect(chapters).toHaveLength(1);
+    expect(chapters[0].title).toBe("Real chapter");
+  });
+});
+
 describe("EPUB block grouping", () => {
   it("keeps the spine title separate and groups only h2 and h3 blocks", () => {
     const result = buildEpubSections([
