@@ -14,6 +14,8 @@ What exists, what is next, and how progress will be measured.
 
 - [[Current State Matrix]] - the single source of truth for verified versus planned
 - [[Backlog P0-P1-P2]] - prioritized work, merged from the project planning documents
+- [[Audit Compare Replan]] - Bookflow audited capability by capability against competitors
+- [[Massive Upgrade Backlog]] - the 24 item prioritized UI and experience upgrade list
 - [[Future Features MOC]] - spec-ready designs for larger capabilities
 - [[Success Metrics]] - measurable outcomes and current baselines
 - [[Library and Reading Stats]] - persistent library, continuity, garden
@@ -29,6 +31,9 @@ Next      Library plus durable storage, annotation export and import
 Later     PWA install, TTS synchronization, concept graph
 Deferred  Social layer, ambient WebGL, native wrappers
 ```
+
+The competitor research replanned this order. See [[Audit Compare Replan]] for the reasoning and
+[[Massive Upgrade Backlog]] for the item-by-item specs.
 
 ## The ordering logic
 

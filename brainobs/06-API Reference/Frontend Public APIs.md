@@ -72,9 +72,16 @@ VariableRewardCapsule
 
 ## `src/shared/lib/index.js`
 
-Storage, text, and performance helpers, including `documentId`, `wordCount`, `splitParagraphs`,
-`getSafeStorage`, `getStorageItem`, `setStorageItem`, `removeStorageItem`, `safeParse`,
-`documentStorageKey`, and the `mark` performance helper.
+Storage, text, haptics, and performance helpers.
+
+| Group | Exports |
+| --- | --- |
+| Haptics | `triggerHaptic`, `HAPTIC_PATTERNS` |
+| Storage | `documentStorageKey`, `getSafeStorage`, `getStorageItem`, `memoryStorage`, `removeStorageItem`, `safeParse`, `setStorageItem` |
+| Text | `classifyParagraph`, `documentId`, `formatClassification`, `splitSentences`, `wordCount` |
+
+`splitParagraphs` and `normalizeText` live in `src/shared/lib/text.js` and are imported directly
+by the parsers. Performance marks come from `src/shared/lib/perfMarks.js` as `mark`.
 
 ## Stores
 

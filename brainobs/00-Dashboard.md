@@ -40,6 +40,7 @@ Read this note first. Every other note is one hop away.
 - [[API Reference MOC]] - endpoints, public APIs, environment
 - [[Ops MOC]] - setup, Docker, testing, debugging
 - [[Agent Context MOC]] - invariants, file map, verification
+- [[Competitor Research MOC]] - primary-source research on Kindle, Apple Books, Everand, Libby, Goodreads, Bookly, Fable
 - [[Vault Maintenance]] - how to keep this vault true
 - [[Context Sync Protocol]] - the update process after every code change
 

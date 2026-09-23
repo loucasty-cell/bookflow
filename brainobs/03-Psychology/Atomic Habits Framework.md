@@ -86,15 +86,23 @@ pulls a reader back. Vague promises do not create craving; concrete previews do.
 
 **Build spec: Chapter horizon teaser**
 
-```text
-Source      Derived from existing chapter structure
-Placement   End of a chapter, above the completion mark
-Content     Two lines maximum. Must describe something real in the next chapter.
-Never       Generic filler such as "Next: more great insights"
-```
+Status: **verified and built.** `src/features/reader/components/HorizonTeaser.jsx` is wired into
+`ReaderPage.jsx` and renders at the end of every focus-eligible chapter that has a successor.
 
-If a truthful teaser cannot be produced, show nothing. A fabricated teaser teaches the reader
-that the app lies, which destroys the craving mechanism permanently.
+| Aspect | Implementation |
+| --- | --- |
+| Placement | End of chapter, after the last paragraph |
+| Trigger | `chapter.focusEligible && chapterIndex < chapters.length - 1` |
+| Content | Next chapter title, an estimated read time, and the first sentence as a hook |
+| Hint extraction | First sentence split from the next chapter's opening paragraph, with section fallback |
+| Action | `onJumpToNext` calls `jumpToChapter`, which also reprioritizes the import scheduler |
+| Honesty | The hook is real extracted text, never generated or fabricated |
+
+The honesty property matters most. The teaser quotes the actual next chapter, so it can never
+promise something the book does not contain. Keep it that way.
+
+Remaining gap: `estimatedMinutes` defaults to a fixed `3` rather than being derived from the next
+chapter's real word count. Tracked in [[Massive Upgrade Backlog]].
 
 **Build spec: Reading mood presets**
 

@@ -28,22 +28,46 @@ relevant component exists and is verified.
 
 ## 1. Haptic vocabulary
 
-**Status:** partial. Haptic helpers are referenced in the frontend architecture notes.
+**Status:** verified and wired. Implemented in `src/shared/lib/haptics.js` and consumed by
+`FocusCard.jsx` and `SelectionTooltip.jsx`.
 
-| Action | Haptic | Reason |
-| --- | --- | --- |
-| Pin a paragraph | Short light pulse | Confirms a deliberate state change |
-| Toggle bookmark | Short light pulse | Confirms the bookmark took |
-| Copy paragraph | Single micro pulse | Confirms the clipboard write |
-| Chapter complete | Double gentle pulse | Marks a milestone |
-| Rapid step navigation | Suppressed | Prevents buzzing during fast navigation |
+Implemented API:
+
+| Export | Purpose |
+| --- | --- |
+| `triggerHaptic(pattern)` | Calls `navigator.vibrate` when available, fails silently otherwise |
+| `HAPTIC_PATTERNS.LIGHT` | 15 ms, used for pin, dismiss, step, resume, note actions |
+| `HAPTIC_PATTERNS.MEDIUM` | 35 ms, used for bookmark toggle |
+| `HAPTIC_PATTERNS.SUCCESS` | 20/30/40 ms pattern, used for copy confirmation |
+| `HAPTIC_PATTERNS.HEAVY` | 50 ms, unused at present |
+| `HAPTIC_PATTERNS.WARNING` | 40/40/40 ms pattern, unused at present |
+| `HAPTIC_PATTERNS.SELECTION` | 10 ms selection tick, unused at present |
+
+Current mapping in the reader:
+
+| Action | Pattern |
+| --- | --- |
+| Restore the hidden focus card | `LIGHT` |
+| Dismiss the focus card | `LIGHT` |
+| Step focus back or forward | `LIGHT` |
+| Toggle bookmark | `MEDIUM` |
+| Copy focused paragraph | `SUCCESS` |
+| Resume automatic flow | `LIGHT` |
+| Copy selected text | `SUCCESS` |
+| Add note from selection | `LIGHT` |
+| Bookmark from selection tooltip | `MEDIUM` |
 
 Rules:
 
-- Feature-detect `navigator.vibrate`. Never assume support.
+- Feature detection is already handled inside `triggerHaptic`. Never call `navigator.vibrate`
+  directly.
 - Never vibrate on scroll or focus change. Those are continuous, and buzzing would be hostile.
-- Suppress haptics under reduced-motion preferences.
-- Keep it under 20ms. A long buzz is jarring in a calm reading app.
+- Suppress haptics under reduced-motion preferences. Not yet implemented; tracked in
+  [[Massive Upgrade Backlog]].
+- Keep it under 20 ms for continuous-use interactions. A long buzz is jarring in a calm reader.
+
+`HEAVY`, `WARNING`, and `SELECTION` are defined but unused. Either wire them to a real action or
+leave them documented as reserved.
 
 ## 2. Resume pulse
 

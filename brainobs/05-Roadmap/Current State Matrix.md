@@ -32,7 +32,7 @@ with this table, this table is correct until it is updated with evidence.
 | Deterministic progress | Verified | `readingProgress` from position |
 | Reading time estimate | Verified | 230 words per minute |
 | Editorial typography | Verified | Drop caps, keywords, pull quotes, insight boxes |
-| Paragraph classification | Partial | 7-category heuristic; accuracy claims need validation |
+| Paragraph classification | Verified | `classifyParagraph` in `src/shared/lib/text.js` with `formatClassification`, 7 categories |
 | 3D book cards and living shelf | Verified | `ThreeDBookCard.jsx`, `LivingShelf.jsx` with spring physics and proximity shadows |
 | Curated shelf library | Verified | Three openable books on the landing page |
 | Ambient visual layer | Verified | `AmbientDustCanvas`, `Brand`, `ThreeDButton` in shared components |
@@ -76,7 +76,8 @@ with this table, this table is correct until it is updated with evidence.
 | 4-minute drop-off detection | Verified | 240000 ms stillness check |
 | Intervention modal | Verified | Opt-in, default `false` |
 | Social resonance | Planned | Endpoints specified, not built |
-| Haptic helpers | Partial | Referenced, coverage not confirmed |
+| Haptic feedback vocabulary | Verified | `triggerHaptic`, `HAPTIC_PATTERNS` in `src/shared/lib/haptics.js`, used by `FocusCard.jsx` and `SelectionTooltip.jsx` |
+| Paragraph classification heuristic | Verified | `classifyParagraph` in `src/shared/lib/text.js`, 7 categories, unit tested in `text.test.js` |
 
 ## Reliability and quality
 

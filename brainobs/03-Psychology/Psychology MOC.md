@@ -13,6 +13,7 @@ Why Bookflow is designed the way it is, and what it is allowed to do to a reader
 ## Notes
 
 - [[Atomic Habits Framework]] - the four laws mapped to real Bookflow features
+- [[Competitor Mechanics Scorecard]] - every competitor mechanic scored adopt, adapt, defer, or reject
 - [[Habit Loop Design]] - cue, craving, response, reward as a reading session
 - [[Flow State Science]] - challenge and skill balance, the drop-off window
 - [[Cognitive Ergonomics]] - the focus rail, saccadic regressions, perceptual span
