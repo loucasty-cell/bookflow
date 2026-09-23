@@ -15,4 +15,10 @@ export const DEFAULT_SETTINGS = {
   showRewardCapsules: false,
   showInterventionModals: false,
   useProgressiveImport: true,
+  showResumeCard: true,
+  showSessionRecap: false,
+  showAchievements: false,
+  showDefinitionLookup: false,
+  enableAnnualGoal: false,
+  annualGoalTarget: 12,
 }

@@ -1,0 +1,513 @@
+/**
+ * library.css: styles for the library, resume, milestones, and session recap.
+ *
+ * Uses the project design tokens. Every animation is opt-out under
+ * prefers-reduced-motion, and no surface requires blur for legibility.
+ */
+
+:root {
+  --badge-gold: #b08a3e;
+  --badge-sepia: #6b4f2a;
+  --badge-ink: #3d2f17;
+  --badge-parchment: #f3ead9;
+}
+
+[data-theme="dusk"] {
+  --badge-gold: #d8b56a;
+  --badge-sepia: #b79263;
+  --badge-ink: #e8dcc4;
+  --badge-parchment: #1b1d26;
+}
+
+/* ---------- Resume card ---------- */
+
+.resume-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--landing-line, rgba(0, 0, 0, 0.08));
+  background: var(--landing-surface-strong, #ffffff);
+  box-shadow: var(--shadow-md);
+  text-align: left;
+}
+
+.resume-card.is-compact {
+  padding: var(--space-3) var(--space-4);
+  gap: var(--space-3);
+}
+
+.resume-card-art {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  color: var(--badge-gold);
+  background: color-mix(in srgb, var(--badge-gold) 12%, transparent);
+}
+
+.resume-card.is-compact .resume-card-art {
+  width: 36px;
+  height: 36px;
+}
+
+.resume-card-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.resume-card-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--landing-muted, #5e6674);
+}
+
+.resume-card-title {
+  margin: 3px 0 5px;
+  font-family: var(--font-reading);
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--landing-text, #1d222b);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resume-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  font-size: 12px;
+  color: var(--landing-muted, #5e6674);
+}
+
+.resume-card-progress {
+  position: relative;
+  height: 3px;
+  margin-top: var(--space-3);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--landing-text, #1d222b) 10%, transparent);
+  overflow: hidden;
+}
+
+.resume-card-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--badge-gold);
+  transition: width var(--duration-medium) var(--spring);
+}
+
+.resume-card-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.resume-card-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--brand-navy, #171d3a);
+  cursor: pointer;
+}
+
+.resume-card-secondary {
+  padding: 8px 14px;
+  border: 1px solid var(--landing-line, rgba(0, 0, 0, 0.1));
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  color: var(--landing-muted, #5e6674);
+  background: transparent;
+  cursor: pointer;
+}
+
+/* ---------- Badge gallery ---------- */
+
+.badge-gallery {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto var(--space-6);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--landing-line, rgba(0, 0, 0, 0.08));
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--badge-gold) 8%, transparent), transparent 60%),
+    var(--landing-surface-strong, #ffffff);
+  box-shadow: var(--shadow-md);
+}
+
+.badge-gallery-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.badge-gallery-heading {
+  display: flex;
+  gap: var(--space-3);
+  color: var(--badge-gold);
+}
+
+.badge-gallery-title {
+  margin: 0;
+  font-family: var(--font-reading);
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--landing-text, #1d222b);
+}
+
+.badge-gallery-subtitle {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--landing-muted, #5e6674);
+}
+
+.badge-gallery-dismiss {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--landing-muted, #5e6674);
+  background: transparent;
+  cursor: pointer;
+}
+
+.badge-gallery-dismiss:hover {
+  background: color-mix(in srgb, var(--landing-text, #1d222b) 6%, transparent);
+}
+
+.badge-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-4);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.badge-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--badge-parchment) 40%, transparent);
+  text-align: center;
+  transition:
+    transform var(--duration-medium) var(--spring),
+    border-color var(--duration-short) ease,
+    box-shadow var(--duration-medium) ease;
+}
+
+.badge-card.is-earned {
+  border-color: color-mix(in srgb, var(--badge-gold) 45%, transparent);
+  box-shadow: 0 6px 24px -10px color-mix(in srgb, var(--badge-gold) 50%, transparent);
+}
+
+.badge-card.is-new {
+  animation: badge-earned-pulse 1.6s var(--spring) 1;
+}
+
+.badge-medallion {
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+
+.badge-glyph-layer,
+.badge-ring {
+  position: absolute;
+  inset: 0;
+}
+
+.badge-glyph-layer {
+  display: grid;
+  place-items: center;
+}
+
+.badge-ring {
+  pointer-events: none;
+}
+
+.badge-ring-track {
+  stroke: color-mix(in srgb, var(--landing-text, #1d222b) 12%, transparent);
+}
+
+.badge-ring-fill {
+  stroke: var(--badge-gold);
+  transition: stroke-dashoffset var(--duration-medium) var(--spring);
+}
+
+.badge-ring-earned {
+  stroke: var(--badge-gold);
+  opacity: 0.5;
+}
+
+.badge-new-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  border-radius: var(--radius-full);
+  background: var(--brand-red, #e3242b);
+  box-shadow: 0 0 0 2px var(--landing-surface-strong, #ffffff);
+}
+
+.badge-latin {
+  font-family: var(--font-reading);
+  font-size: 10px;
+  font-style: italic;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--badge-sepia);
+}
+
+.badge-title {
+  margin: 3px 0 1px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--landing-text, #1d222b);
+}
+
+.badge-subtitle {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--landing-muted, #5e6674);
+}
+
+.badge-earned-by {
+  display: none;
+}
+
+.badge-progress-label {
+  margin-top: var(--space-2);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--badge-sepia);
+  background: color-mix(in srgb, var(--badge-gold) 12%, transparent);
+}
+
+.badge-card.is-earned .badge-progress-label {
+  color: #fff;
+  background: var(--badge-gold);
+}
+
+.badge-gallery-award {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-4);
+  padding: 12px;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--badge-sepia);
+  background: color-mix(in srgb, var(--badge-gold) 16%, transparent);
+  cursor: pointer;
+}
+
+.badge-glyph.is-locked {
+  filter: grayscale(0.6);
+}
+
+/* ---------- Session recap ---------- */
+
+.session-recap-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: color-mix(in srgb, var(--landing-text, #1d222b) 40%, transparent);
+}
+
+.session-recap {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--landing-line, rgba(0, 0, 0, 0.08));
+  background: var(--landing-surface-strong, #ffffff);
+  box-shadow: var(--shadow-lg);
+  text-align: center;
+}
+
+.session-recap-close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--landing-muted, #5e6674);
+  background: transparent;
+  cursor: pointer;
+}
+
+.session-recap-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--badge-gold);
+}
+
+.session-recap-title {
+  margin: var(--space-2) 0 var(--space-3);
+  font-family: var(--font-reading);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--landing-text, #1d222b);
+}
+
+.session-recap-sparkline {
+  display: block;
+  width: 100%;
+  height: 28px;
+  margin: 0 auto var(--space-3);
+  color: var(--badge-gold);
+}
+
+.session-recap-sparkline path {
+  stroke: currentColor;
+}
+
+.session-recap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: var(--space-3);
+  padding: 0;
+  margin: 0 0 var(--space-5);
+  list-style: none;
+}
+
+.session-recap-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--badge-sepia);
+  background: color-mix(in srgb, var(--badge-gold) 8%, transparent);
+}
+
+.session-recap-stat-value {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--landing-text, #1d222b);
+}
+
+.session-recap-stat-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--landing-muted, #5e6674);
+}
+
+.session-recap-dismiss {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--brand-navy, #171d3a);
+  cursor: pointer;
+}
+
+/* ---------- Animations ---------- */
+
+@keyframes badge-earned-pulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 560px) {
+  .resume-card {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .resume-card-actions {
+    flex-direction: row;
+    width: 100%;
+  }
+
+  .resume-card-primary {
+    justify-content: center;
+    flex: 1 1 auto;
+  }
+
+  .badge-gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: var(--space-3);
+  }
+}
+
+/* ---------- Reduced motion & transparency ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-card,
+  .badge-ring-fill,
+  .resume-card-progress-fill {
+    transition: none;
+    animation: none;
+  }
+
+  .badge-card.is-new {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .session-recap-backdrop {
+    background: var(--landing-surface-strong, #ffffff);
+  }
+}
