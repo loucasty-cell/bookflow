@@ -11,6 +11,8 @@ __pycache__/
 .pytest_cache/
 .venv/
 .next/
+playwright-report/
+test-results/
 public/ocr/
 public/pdf.worker.min.mjs
 /*.pdf

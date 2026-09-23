@@ -32,7 +32,7 @@ bookflow/
 ### Core Invariants:
 1. **Local-First Privacy**: Book text stays on user's device. Never send book contents to cloud services without explicit approval.
 2. **React Text Nodes Only**: Render book text safely via React element trees. Never use `dangerouslySetInnerHTML` for book contents.
-3. **Sentence/Paragraph Golden Ratio Focus**: Scrolling pulls the active sentence/paragraph into focus at `FOCUS_RAIL_RATIO = 0.42`.
+3. **Sentence/Paragraph Golden Ratio Focus**: Scrolling pulls the active sentence/paragraph into focus at `FOCUS_RAIL_RATIO = 0.38`, centering the active paragraph a little above viewport center.
 
 ---
 
