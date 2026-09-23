@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { BookOpen, Sparkles } from "lucide-react";
 
@@ -17,6 +17,11 @@ export function ThreeDBookCard({
   const cardRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
+  const openTimerRef = useRef(null);
+
+  useEffect(() => () => {
+    if (openTimerRef.current) window.clearTimeout(openTimerRef.current);
+  }, []);
 
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -48,13 +53,19 @@ export function ThreeDBookCard({
   };
 
   const handleClick = () => {
-    if (isOpening) return;
-    setIsOpening(true);
-    if (onOpen) {
-      setTimeout(() => {
-        onOpen(book);
-      }, 360);
+    if (!book || isOpening) return;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    if (!onOpen) return;
+    if (reduceMotion) {
+      onOpen(book);
+      return;
     }
+    setIsOpening(true);
+    openTimerRef.current = window.setTimeout(() => {
+      openTimerRef.current = null;
+      setIsOpening(false);
+      onOpen(book);
+    }, 360);
   };
 
   const colorThemes = {
@@ -111,7 +122,7 @@ export function ThreeDBookCard({
         whileTap={{ scale: 0.98, z: -8 }}
         tabIndex={0}
         role="button"
-        aria-label={`Open book: ${book.title}`}
+        aria-label={`Open book: ${book?.title ?? "untitled"}`}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();

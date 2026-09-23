@@ -1,12 +1,10 @@
 import { useState, useRef } from "react";
 import {
   BookOpen,
-  ChevronRight,
   Focus,
   Highlighter,
   Moon,
   ShieldCheck,
-  Sparkles,
   Sun,
   UploadCloud,
   X,
@@ -68,7 +66,7 @@ export function LandingPage({
             className="theme-toggle"
             type="button"
             onClick={toggleTheme}
-            aria-label={theme === "dusk" ? "Use light appearance" : "Use black appearance"}
+            aria-label={theme === "dusk" ? "Use light appearance" : "Use dark appearance"}
           >
             {theme === "dusk" ? <Sun size={17} /> : <Moon size={17} />}
           </button>
@@ -86,7 +84,7 @@ export function LandingPage({
             <span>Keep going.</span>
           </h1>
           <p className="hero-copy">
-            Bookflow keeps your place, quiets the chrome, and brings one complete paragraph forward at a time. Read privately, then come back exactly where the thread still feels alive.
+            Bookflow keeps your place and brings one paragraph forward at a time. Read privately, return exactly where you left off.
           </p>
 
           <div
@@ -108,14 +106,18 @@ export function LandingPage({
               event.preventDefault();
               setDragging(false);
               setMousePos({ x: 0, y: 0, isHovering: false });
-              handleFile(event.dataTransfer.files[0]);
+              const dropped = event.dataTransfer.files?.[0];
+              if (dropped) handleFile(dropped);
             }}
           >
             <input
               ref={fileInputRef}
               type="file"
               accept={ACCEPTED_FILES}
-              onChange={(event) => handleFile(event.target.files[0])}
+              onChange={(event) => {
+                const selected = event.target.files?.[0];
+                if (selected) handleFile(selected);
+              }}
               aria-label="Choose a book or document"
             />
             <div className="upload-icon">
@@ -201,7 +203,7 @@ export function LandingPage({
       {/* Interactive 3D Living Shelf Section */}
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-12">
         <LivingShelf
-          onOpenBook={(book) => openBook(book, book.kind === "SAMPLE" ? "bookflow-sample" : undefined)}
+          onOpenBook={(book, id) => openBook(book, id ?? (book.kind === "SAMPLE" ? "bookflow-sample" : `curated:${book.title}`))}
           onUploadClick={() => fileInputRef.current?.click()}
         />
       </div>

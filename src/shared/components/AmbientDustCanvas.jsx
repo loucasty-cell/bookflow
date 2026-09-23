@@ -89,8 +89,12 @@ const STARDUST_GLYPHS = [
 ];
 
 function pickRandomAlphabets(count = 12) {
-  const shuffled = [...ALPHABET_A_TO_Z].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
+  const pool = [...ALPHABET_A_TO_Z];
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, count);
 }
 
 function createMoteTexture() {
@@ -117,10 +121,9 @@ function createMoteTexture() {
   return texture;
 }
 
-function createGlyphTexture(char, fontSize, maxAnisotropy = 4) {
+function createGlyphTexture(char, fontSize, maxAnisotropy = 4, canvasSize = 512) {
   if (typeof document === "undefined") return null;
-  // High-DPI 512x512 canvas texture for razor-sharp rendering without blur
-  const size = 512;
+  const size = canvasSize;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
@@ -152,10 +155,12 @@ function createGlyphTexture(char, fontSize, maxAnisotropy = 4) {
 
 export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "paper" }) {
   const containerRef = useRef(null);
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !active) return;
+    if (!container || !active) return undefined;
 
     let isDisposed = false;
     let renderer = null;
@@ -215,10 +220,11 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
       const handleContextLost = (event) => {
         event.preventDefault();
         if (animId) cancelAnimationFrame(animId);
+        animId = null;
       };
 
       const handleContextRestored = () => {
-        if (!reducedMotion) {
+        if (!reducedMotion && !animId) {
           animId = requestAnimationFrame(animate);
         }
       };
@@ -234,7 +240,7 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
       const planeGeo = new THREE.PlaneGeometry(36, 24, 24, 24);
       disposables.push(planeGeo);
 
-      const initialPalette = THEME_PALETTES[theme] || THEME_PALETTES.paper;
+      const initialPalette = THEME_PALETTES[themeRef.current] || THEME_PALETTES.paper;
       const currentPalette = {
         bg: initialPalette.bg.clone(),
         warm: initialPalette.warm.clone(),
@@ -547,7 +553,7 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
         const baseScale = Math.random() * 0.14 + 0.26; // 0.26 - 0.40
         const fontSize = Math.floor(Math.random() * 25 + 120);
 
-        const glyph = createGlyphTexture(char, fontSize, maxAnisotropy);
+        const glyph = createGlyphTexture(char, fontSize, maxAnisotropy, 256);
         if (!glyph) return;
         disposables.push(glyph.texture);
 
@@ -620,6 +626,12 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
           hoverIntensity: 0,
           resonanceGlow: 0,
         });
+      });
+
+      // Staggered materialize: each letter fades in turn after mount
+      letterDataList.forEach((letter, letterIndex) => {
+        letter.appearAt = 0.4 + letterIndex * 0.05;
+        letter.mesh.material.opacity = 0;
       });
 
       // Mouse tracking & 3D raycasting
@@ -752,8 +764,8 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
         shaderMaterial.uniforms.uTime.value = reducedMotion ? 0 : elapsedTime;
         shaderMaterial.uniforms.uMouse.value.set(currentMouse.x, currentMouse.y);
 
-        // Smooth theme palette interpolation
-        const targetPalette = THEME_PALETTES[theme] || THEME_PALETTES.paper;
+        // Smooth theme palette interpolation (live ref: no scene rebuild on toggle)
+        const targetPalette = THEME_PALETTES[themeRef.current] || THEME_PALETTES.paper;
         currentPalette.bg.lerp(targetPalette.bg, 0.06);
         currentPalette.warm.lerp(targetPalette.warm, 0.06);
         currentPalette.cool.lerp(targetPalette.cool, 0.06);
@@ -952,11 +964,14 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
           // Idle breathing shimmer
           const breathTwinkle = Math.sin(elapsedTime * letter.breathSpeed + letter.breathPhase);
           const breathOpacityMod = 1.0 + breathTwinkle * (letter.tier === "stardust" ? 0.12 : 0.05);
+          const appearK = reducedMotion
+            ? 1
+            : Math.min(1, Math.max(0, (elapsedTime - (letter.appearAt ?? 0)) / 1.4));
 
           // Smooth opacity & interactive ink glow
           letter.mesh.material.opacity = THREE.MathUtils.lerp(
             letter.mesh.material.opacity,
-            letter.targetOpacity * (reducedMotion ? 1.0 : breathOpacityMod),
+            letter.targetOpacity * (reducedMotion ? 1.0 : breathOpacityMod) * appearK,
             0.07
           );
 
@@ -1020,7 +1035,7 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
         }
       }
     };
-  }, [active, particleCount, theme]);
+  }, [active, particleCount]);
 
   return (
     <div

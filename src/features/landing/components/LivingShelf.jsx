@@ -2,6 +2,47 @@ import { useState, useEffect, useRef } from "react";
 import { BookOpen, Plus } from "lucide-react";
 import { ThreeDBookCard } from "./ThreeDBookCard.jsx";
 import { SAMPLE_BOOK } from "../sampleBook.js";
+import { getSafeStorage } from "../../../shared/lib/storage.js";
+
+function textOf(paragraph) {
+  if (typeof paragraph === "string") return paragraph;
+  if (typeof paragraph?.text === "string") return paragraph.text;
+  return "";
+}
+
+function toNormalizedBook(bookItem) {
+  const chapters = (bookItem.chapters ?? []).map((chapter) => {
+    const topLevel = Array.isArray(chapter.paragraphs)
+      ? chapter.paragraphs.map(textOf).filter((text) => text.trim().length > 0)
+      : [];
+    const sections = Array.isArray(chapter.sections) ? chapter.sections : [];
+    const paragraphs = [
+      ...topLevel,
+      ...sections.flatMap((section) =>
+        (section.paragraphs ?? []).map(textOf),
+      ),
+    ].filter((text) => text.trim().length > 0);
+    const subheadings = sections
+      .map((section) => ({
+        title: section.title ?? null,
+        paragraphs: (section.paragraphs ?? [])
+          .map(textOf)
+          .filter((text) => text.trim().length > 0),
+      }))
+      .filter((section) => section.paragraphs.length);
+    return {
+      title: chapter.title,
+      paragraphs: paragraphs.length ? paragraphs : ["This chapter has no readable text."],
+      ...(subheadings.some((section) => section.title) ? { subheadings } : {}),
+    };
+  });
+  return {
+    title: bookItem.title,
+    author: bookItem.author ?? "",
+    kind: bookItem.kind ?? "SAMPLE",
+    chapters,
+  };
+}
 
 const CURATED_LIBRARY = [
   {
@@ -71,7 +112,7 @@ export function LivingShelf({ onOpenBook, onUploadClick }) {
   const plankRef = useRef(null);
   const [shadowDepth, setShadowDepth] = useState(() => {
     try {
-      return localStorage.getItem("bookflow_shelf_shadow") || "medium";
+      return getSafeStorage().getItem("bookflow_shelf_shadow") || "medium";
     } catch {
       return "medium";
     }
@@ -80,10 +121,14 @@ export function LivingShelf({ onOpenBook, onUploadClick }) {
   const handleShadowChange = (mode) => {
     setShadowDepth(mode);
     try {
-      localStorage.setItem("bookflow_shelf_shadow", mode);
+      getSafeStorage().setItem("bookflow_shelf_shadow", mode);
     } catch {
       // Ignore storage errors
     }
+  };
+
+  const handleOpenBook = (bookItem) => {
+    onOpenBook?.(toNormalizedBook(bookItem), `curated:${bookItem.title}`);
   };
 
   useEffect(() => {
@@ -210,7 +255,7 @@ export function LivingShelf({ onOpenBook, onUploadClick }) {
             book={bookItem}
             badge={bookItem.badge}
             coverColor={bookItem.coverColor}
-            onOpen={onOpenBook}
+            onOpen={handleOpenBook}
           />
         ))}
 
