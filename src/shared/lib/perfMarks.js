@@ -31,6 +31,10 @@ export function getMarks() {
   }
 }
 
+// TODO(backlog-24): publish import benchmarks from these marks. Add an
+// aggregator that reports p50/p95 time-to-first-readable-unit per format
+// (PDF/EPUB/TXT/MD, native vs OCR) with a measurement date, and surface it in
+// scripts/bench.md. Never claim speed without these numbers.
 export function getMeasures() {
   try {
     return performance

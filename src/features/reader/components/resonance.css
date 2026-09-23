@@ -1,3 +1,6 @@
+/* TODO(backlog-22): orphaned stylesheet, no importer in src/. Either wire it
+   to the Social Resonance work when that starts, or delete this file. Do not
+   leave dead assets that suggest a feature exists. */
 .resonance-indicator {
   display: flex;
   align-items: center;

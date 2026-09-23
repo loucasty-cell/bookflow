@@ -71,6 +71,11 @@
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#fffefa" media="(prefers-color-scheme: light)" />
+    <!-- TODO(backlog-17): PWA delivery. Add public/manifest.webmanifest plus a
+         service worker that precaches the app shell, vendor chunks, and OCR
+         worker/WASM assets. Never cache document files or backend API
+         responses. Offer install only after a completed session, permanently
+         dismissible. Full spec in brainobs PWA Offline note. -->
     <meta
       name="description"
       content="A private, sentence-focused reading application that turns PDFs, EPUB ebooks, text files, and Markdown into a calm reading experience."

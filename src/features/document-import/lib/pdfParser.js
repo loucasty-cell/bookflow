@@ -92,6 +92,10 @@ async function extractNativeText(pdf, documentTitle, startTime, reportProgress) 
 
     const page = await pdf.getPage(pageNumber);
     const content = await page.getTextContent({ normalizeWhitespace: true });
+    // TODO(backlog-21): multi-column spatial sorting. This assembly orders by
+    // y alone, so two-column PDFs interleave columns. Sort items on x and y
+    // (column detection with an x-tolerance) before line assembly, and cover
+    // it with a two-column fixture that asserts reading order.
     const lines = [];
     let currentLine = [];
     let lastY = null;

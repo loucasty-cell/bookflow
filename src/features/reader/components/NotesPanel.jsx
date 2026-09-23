@@ -1,4 +1,12 @@
 import { MessageSquareText, Plus, X } from "lucide-react";
+// TODO(backlog-11): add cross-chapter note search + jump-to-quote (Kindle My
+// Notebook analogue). Notes already carry `quote`; resolve jumps by paragraph
+// id first, quote match second, and show "Review location" on ambiguity.
+// TODO(backlog-12): add annotation export/import via a versioned JSON bundle
+// (documentId, title, progress, bookmarks, notes with quotes) in a future
+// src/features/library/lib/annotationBundle.js, reusing the backend
+// ExportPayload contract in backend/app/models/reader.py. Never persist text
+// beyond the note quotes the user wrote.
 
 export function NotesPanel({
   open,

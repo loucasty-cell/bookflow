@@ -234,6 +234,10 @@ export function ReaderPage({
         <div className="reader-continue" aria-live="polite">
           <span>Continue</span>
           <strong>{safeChapterLabel}</strong>
+          {/* TODO(backlog-6): show "N min left in this chapter" here from the
+              readingSpeed estimate + remaining chapter words. Fall back to a
+              fixed 220 WPM until enough samples exist, and render the estimate
+              only once it is meaningful. Never fabricate the number. */}
         </div>
         <button
           className={`topbar-action ${notesOpen ? "is-active" : ""}`}

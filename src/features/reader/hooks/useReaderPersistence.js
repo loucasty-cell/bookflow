@@ -30,6 +30,12 @@ export function useReaderPersistence({ bookId, activeParagraphId, bookmarks, not
   useEffect(() => {
     if (!bookId) return undefined;
 
+    // TODO(improvements-gap-4): harden anchors beyond paragraph ids. Notes and
+    // bookmarks keyed `paragraph-{chapter}-{index}` break when OCR retries or
+    // parsing changes. Add quote selectors + normalized quote hash with source
+    // provenance, resolve by exact location first with prefix/suffix fallback,
+    // show "Review location" on ambiguity, and store parser version in the
+    // document metadata. Include an anchor repair report after reprocessing.
     const now = Date.now();
     const write = () => {
       lastPersistRef.current = Date.now();

@@ -1,4 +1,8 @@
 import { Library, PanelLeftClose, Plus, X } from "lucide-react";
+// TODO(backlog-10): build LookBackPanel (chapter + heading map with current
+// position marked) reusing this chapter data, no new parsing. Never a 3D
+// page-flip, never animate the reading column. Looking back is a core failure
+// mode of scroll readers; this panel is the fix.
 import bookflowArtwork from "../../../assets/bookflow-quill.png";
 import { formatReadingTime } from "../lib/readingTime.js";
 

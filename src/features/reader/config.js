@@ -21,4 +21,10 @@ export const DEFAULT_SETTINGS = {
   showDefinitionLookup: false,
   enableAnnualGoal: false,
   annualGoalTarget: 12,
+  // TODO(backlog-16): readingMoods presets (Morning, Deep Work, Night, Gentle
+  // on Eyes) mapping theme + fontFamily + fontSize + lineHeight +
+  // letterSpacing + focus in src/features/reader/lib/readingMoods.js. Store
+  // preset id + custom flag in settings. All opt-in, default off.
+  // TODO(backlog-19): auto night theme following prefers-color-scheme when the
+  // reader opts in. Never flip the theme mid-paragraph without warning.
 }

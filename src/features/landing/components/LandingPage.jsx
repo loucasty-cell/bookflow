@@ -15,6 +15,11 @@ import { Brand, LoadingOverlay, ThreeDButton, AmbientDustCanvas } from "../../..
 import bookflowArtwork from "../../../assets/bookflow-quill.png";
 import { SAMPLE_BOOK } from "../sampleBook.js";
 import { LivingShelf } from "./LivingShelf.jsx";
+// TODO(backlog-3): add a RecentShelf beside LivingShelf showing the last 3-5
+// library entries with progress + relative last-read time, sourced from
+// libraryStore recency (metadata only, never text). Keep the curated shelf for
+// first-session cold start; visually distinguish the reader's own books.
+// Acceptance: own books appear with progress; empty library shows no shell.
 
 export function LandingPage({
   dragging,
