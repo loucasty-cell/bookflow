@@ -37,6 +37,7 @@ export function useReaderNavigation({
   commitFocus,
   alignParagraphRef,
   navigationRef,
+  measureKey = "",
 }) {
   const frameRef = useRef(null);
   const alignTimerRef = useRef(null);
@@ -140,12 +141,16 @@ export function useReaderNavigation({
       const currentIndex = paragraphsRef.current.findIndex(
         (paragraph) => paragraph.id === activeParagraphIdRef.current
       );
+      const reader = readerRef.current;
+      const railAnchor = reader
+        ? reader.scrollTop + reader.clientHeight * FOCUS_RAIL_RATIO
+        : 0;
       const currentParagraph =
         currentIndex >= 0
           ? paragraphsRef.current[currentIndex]
           : selectClosestParagraph(
               paragraphsRef.current,
-              readerRef.current?.scrollTop + readerRef.current?.clientHeight * FOCUS_RAIL_RATIO,
+              railAnchor,
               activeParagraphIdRef.current
             );
       const currentId = currentParagraph?.id ?? activeParagraphIdRef.current;
@@ -244,6 +249,16 @@ export function useReaderNavigation({
         return;
       }
 
+      if (!isInitialMeasurement) {
+        if (readerSizeChanged && useReaderStore.getState().settings.mode === "focus") {
+          const existing = nextParagraphs.find(
+            (paragraph) => paragraph.id === activeParagraphIdRef.current
+          );
+          if (existing) queueParagraphAlignment(existing, "auto");
+        }
+        return;
+      }
+
       const restored = nextParagraphs.find(
         (paragraph) => paragraph.id === pendingRestoreParagraphRef.current
       );
@@ -265,7 +280,6 @@ export function useReaderNavigation({
       pendingRestoreParagraphRef.current = "";
       commitFocus(target);
       if (
-        isInitialMeasurement &&
         useReaderStore.getState().settings.mode === "focus" &&
         !hasRestorePositionRef.current &&
         (staticRegion.isStatic || shouldStartAtDocumentTop)
@@ -274,10 +288,8 @@ export function useReaderNavigation({
           updateStaticScrollState(reader, staticRegion.section);
           setReaderState("reading");
         }
-      } else if (isInitialMeasurement && useReaderStore.getState().settings.mode === "focus")
+      } else if (useReaderStore.getState().settings.mode === "focus")
         queueParagraphAlignment(target, "auto", false, true);
-      else if (readerSizeChanged && useReaderStore.getState().settings.mode === "focus")
-        queueParagraphAlignment(target, "auto");
     };
 
     const scheduleMeasurement = () => {
@@ -304,6 +316,7 @@ export function useReaderNavigation({
     };
   }, [
     book,
+    measureKey,
     commitFocus,
     queueParagraphAlignment,
     updateStaticRegion,
@@ -334,6 +347,10 @@ export function useReaderNavigation({
         updateStaticScrollState(reader, staticRegion.section);
         userScrollingRef.current = true;
         if (useReaderStore.getState().settings.mode === "focus") setReaderState("reading");
+        if (scrollSettleTimerRef.current) window.clearTimeout(scrollSettleTimerRef.current);
+        scrollSettleTimerRef.current = window.setTimeout(() => {
+          userScrollingRef.current = false;
+        }, 180);
         return;
       }
 
@@ -414,8 +431,8 @@ export function useReaderNavigation({
         setReaderState(pinnedIdRef.current ? "paused" : "reading");
         return;
       }
-      event.preventDefault();
       if (pinnedIdRef.current) return;
+      event.preventDefault();
 
       const now = performance.now();
       const elapsed = now - wheelRef.current.lastAt;
@@ -469,7 +486,8 @@ export function useReaderNavigation({
     };
 
     const handleKeyDown = (event) => {
-      if (useReaderStore.getState().settings.mode !== "focus" || event.target.closest("button, input, textarea, select"))
+      const target = event.target instanceof Element ? event.target : null;
+      if (useReaderStore.getState().settings.mode !== "focus" || target?.closest("button, input, textarea, select"))
         return;
 
       const keyActions = {
@@ -485,11 +503,15 @@ export function useReaderNavigation({
 
       if (event.key === "Escape") {
         clearTimers();
-        if (activeParagraphIdRef.current) {
+        if (pinnedIdRef.current) {
+          pinnedIdRef.current = "";
+          setPinnedId("");
+          setReaderState("focused");
+        } else if (activeParagraphIdRef.current) {
           pinnedIdRef.current = activeParagraphIdRef.current;
           setPinnedId(activeParagraphIdRef.current);
+          setReaderState("paused");
         }
-        setReaderState("paused");
         return;
       }
 
@@ -580,9 +602,10 @@ export function useReaderNavigation({
     };
   }, [book, clearTimers, commitFocus, setSelectedParagraph, setReaderState, setActiveParagraphIsLarge, updateStaticRegion, updateStaticScrollState, activeParagraphIdRef, activeParagraphIsLargeRef, navigationRef, overStaticRegionRef, paragraphsRef, pinnedIdRef, readerRef, setPinnedId, userScrollingRef]);
 
+  const settingsMode = useReaderStore((state) => state.settings.mode);
   // Mode-change alignment
   useEffect(() => {
-    if (useReaderStore.getState().settings.mode !== "focus" || !activeParagraphIdRef.current) return undefined;
+    if (settingsMode !== "focus" || !activeParagraphIdRef.current) return undefined;
     const align = window.setTimeout(() => {
       if (updateStaticRegion().isStatic) {
         userScrollingRef.current = true;
@@ -592,7 +615,7 @@ export function useReaderNavigation({
       alignParagraphRef.current?.(activeParagraphIdRef.current, "auto");
     }, 0);
     return () => window.clearTimeout(align);
-  }, [setReaderState, updateStaticRegion, activeParagraphIdRef, alignParagraphRef, userScrollingRef]);
+  }, [settingsMode, setReaderState, updateStaticRegion, activeParagraphIdRef, alignParagraphRef, userScrollingRef]);
 
   return {
     navigateBy,

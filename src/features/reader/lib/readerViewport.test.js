@@ -14,7 +14,7 @@ describe('reader safe viewport alignment', () => {
 
     expect(result.isLarge).toBe(false)
     expect(result.shouldScroll).toBe(true)
-    expect(result.targetScrollTop).toBe(800)
+    expect(result.targetScrollTop).toBe(772)
   })
 
   it('does not move a visible paragraph already inside the focus zone', () => {
@@ -30,7 +30,7 @@ describe('reader safe viewport alignment', () => {
     expect(result.isLarge).toBe(false)
     expect(result.fullyVisible).toBe(true)
     expect(result.shouldScroll).toBe(false)
-    expect(result.targetScrollTop).toBe(470)
+    expect(result.targetScrollTop).toBe(462)
   })
 
   it('aligns a paragraph taller than the usable viewport by its beginning', () => {

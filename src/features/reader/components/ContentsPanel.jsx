@@ -2,6 +2,10 @@ import { Library, PanelLeftClose, Plus, X } from "lucide-react";
 import bookflowArtwork from "../../../assets/bookflow-quill.png";
 import { formatReadingTime } from "../lib/readingTime.js";
 
+function safeProgressValue(progress) {
+  return Number.isFinite(progress) ? Math.min(100, Math.max(0, Math.round(progress))) : 0;
+}
+
 export function ContentsPanel({
   book,
   chapters,
@@ -35,13 +39,15 @@ export function ContentsPanel({
             </span>
             <div className="navigator-heading-actions">
               <button
+                type="button"
                 className="icon-button desktop-only contents-collapse-button"
-                onClick={() => setSidebarCollapsed(true)}
-                aria-label="Hide navigator for focused reading"
+                onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+                aria-label="Toggle navigator for focused reading"
               >
                 <PanelLeftClose size={18} />
               </button>
               <button
+                type="button"
                 className="icon-button mobile-only"
                 onClick={() => setSidebarOpen(false)}
                 aria-label="Close navigator"
@@ -76,12 +82,12 @@ export function ContentsPanel({
             </div>
           </div>
 
-          <div className="contents-continue" aria-label={`Continue reading at ${Math.round(progress)} percent`}>
+          <div className="contents-continue" aria-label={`Continue reading at ${safeProgressValue(progress)} percent`}>
             <div>
               <span>Continue reading</span>
-              <strong>{Math.round(progress)}%</strong>
+              <strong>{safeProgressValue(progress)}%</strong>
             </div>
-            <i><b style={{ width: `${progress}%` }} /></i>
+            <i><b style={{ width: `${safeProgressValue(progress)}%` }} /></i>
             <small>{chapters[activeChapter]?.title ?? "Start at the beginning"}</small>
           </div>
           <div className="contents-category-header">
@@ -104,14 +110,14 @@ export function ContentsPanel({
                   <strong title={chapter.title}>{chapter.title}</strong>
                 </div>
                 <small className="contents-item-detail">
-                  {chapter.paragraphs.length} {chapter.paragraphs.length === 1 ? "par" : "pars"}
+                  {chapter.paragraphs.length} {chapter.paragraphs.length === 1 ? "paragraph" : "paragraphs"}
                 </small>
               </button>
             ))}
           </nav>
 
           <div className="contents-actions">
-            <button className="contents-action-button" onClick={closeBook}>
+            <button type="button" className="contents-action-button" onClick={closeBook}>
               <Plus size={16} />
               <span>Open another book</span>
             </button>
@@ -120,6 +126,7 @@ export function ContentsPanel({
       </aside>
       {sidebarOpen && (
         <button
+          type="button"
           className="mobile-scrim"
           onClick={() => setSidebarOpen(false)}
           aria-label="Close navigator"

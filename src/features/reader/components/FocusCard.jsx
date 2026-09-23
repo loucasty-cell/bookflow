@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Bookmark,
   BookmarkCheck,
@@ -21,6 +21,11 @@ export function FocusCard({
   resumeFlow,
 }) {
   const [isHidden, setIsHidden] = useState(false);
+  const focusedId = focusedParagraph?.id;
+
+  useEffect(() => {
+    setIsHidden(false);
+  }, [focusedId]);
 
   if (!focusedParagraph) return null;
 
@@ -82,6 +87,7 @@ export function FocusCard({
       <p>{focusedParagraph.text}</p>
       <div className="focus-card-actions">
         <button
+          type="button"
           className="focus-card-step"
           onClick={() => {
             triggerHaptic(HAPTIC_PATTERNS.LIGHT);
@@ -93,6 +99,7 @@ export function FocusCard({
           <ChevronLeft size={16} />
         </button>
         <button
+          type="button"
           className="focus-card-step"
           onClick={() => {
             triggerHaptic(HAPTIC_PATTERNS.LIGHT);
@@ -104,6 +111,7 @@ export function FocusCard({
           <ChevronRight size={16} />
         </button>
         <button
+          type="button"
           className="focus-card-primary"
           onClick={() => {
             triggerHaptic(HAPTIC_PATTERNS.MEDIUM);
@@ -115,6 +123,7 @@ export function FocusCard({
           {isBookmarked ? "Saved" : "Save"}
         </button>
         <button
+          type="button"
           onClick={() => {
             triggerHaptic(HAPTIC_PATTERNS.SUCCESS);
             copyFocusedParagraph();
@@ -124,6 +133,7 @@ export function FocusCard({
         </button>
         {pinnedId && (
           <button
+            type="button"
             onClick={() => {
               triggerHaptic(HAPTIC_PATTERNS.LIGHT);
               resumeFlow();

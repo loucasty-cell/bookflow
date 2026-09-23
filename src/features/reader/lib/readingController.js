@@ -1,4 +1,4 @@
-export const FOCUS_RAIL_RATIO = 0.42;
+export const FOCUS_RAIL_RATIO = 0.38;
 export const MAX_SCROLL_INPUT = 64;
 export const SCROLL_INTENT_THRESHOLD = 96;
 export const LINE_COOLDOWN = 240;
@@ -23,12 +23,13 @@ export function getIntentDirection(
   return 0;
 }
 
-export function getNavigationStep() {
-  return 1;
+export function getNavigationStep({ rapid } = {}) {
+  return rapid ? 3 : 1;
 }
 
 export function readingProgress(index, total) {
-  if (total <= 1 || index < 0) return 0;
+  if (index < 0) return 0;
+  if (total <= 1) return index >= 0 ? 100 : 0;
   return Math.min(100, Math.max(0, Math.round((index / (total - 1)) * 100)));
 }
 

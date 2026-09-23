@@ -1,5 +1,7 @@
+import { FOCUS_RAIL_RATIO } from "./readingController.js"
+
 const DEFAULT_SAFE_PADDING = 24
-const DEFAULT_FOCUS_RATIO = 0.25
+const DEFAULT_FOCUS_RATIO = FOCUS_RAIL_RATIO
 
 function clamp(value, minimum, maximum) {
   return Math.min(maximum, Math.max(minimum, value))
@@ -11,6 +13,7 @@ export function getReaderSafeViewport(
   bottomOverlay,
   safePadding = DEFAULT_SAFE_PADDING,
 ) {
+  if (!scrollContainer || !selectedElement) return null;
   const containerRect = scrollContainer.getBoundingClientRect()
   const selectedRect = selectedElement.getBoundingClientRect()
   let safeBottom = safePadding
@@ -59,11 +62,11 @@ export function getSelectedSegmentAlignment({
   const isLarge = selectedHeight > usableHeight
   const fullyVisible =
     selectedTop >= visibleTop && selectedBottom <= visibleBottom
-  const preferredTop = visibleTop + usableHeight * focusRatio
+  const railY = visibleTop + usableHeight * focusRatio
   const latestFittingTop = visibleBottom - selectedHeight
   const desiredTop = isLarge
     ? visibleTop
-    : clamp(preferredTop, visibleTop, Math.max(visibleTop, latestFittingTop))
+    : clamp(railY - selectedHeight / 2, visibleTop, Math.max(visibleTop, latestFittingTop))
   const focusBandTop = visibleTop + usableHeight * 0.16
   const focusBandBottom = visibleTop + usableHeight * 0.36
   const alreadyInFocusZone =

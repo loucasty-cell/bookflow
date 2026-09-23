@@ -12,8 +12,9 @@ export function SaccadicGuide({ readerRef, activeParagraphId, visible = true }) 
   const rafRef = useRef(null);
 
   useEffect(() => {
-    if (!visible || !readerRef?.current) return;
+    if (!visible || !readerRef?.current) return undefined;
 
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
     const updatePosition = () => {
       const reader = readerRef.current;
       if (!reader) return;
@@ -41,12 +42,13 @@ export function SaccadicGuide({ readerRef, activeParagraphId, visible = true }) 
     };
 
     const reader = readerRef.current;
+    updatePosition();
+    if (reduceMotion) return undefined;
     reader.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleScroll, { passive: true });
-    updatePosition();
 
     return () => {
-      if (reader) reader.removeEventListener("scroll", handleScroll);
+      reader.removeEventListener("scroll", handleScroll);
       window.removeEventListener("resize", handleScroll);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };

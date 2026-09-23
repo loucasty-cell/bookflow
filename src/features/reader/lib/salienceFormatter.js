@@ -57,16 +57,17 @@ export function formatSalientParagraphText(text) {
   return tokens.map((token, index) => {
     if (/^\s+$/.test(token) || !token) return token;
 
-    const match = token.match(/^([\p{L}\p{N}]+)(.*)$/u);
+    const match = token.match(/^([^\p{L}\p{N}]*)([\p{L}\p{N}]+)(.*)$/u);
     if (!match) return token;
 
-    const [, word, suffix] = match;
+    const [, prefix, word, suffix] = match;
     const fixLen = getSalientFixationLength(word);
 
     if (fixLen <= 0) {
       return React.createElement(
         "span",
         { key: `salience-${index}`, className: "bionic-token bionic-calm" },
+        prefix,
         word,
         suffix,
       );
@@ -78,6 +79,7 @@ export function formatSalientParagraphText(text) {
     return React.createElement(
       "span",
       { key: `salience-${index}`, className: "bionic-token bionic-salient" },
+      prefix,
       React.createElement("b", { className: "fixation-anchor fixation-salient" }, anchor),
       rest,
       suffix,

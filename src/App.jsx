@@ -25,12 +25,29 @@ import {
 import { useReaderSession } from "./features/reader/hooks/useReaderSession.js";
 import { useReaderNavigation } from "./features/reader/hooks/useReaderNavigation.js";
 import { useReaderPersistence } from "./features/reader/hooks/useReaderPersistence.js";
+import { useChapterWindow } from "./features/reader/hooks/useChapterWindow.js";
 import { ReaderShell } from "./features/reader/components/ReaderShell.jsx";
 import {
   documentId,
   wordCount,
 } from "./shared/lib/index.js";
 import { mark } from "./shared/lib/perfMarks.js";
+import {
+  BadgeGallery,
+  ResumeCard,
+  SessionRecap,
+  createSpeedTracker,
+  getResumeEntry,
+  recordSession,
+} from "./features/library/index.js";
+import { getSafeStorage, safeParse, setStorageItem } from "./shared/lib/storage.js";
+
+const AWARDED_BADGES_KEY = "bookflow:awarded-badges";
+
+function readAwardedBadges() {
+  const stored = safeParse(getSafeStorage().getItem(AWARDED_BADGES_KEY), []);
+  return Array.isArray(stored) ? stored.filter((id) => typeof id === "string") : [];
+}
 
 const OcrUploader = lazy(() =>
   import("./components/OcrUploader.jsx").then((module) => ({
@@ -168,6 +185,78 @@ function App() {
     setStaticRegionLabel: setSessionStaticRegionLabel,
   } = session;
 
+  // --- Library session tracking ---
+  // A real reading session is measured, never logged by hand.
+  const [sessionRecap, setSessionRecap] = useState(null);
+  const [awardedBadges, setAwardedBadges] = useState(readAwardedBadges);
+  const sessionMetricsRef = useRef(null);
+
+  const resetSessionMetrics = useCallback((bookTitle) => {
+    sessionMetricsRef.current = {
+      bookTitle,
+      openedAt: Date.now(),
+      tracker: createSpeedTracker(),
+      wordsRead: 0,
+      notesAdded: 0,
+      bookmarksAdded: 0,
+      lastParagraphId: "",
+    };
+  }, []);
+
+  const awardBadges = useCallback((ids) => {
+    setAwardedBadges((current) => {
+      const merged = [...new Set([...current, ...ids])];
+      setStorageItem(AWARDED_BADGES_KEY, merged);
+      return merged;
+    });
+  }, []);
+
+  const totalWords = useMemo(
+    () =>
+      book?.chapters.reduce(
+        (total, chapter) => total + wordCount(chapter.paragraphs.join(" ")),
+        0
+      ) ?? 0,
+    [book]
+  );
+
+  const finalizeSession = useCallback(() => {
+    const metrics = sessionMetricsRef.current;
+    if (!metrics || !book) return;
+    sessionMetricsRef.current = null;
+
+    const wordsRead = metrics.wordsRead;
+    const activeMs = metrics.tracker.getActiveMs();
+    if (wordsRead < 20) return;
+
+    recordSession({
+      documentId: bookId,
+      title: book.title,
+      author: book.author,
+      kind: book.kind,
+      progress,
+      activeChapter,
+      totalChapters: book.chapters.length,
+      totalWords,
+      wordsRead,
+      readingSeconds: Math.round(activeMs / 1000),
+      notesCount: notes.length,
+      bookmarksCount: bookmarks.length,
+      activeParagraphId,
+    });
+
+    if (settings.showSessionRecap && wordsRead >= 80) {
+      setSessionRecap({
+        bookTitle: book.title,
+        wordsRead,
+        activeMs,
+        notesAdded: metrics.notesAdded,
+        bookmarksAdded: metrics.bookmarksAdded,
+        paceSamples: [],
+      });
+    }
+  }, [book, bookId, progress, activeChapter, totalWords, notes, bookmarks, activeParagraphId, settings.showSessionRecap]);
+
   // --- Static region helpers ---
   const updateStaticRegion = useCallback(() => {
     const reader = readerRef.current;
@@ -211,50 +300,6 @@ function App() {
     [setProgress, setSessionActiveParagraphId, setSessionActiveChapter, paragraphsRef, activeParagraphIdRef]
   );
 
-  const nav = useReaderNavigation({
-    book,
-    readerRef,
-    activeParagraphIdRef,
-    pinnedIdRef,
-    paragraphsRef,
-    userScrollingRef,
-    activeParagraphIsLargeRef,
-    hasMeasuredBookRef,
-    pendingRestoreParagraphRef,
-    hasRestorePositionRef,
-    overStaticRegionRef,
-    setReaderState: session.setReaderState,
-    setActiveParagraphIsLarge: session.setActiveParagraphIsLarge,
-    setPinnedId: session.setPinnedId,
-    updateStaticRegion,
-    updateStaticScrollState,
-    clearTimers,
-    commitFocus,
-    alignParagraphRef,
-    navigationRef,
-  });
-
-  useEffect(() => {
-    navigationHookRef.current = nav;
-  }, [nav]);
-
-  const jumpToChapter = useCallback(
-    (index) => {
-      try {
-        importHandleRef.current?.jumpToUnit(index);
-      } catch {
-        // Background import already settled — chapter jump still works via paragraphs.
-      }
-      rawJumpToChapter(index, nav.setSelectedParagraph);
-    },
-    [rawJumpToChapter, nav.setSelectedParagraph]
-  );
-
-  const focusParagraph = useCallback(
-    (id) => rawFocusParagraph(id, nav.setSelectedParagraph),
-    [rawFocusParagraph, nav.setSelectedParagraph]
-  );
-
   const resumeFlow = useCallback(
     () => rawResumeFlow(alignParagraphRef),
     [rawResumeFlow, alignParagraphRef]
@@ -285,11 +330,14 @@ function App() {
           : [{ title: null, paragraphs: chapter.paragraphs }];
         let paragraphOffset = 0;
         return rawSections.map((section) => {
-          const enrichedParagraphs = section.paragraphs.map(() => {
-            const paragraph = flatParagraphs[paragraphOffset];
-            paragraphOffset += 1;
-            return paragraph;
-          });
+          const declared = Array.isArray(section.paragraphs) ? section.paragraphs : [];
+          const enrichedParagraphs = declared
+            .map(() => {
+              const paragraph = flatParagraphs[paragraphOffset];
+              paragraphOffset += 1;
+              return paragraph;
+            })
+            .filter(Boolean);
           return { ...section, paragraphs: enrichedParagraphs };
         });
       })(),
@@ -301,18 +349,80 @@ function App() {
     return new Map(entries.map((paragraph) => [paragraph.id, paragraph]));
   }, [chapters]);
 
-  const totalWords = useMemo(
-    () =>
-      book?.chapters.reduce(
-        (total, chapter) => total + wordCount(chapter.paragraphs.join(" ")),
-        0
-      ) ?? 0,
-    [book]
-  );
   const minutes = Math.max(1, Math.ceil(totalWords / 230));
   const focusId = pinnedId || activeParagraphId;
   const focusedParagraph = paragraphMap.get(focusId);
   const isBookmarked = focusId ? bookmarks.includes(focusId) : false;
+
+  // --- Long-book chapter windowing (renders a window, spacers hold scroll) ---
+  const chapterWindow = useChapterWindow({ docKey: bookId, chapters, activeChapter, focusId });
+
+  useEffect(() => {
+    if (!chapterWindow.windowed || !book) return;
+    const restoreId = pendingRestoreParagraphRef.current;
+    if (!restoreId) return;
+    const paragraph = paragraphMap.get(restoreId);
+    if (!paragraph) return;
+    const mounted = paragraphsRef.current.some((measured) => measured.id === restoreId);
+    if (mounted) return;
+    if (paragraph.chapterIndex < chapterWindow.winStart || paragraph.chapterIndex > chapterWindow.winEnd) {
+      chapterWindow.requestJump(paragraph.chapterIndex, restoreId);
+    }
+  }, [book, bookId, chapters, paragraphMap, chapterWindow, pendingRestoreParagraphRef, paragraphsRef]);
+
+  const nav = useReaderNavigation({
+    book,
+    readerRef,
+    activeParagraphIdRef,
+    pinnedIdRef,
+    paragraphsRef,
+    userScrollingRef,
+    activeParagraphIsLargeRef,
+    hasMeasuredBookRef,
+    pendingRestoreParagraphRef,
+    hasRestorePositionRef,
+    overStaticRegionRef,
+    setReaderState: session.setReaderState,
+    setActiveParagraphIsLarge: session.setActiveParagraphIsLarge,
+    setPinnedId: session.setPinnedId,
+    updateStaticRegion,
+    updateStaticScrollState,
+    clearTimers,
+    commitFocus,
+    alignParagraphRef,
+    navigationRef,
+    measureKey: chapterWindow.windowed ? `${chapterWindow.winStart}:${chapterWindow.winEnd}` : "",
+  });
+
+  useEffect(() => {
+    navigationHookRef.current = nav;
+  }, [nav]);
+
+  const jumpToChapter = useCallback(
+    (index) => {
+      try {
+        importHandleRef.current?.jumpToUnit(index);
+      } catch {
+        // Background import already settled — chapter jump still works via paragraphs.
+      }
+      if (chapterWindow.windowed) chapterWindow.requestJump(index);
+      rawJumpToChapter(index, nav.setSelectedParagraph);
+    },
+    [rawJumpToChapter, nav.setSelectedParagraph, chapterWindow]
+  );
+
+  const focusParagraph = useCallback(
+    (id) => {
+      if (chapterWindow.windowed) {
+        const paragraph = paragraphMap.get(id);
+        if (paragraph && !paragraphsRef.current.some((measured) => measured.id === id)) {
+          chapterWindow.requestJump(paragraph.chapterIndex, id);
+        }
+      }
+      rawFocusParagraph(id, nav.setSelectedParagraph);
+    },
+    [rawFocusParagraph, nav.setSelectedParagraph, chapterWindow, paragraphMap, paragraphsRef]
+  );
 
   // --- Persistence ---
   useReaderPersistence({
@@ -323,6 +433,36 @@ function App() {
     progress,
     readerRef,
   });
+
+  // --- Library session lifecycle ---
+  const finalizeSessionRef = useRef(finalizeSession);
+  useEffect(() => {
+    finalizeSessionRef.current = finalizeSession;
+  }, [finalizeSession]);
+  const sessionBookTitle = book?.title;
+  useEffect(() => {
+    if (!sessionBookTitle) return;
+    resetSessionMetrics(sessionBookTitle);
+    return () => {
+      finalizeSessionRef.current();
+    };
+  }, [sessionBookTitle, resetSessionMetrics]);
+
+  useEffect(() => {
+    if (!book) return;
+    const metrics = sessionMetricsRef.current;
+    if (!metrics || !focusId) return;
+
+    const paragraph = paragraphMap.get(focusId);
+    if (!paragraph) return;
+
+    if (metrics.lastParagraphId !== focusId) {
+      metrics.lastParagraphId = focusId;
+      const words = wordCount(paragraph.text);
+      metrics.tracker.advance(words);
+      metrics.wordsRead += words;
+    }
+  }, [book, focusId, paragraphMap]);
 
   // --- Intervention timer (opt-in only, default off) ---
   const lastNavigationAtRef = nav.lastNavigationAtRef;
@@ -415,7 +555,7 @@ function App() {
             label: `Reading page ${unit.sourcePage} now`,
             detail: `${readyCount} of ${manifest.totalUnits} pages ready. Your book stays on this device.`,
           });
-          if (readyCount > 1) {
+          if (readyCount >= 1) {
             setSessionBook(manifestToBook(manifest));
           }
           return;
@@ -593,8 +733,9 @@ function App() {
 
   const handleCloseBook = useCallback(() => {
     cancelActiveImport();
+    finalizeSession();
     closeBook();
-  }, [cancelActiveImport, closeBook]);
+  }, [cancelActiveImport, finalizeSession, closeBook]);
 
   // --- Annotations ---
   const toggleBookmark = useCallback(() => {
@@ -606,13 +747,24 @@ function App() {
 
   const [noteDraft, setNoteDraft] = useState("");
 
+  const newNoteId = useCallback(() => {
+    try {
+      if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID();
+      }
+    } catch {
+      // Fall through to the timestamp fallback below.
+    }
+    return `note-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
+  }, []);
+
   const addNote = useCallback(() => {
     const text = noteDraft.trim();
     if (!text || !focusId) return;
 
     setNotes((current) => [
       {
-        id: crypto.randomUUID(),
+        id: newNoteId(),
         paragraphId: focusId,
         quote: focusedParagraph?.text ?? "",
         text,
@@ -620,31 +772,36 @@ function App() {
       ...current,
     ]);
     setNoteDraft("");
-  }, [noteDraft, focusId, focusedParagraph, setNotes]);
+  }, [noteDraft, focusId, focusedParagraph, setNotes, newNoteId]);
 
   const copyFocusedParagraph = useCallback(async () => {
     if (!focusedParagraph) return;
-    await navigator.clipboard?.writeText(focusedParagraph.text).catch(() => {});
-  }, [focusedParagraph]);
+    try {
+      await navigator.clipboard?.writeText(focusedParagraph.text);
+    } catch {
+      setError("Copy is unavailable in this browser. Select the text manually to copy it.");
+    }
+  }, [focusedParagraph, setError]);
 
   // --- OCR document loaded ---
   const handleOcrDocumentLoaded = useCallback(
     (ocrResult) => {
       if (!ocrResult || !ocrResult.pages || ocrResult.pages.length === 0) return;
-      const docChapters = ocrResult.pages.map((p) => {
-        const rawText = p.text || "";
+      const docChapters = ocrResult.pages.map((p, pageIndex) => {
+        const pageNumber = Number(p.page_number) > 0 ? p.page_number : pageIndex + 1;
+        const rawText = typeof p.text === "string" ? p.text : "";
         const lines = rawText
-          .split("\n\n")
+          .split(/\n\s*\n|\n/)
           .map((t) => t.trim())
           .filter((t) => t.length > 0);
 
-        let title = `Page ${p.page_number}`;
+        let title = `Page ${pageNumber}`;
         if (lines.length > 0 && lines[0].startsWith("# ")) {
           title = lines[0].replace(/^#+\s*/, "");
         }
         return {
           title,
-          paragraphs: lines.length > 0 ? lines : [rawText || `Page ${p.page_number}`],
+          paragraphs: lines.length > 0 ? lines : [rawText || `Page ${pageNumber}`],
         };
       });
       const bookDoc = {
@@ -661,9 +818,29 @@ function App() {
 
   // --- Landing view ---
   if (!book) {
+    const resumeEntry = settings.showResumeCard ? getResumeEntry() : null;
     return (
       <>
         {showEntryIntro && <BookOpeningIntro onComplete={completeEntryIntro} />}
+        {resumeEntry && (
+          <div className="landing-resume-wrap">
+            <ResumeCard
+              entry={resumeEntry}
+              onReopen={() => fileInputRef.current?.click()}
+            />
+          </div>
+        )}
+        {settings.showAchievements && (
+          <BadgeGallery
+            enabled
+            awarded={awardedBadges}
+            onAward={awardBadges}
+          />
+        )}
+        <SessionRecap
+          session={sessionRecap}
+          onClose={() => setSessionRecap(null)}
+        />
         <LandingPage
           dragging={dragging}
           setDragging={setDragging}
@@ -687,6 +864,7 @@ function App() {
             onClick={() => setOcrOpen(false)}
             role="dialog"
             aria-modal="true"
+            aria-label="OCR document scanner"
           >
             <div className="ocr-modal-card" onClick={(e) => e.stopPropagation()}>
               <div className="ocr-modal-header">
@@ -766,6 +944,7 @@ function App() {
         moveFocus={nav.moveFocus}
         addNote={addNote}
         resumeFlow={resumeFlow}
+        chapterWindow={chapterWindow}
       />
     </ReaderShell>
   );

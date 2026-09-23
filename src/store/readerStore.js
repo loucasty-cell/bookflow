@@ -18,7 +18,11 @@ export const createReaderStore = (storage = undefined) => create(
         };
       }),
       
-      setProgress: (progress) => set({ progress }),
+      setProgress: (progress) => set((state) => {
+        const value = typeof progress === 'function' ? progress(state.progress) : progress;
+        const safe = Number.isFinite(Number(value)) ? Math.min(100, Math.max(0, Math.round(Number(value)))) : 0;
+        return { progress: safe };
+      }),
       
       setBookmarks: (bookmarks) => set({ bookmarks }),
       toggleBookmark: (id) => set((state) => {

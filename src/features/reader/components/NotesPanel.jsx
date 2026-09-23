@@ -19,39 +19,40 @@ export function NotesPanel({
     >
       <div className="panel-heading">
         <span><MessageSquareText size={16} /> Margin notes</span>
-        <button className="icon-button" onClick={close} aria-label="Close notes">
+        <button type="button" className="icon-button" onClick={close} aria-label="Close notes">
           <X size={18} />
         </button>
       </div>
       <div className="note-composer">
         {focusedParagraph && <blockquote>{focusedParagraph.text}</blockquote>}
         <textarea
-          value={draft}
+          value={draft ?? ""}
           onChange={(event) => setDraft(event.target.value)}
           placeholder="What do you want to remember?"
           aria-label="New margin note"
         />
-        <button onClick={addNote} disabled={!draft.trim()}>
+        <button type="button" onClick={addNote} disabled={!(draft ?? "").trim()}>
           <Plus size={16} /> Add note
         </button>
       </div>
       <div className="notes-list">
-        {!notes.length && (
+        {!(notes ?? []).length && (
           <div className="empty-notes">
             <MessageSquareText size={24} />
             <strong>Your margins are quiet</strong>
             <span>Focus a paragraph, then capture the thought it sparked.</span>
           </div>
         )}
-        {notes.map((note) => (
-          <article key={note.id}>
+        {(notes ?? []).map((note) => (
+          <article key={note.id} aria-label={`Note: ${String(note.text ?? "").slice(0, 80)}`}>
             {note.quote && <blockquote>{note.quote}</blockquote>}
             <p>{note.text}</p>
             <button
+              type="button"
               onClick={() =>
                 setNotes((current) => current.filter((item) => item.id !== note.id))
               }
-              aria-label="Delete note"
+              aria-label={`Delete note: ${String(note.text ?? "").slice(0, 80)}`}
             >
               <X size={14} />
             </button>

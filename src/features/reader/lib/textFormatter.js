@@ -22,10 +22,10 @@ export function formatParagraphText(text, options = {}) {
   return tokens.map((token, index) => {
     if (/^\s+$/.test(token) || !token) return token;
 
-    const match = token.match(/^([\p{L}\p{N}]+)(.*)$/u);
+    const match = token.match(/^([^\p{L}\p{N}]*)([\p{L}\p{N}]+)(.*)$/u);
     if (!match) return token;
 
-    const [, word, suffix] = match;
+    const [, prefix, word, suffix] = match;
     const fixLen = getFixationLength(word.length);
     const anchor = word.slice(0, fixLen);
     const rest = word.slice(fixLen);
@@ -33,6 +33,7 @@ export function formatParagraphText(text, options = {}) {
     return React.createElement(
       "span",
       { key: `bionic-${index}`, className: "bionic-token" },
+      prefix,
       React.createElement("b", { className: "fixation-anchor" }, anchor),
       rest,
       suffix,

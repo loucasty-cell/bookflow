@@ -4,8 +4,9 @@ const FRONT_MATTER_PATTERN = /cover|title page|contents|table of contents|copyri
 const BACK_MATTER_PATTERN = /appendix|bibliograph|references|glossary|index|credits|afterword|epilogue|about the author/i
 
 export function isFocusEligibleChapter(chapter, index, total) {
-  const title = String(chapter.title ?? '')
-  const words = wordCount(chapter.paragraphs.join(' '))
+  const title = String(chapter?.title ?? '')
+  const rawParagraphs = Array.isArray(chapter?.paragraphs) ? chapter.paragraphs : []
+  const words = wordCount(rawParagraphs.filter((p) => typeof p === 'string').join(' '))
   const chapterLikeTitle = /chapter|part|section|lesson|unit|act|volume/i.test(title)
   const genericTitle = /^(?:page\s*)?\d+$|^untitled$|^section$/i.test(title.trim())
 

@@ -140,6 +140,27 @@ export function useScrollPosition(containerRef, options = {}) {
     };
   }, [containerRef, disabled, updateScrollState]);
 
+  const scrollInContainer = useCallback(
+    (container, element, block, behavior) => {
+      const containerRect = container.getBoundingClientRect();
+      const elementRect = element.getBoundingClientRect();
+      const offsetTop = elementRect.top - containerRect.top + container.scrollTop;
+      let targetTop;
+      if (block === "center") {
+        targetTop = offsetTop - container.clientHeight / 2 + elementRect.height / 2;
+      } else if (block === "end") {
+        targetTop = offsetTop - container.clientHeight + elementRect.height;
+      } else {
+        targetTop = offsetTop;
+      }
+      container.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior,
+      });
+    },
+    [],
+  );
+
   const scrollToParagraph = useCallback(
     (paragraphId, options = {}) => {
       const container = containerRef.current;
@@ -152,12 +173,9 @@ export function useScrollPosition(containerRef, options = {}) {
       const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
       const effectiveBehavior = prefersReduced ? "auto" : behavior;
 
-      element.scrollIntoView({
-        behavior: effectiveBehavior,
-        block: options.block || "center",
-      });
+      scrollInContainer(container, element, options.block || "center", effectiveBehavior);
     },
-    [containerRef],
+    [containerRef, scrollInContainer],
   );
 
   const scrollToChapter = useCallback(
@@ -172,12 +190,9 @@ export function useScrollPosition(containerRef, options = {}) {
       const prefersReduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
       const effectiveBehavior = prefersReduced ? "auto" : behavior;
 
-      element.scrollIntoView({
-        behavior: effectiveBehavior,
-        block: options.block || "start",
-      });
+      scrollInContainer(container, element, options.block || "start", effectiveBehavior);
     },
-    [containerRef],
+    [containerRef, scrollInContainer],
   );
 
   const scrollToTop = useCallback(

@@ -47,8 +47,9 @@ export function useReaderSession({ clearTimers }) {
     (nextBook, id) => {
       const saved = safeParse(getStorageItem(documentStorageKey(id)), {});
       clearTimers();
-      const fallbackParagraph = String(saved.activeId ?? "").match(/^(\d+)-(\d+)-\d+$/)
-        ? `paragraph-${RegExp.$1}-${RegExp.$2}`
+      const legacyMatch = String(saved.activeId ?? "").match(/^(\d+)-(\d+)-\d+$/);
+      const fallbackParagraph = legacyMatch
+        ? `paragraph-${legacyMatch[1]}-${legacyMatch[2]}`
         : "";
       pendingRestoreParagraphRef.current = saved.activeParagraphId ?? fallbackParagraph;
       hasRestorePositionRef.current = Boolean(
@@ -73,6 +74,8 @@ export function useReaderSession({ clearTimers }) {
       setActiveChapter(0);
       setSidebarOpen(false);
       setSidebarCollapsed(false);
+      setNotesOpen(false);
+      setSettingsOpen(false);
       setError("");
       document.title = `${nextBook.title} - Bookflow`;
     },
@@ -81,7 +84,9 @@ export function useReaderSession({ clearTimers }) {
       setBookmarks,
       setError,
       setNotes,
+      setNotesOpen,
       setProgress,
+      setSettingsOpen,
       setSidebarCollapsed,
       setSidebarOpen,
     ]
@@ -96,6 +101,7 @@ export function useReaderSession({ clearTimers }) {
     setSidebarOpen(false);
     setSidebarCollapsed(false);
     setPinnedId("");
+    pendingRestoreParagraphRef.current = "";
     setActiveParagraphIsLarge(false);
     setOverStaticRegion(false);
     setStaticRegionLabel("Reading the intro");
@@ -124,9 +130,11 @@ export function useReaderSession({ clearTimers }) {
       if (settings.mode === "focus" && targetParagraph) {
         setSelectedParagraph(targetParagraph, "smooth");
       } else {
-        document
-          .getElementById(`chapter-${index}`)
-          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        const chapterElement = document.getElementById(`chapter-${index}`);
+        if (chapterElement) {
+          const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+          chapterElement.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+        }
         setActiveChapter(index);
       }
       setSidebarOpen(false);

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import {
   Menu,
   MessageSquareText,
@@ -57,6 +58,7 @@ export function ReaderPage({
   moveFocus,
   addNote,
   resumeFlow,
+  chapterWindow = null,
 }) {
   const safeSettings = {
     ...DEFAULT_SETTINGS,
@@ -66,6 +68,106 @@ export function ReaderPage({
     disabled: !book,
   });
   const isStaticFocusRegion = safeSettings.mode === "focus" && overStaticRegion;
+  const safeProgress = Number.isFinite(progress) ? Math.min(100, Math.max(0, Math.round(progress))) : 0;
+  const safeChapters = Array.isArray(chapters) ? chapters : [];
+  const safeChapterLabel = safeChapters.length ? `${activeChapter + 1} / ${safeChapters.length}` : "–";
+
+  const windowed = chapterWindow?.windowed === true;
+  const winStart = windowed ? chapterWindow.winStart : 0;
+  const winEnd = windowed ? chapterWindow.winEnd : safeChapters.length - 1;
+  const topSentinelRef = useRef(null);
+  const bottomSentinelRef = useRef(null);
+  const prevWinStartRef = useRef(winStart);
+
+  useEffect(() => {
+    if (!windowed) return undefined;
+    const reader = readerRef?.current;
+    if (!reader) return undefined;
+    const frame = window.requestAnimationFrame(() => {
+      const entries = new Map();
+      for (let index = winStart; index <= winEnd; index += 1) {
+        const section = reader.querySelector(`#chapter-${index}`);
+        if (section) entries.set(index, Math.round(section.offsetHeight));
+      }
+      chapterWindow.cacheHeights(entries);
+    });
+    return () => window.cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [windowed, winStart, winEnd, book]);
+
+  useEffect(() => {
+    if (!windowed) return undefined;
+    const reader = readerRef?.current;
+    if (!reader) return undefined;
+    if (prevWinStartRef.current === winStart) {
+      prevWinStartRef.current = winStart;
+      return undefined;
+    }
+    const previousStart = prevWinStartRef.current;
+    prevWinStartRef.current = winStart;
+    if (winStart >= previousStart) return undefined;
+    const oldHeight = reader.scrollHeight;
+    const frame = window.requestAnimationFrame(() => {
+      reader.scrollTop += reader.scrollHeight - oldHeight;
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [windowed, winStart, readerRef]);
+
+  useEffect(() => {
+    if (!windowed) return undefined;
+    const pending = chapterWindow.pendingJumpRef?.current;
+    if (!pending) return undefined;
+    const reader = readerRef?.current;
+    if (!reader) return undefined;
+    chapterWindow.pendingJumpRef.current = null;
+    const frame = window.requestAnimationFrame(() => {
+      if (pending.paragraphId) {
+        const element = reader.querySelector(`[data-paragraph-id="${pending.paragraphId}"]`);
+        if (element) {
+          const containerRect = reader.getBoundingClientRect();
+          const elementRect = element.getBoundingClientRect();
+          reader.scrollTo({
+            top: Math.max(0, elementRect.top - containerRect.top + reader.scrollTop - containerRect.height * 0.38 + elementRect.height / 2),
+            behavior: "auto",
+          });
+          return;
+        }
+      }
+      const chapterElement = reader.querySelector(`#chapter-${pending.chapterIndex}`);
+      if (chapterElement) {
+        const containerRect = reader.getBoundingClientRect();
+        const elementRect = chapterElement.getBoundingClientRect();
+        reader.scrollTo({
+          top: Math.max(0, elementRect.top - containerRect.top + reader.scrollTop),
+          behavior: "auto",
+        });
+      }
+    });
+    return () => window.cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [windowed, winStart, winEnd]);
+
+  useEffect(() => {
+    if (!windowed) return undefined;
+    const reader = readerRef?.current;
+    const topSentinel = topSentinelRef.current;
+    const bottomSentinel = bottomSentinelRef.current;
+    if (!reader || typeof IntersectionObserver === "undefined") return undefined;
+    const observer = new IntersectionObserver(
+      (observed) => {
+        for (const entry of observed) {
+          if (!entry.isIntersecting) continue;
+          if (entry.target === topSentinel) chapterWindow.expandUp();
+          else if (entry.target === bottomSentinel) chapterWindow.expandDown();
+        }
+      },
+      { root: reader, rootMargin: "600px 0px" },
+    );
+    if (topSentinel) observer.observe(topSentinel);
+    if (bottomSentinel) observer.observe(bottomSentinel);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [windowed, winStart, winEnd, readerRef]);
   const readerStatus = {
     focused: "In focus",
     transitioning: "Moving",
@@ -121,17 +223,17 @@ export function ReaderPage({
           aria-label="Reading progress"
           aria-valuemin="0"
           aria-valuemax="100"
-          aria-valuenow={Math.round(progress)}
+          aria-valuenow={safeProgress}
         >
           <div>
             <span>{readerStatus}</span>
-            <strong>{Math.round(progress)}%</strong>
+            <strong>{safeProgress}%</strong>
           </div>
-          <i><b style={{ width: `${progress}%` }} /></i>
+          <i><b style={{ width: `${safeProgress}%` }} /></i>
         </div>
         <div className="reader-continue" aria-live="polite">
           <span>Continue</span>
-          <strong>{activeChapter + 1} / {chapters.length}</strong>
+          <strong>{safeChapterLabel}</strong>
         </div>
         <button
           className={`topbar-action ${notesOpen ? "is-active" : ""}`}
@@ -231,7 +333,18 @@ export function ReaderPage({
               </div>
             </header>
 
-            {chapters.map((chapter, chapterIndex) => (
+            {windowed && chapterWindow.topSpacer > 0 && (
+              <div
+                className="chapter-spacer"
+                style={{ height: `${chapterWindow.topSpacer}px` }}
+                aria-hidden="true"
+              >
+                <div ref={topSentinelRef} className="chapter-sentinel chapter-sentinel-sink" aria-hidden="true" />
+              </div>
+            )}
+            {chapters.map((chapter, chapterIndex) => {
+              if (windowed && (chapterIndex < winStart || chapterIndex > winEnd)) return null;
+              return (
               <section
                 className={`reading-section ${chapter.focusEligible ? "is-focus-section" : "is-static-section"}`}
                 data-focus-eligible={chapter.focusEligible}
@@ -303,7 +416,17 @@ export function ReaderPage({
                   />
                 )}
               </section>
-            ))}
+              );
+            })}
+            {windowed && chapterWindow.bottomSpacer > 0 && (
+              <div
+                className="chapter-spacer"
+                style={{ height: `${chapterWindow.bottomSpacer}px` }}
+                aria-hidden="true"
+              >
+                <div ref={bottomSentinelRef} className="chapter-sentinel chapter-sentinel-rise" aria-hidden="true" />
+              </div>
+            )}
 
             <footer className="end-mark">
               <strong>You reached the end</strong>
@@ -360,6 +483,7 @@ export function ReaderPage({
           }}
           onBookmarkParagraph={toggleBookmark}
           activeParagraphId={focusId}
+          lookupEnabled={safeSettings.showDefinitionLookup === true}
         />
       </div>
     </div>

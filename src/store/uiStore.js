@@ -31,12 +31,32 @@ export const createUIStore = (initialState = {}) => create((set) => ({
     set((state) => ({
       notesOpen: typeof open === "function" ? Boolean(open(state.notesOpen)) : Boolean(open),
     })),
-  setOcrOpen: (open) => set({ ocrOpen: open }),
-  setShowIntervention: (show) => set({ showIntervention: show }),
-  setShowEntryIntro: (show) => set({ showEntryIntro: show }),
-  setDragging: (dragging) => set({ dragging }),
+  setOcrOpen: (open) =>
+    set((state) => ({
+      ocrOpen: typeof open === "function" ? Boolean(open(state.ocrOpen)) : Boolean(open),
+    })),
+  setShowIntervention: (show) =>
+    set((state) => ({
+      showIntervention: typeof show === "function" ? Boolean(show(state.showIntervention)) : Boolean(show),
+    })),
+  setShowEntryIntro: (show) =>
+    set((state) => ({
+      showEntryIntro: typeof show === "function" ? Boolean(show(state.showEntryIntro)) : Boolean(show),
+    })),
+  setDragging: (dragging) =>
+    set((state) => ({
+      dragging: typeof dragging === "function" ? Boolean(dragging(state.dragging)) : Boolean(dragging),
+    })),
   setLoading: (loading) => set({ loading }),
-  setError: (error) => set({ error })
+  setError: (error) =>
+    set({
+      error:
+        typeof error === "string"
+          ? error
+          : error instanceof Error
+            ? error.message
+            : "",
+    })
 }));
 
 export const useUIStore = createUIStore();

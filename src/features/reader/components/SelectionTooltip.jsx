@@ -1,21 +1,26 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Copy, Check, MessageSquareText, Bookmark } from "lucide-react";
+import { Copy, Check, MessageSquareText, Bookmark, BookOpen } from "lucide-react";
 import { triggerHaptic, HAPTIC_PATTERNS } from "../../../shared/lib/index.js";
+import { lookup, loadLicensedDictionary } from "../lib/dictionary.js";
 
 export function SelectionTooltip({
   containerRef,
   onAddNoteFromSelection,
   onBookmarkParagraph,
   activeParagraphId,
+  lookupEnabled = false,
 }) {
   const [position, setPosition] = useState(null);
   const [selectedText, setSelectedText] = useState("");
   const [copied, setCopied] = useState(false);
-  const tooltipRef = useRef(null);
+  const [copyFailed, setCopyFailed] = useState(false);
+  const [definition, setDefinition] = useState(null);
+  const [lookupMiss, setLookupMiss] = useState(false);
+  const timersRef = useRef([]);
 
   const handleSelectionChange = useCallback(() => {
     const selection = window.getSelection();
-    if (!selection || selection.isCollapsed) {
+    if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
       setPosition(null);
       setSelectedText("");
       return;
@@ -47,13 +52,23 @@ export function SelectionTooltip({
     const left = Math.max(12, Math.min(window.innerWidth - 180, rect.left + rect.width / 2));
 
     setSelectedText(text);
+    setDefinition(null);
+    setLookupMiss(false);
+    setCopied(false);
+    setCopyFailed(false);
     setPosition({ top, left });
   }, [containerRef]);
 
   useEffect(() => {
+    const later = (fn, ms) => {
+      const id = window.setTimeout(() => {
+        timersRef.current = timersRef.current.filter((timer) => timer !== id);
+        fn();
+      }, ms);
+      timersRef.current.push(id);
+    };
     const handleMouseUp = () => {
-      // Delay slightly so selection is finalized
-      setTimeout(handleSelectionChange, 20);
+      later(handleSelectionChange, 20);
     };
 
     const handleKeyUp = (e) => {
@@ -61,7 +76,7 @@ export function SelectionTooltip({
         setPosition(null);
         setSelectedText("");
       } else {
-        setTimeout(handleSelectionChange, 20);
+        later(handleSelectionChange, 20);
       }
     };
 
@@ -86,6 +101,8 @@ export function SelectionTooltip({
       if (container) {
         container.removeEventListener("scroll", handleScroll);
       }
+      for (const id of timersRef.current) window.clearTimeout(id);
+      timersRef.current = [];
     };
   }, [containerRef, handleSelectionChange]);
 
@@ -95,20 +112,18 @@ export function SelectionTooltip({
     if (!selectedText) return;
 
     try {
+      if (!navigator.clipboard) throw new Error("clipboard unavailable");
       await navigator.clipboard.writeText(selectedText);
       setCopied(true);
+      setCopyFailed(false);
       triggerHaptic(HAPTIC_PATTERNS.SUCCESS);
-      setTimeout(() => {
+      const id = window.setTimeout(() => {
         setCopied(false);
         setPosition(null);
       }, 1200);
+      timersRef.current.push(id);
     } catch {
-      // fallback if clipboard fails
-      setCopied(true);
-      setTimeout(() => {
-        setCopied(false);
-        setPosition(null);
-      }, 1000);
+      setCopyFailed(true);
     }
   };
 
@@ -128,22 +143,42 @@ export function SelectionTooltip({
     e.stopPropagation();
     e.preventDefault();
     triggerHaptic(HAPTIC_PATTERNS.MEDIUM);
-    if (onBookmarkParagraph && activeParagraphId) {
-      onBookmarkParagraph(activeParagraphId);
+    const anchorNode = window.getSelection()?.anchorNode;
+    const anchorElement = anchorNode instanceof Element ? anchorNode : anchorNode?.parentElement;
+    const selectedParagraphId = anchorElement?.closest?.("[data-paragraph-id]")?.getAttribute("data-paragraph-id");
+    if (onBookmarkParagraph && (selectedParagraphId || activeParagraphId)) {
+      onBookmarkParagraph(selectedParagraphId || activeParagraphId);
     }
     setPosition(null);
   };
 
+  const handleLookup = async (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const firstWord = selectedText.trim().split(/\s+/)[0] ?? "";
+    if (!firstWord) return;
+    await loadLicensedDictionary().catch(() => null);
+    const entry = lookup(firstWord);
+    if (entry) {
+      setDefinition(entry);
+      setLookupMiss(false);
+    } else {
+      setDefinition(null);
+      setLookupMiss(true);
+    }
+    triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+  };
+
   if (!position) return null;
 
+  const clampedLeft = Math.max(90, Math.min(window.innerWidth - 90, position.left));
   return (
     <div
-      ref={tooltipRef}
       className="sel-tip"
       style={{
         position: "fixed",
         top: `${position.top}px`,
-        left: `${position.left}px`,
+        left: `${clampedLeft}px`,
         transform: "translateX(-50%)",
         zIndex: 1000,
       }}
@@ -169,7 +204,7 @@ export function SelectionTooltip({
         aria-label="Copy selected text"
       >
         {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-        <span>{copied ? "Copied" : "Copy"}</span>
+        <span>{copied ? "Copied" : copyFailed ? "Copy failed" : "Copy"}</span>
       </button>
 
       {activeParagraphId && onBookmarkParagraph && (
@@ -183,6 +218,30 @@ export function SelectionTooltip({
           <Bookmark size={14} />
           <span>Save</span>
         </button>
+      )}
+
+      {lookupEnabled && (
+        <button
+          type="button"
+          className="sel-tip-btn"
+          onClick={handleLookup}
+          title="Look up first selected word locally"
+          aria-label="Look up word locally"
+        >
+          <BookOpen size={14} />
+          <span>Define</span>
+        </button>
+      )}
+      {lookupEnabled && definition && (
+        <div className="sel-tip-definition" role="status">
+          <strong>{definition.word}</strong>
+          <span> — {definition.definitions[0]}</span>
+        </div>
+      )}
+      {lookupEnabled && lookupMiss && !definition && (
+        <div className="sel-tip-definition" role="status">
+          <span>No local entry for that word.</span>
+        </div>
       )}
     </div>
   );
