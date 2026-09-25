@@ -2,7 +2,7 @@
 title: Roadmap MOC
 type: MOC
 status: living
-updated: 2026-09-24
+updated: 2026-09-25
 tags: [bookflow, roadmap, moc, planning]
 ---
 
@@ -13,6 +13,7 @@ What exists, what is next, and how progress will be measured.
 ## Notes
 
 - [[Current State Matrix]] - the single source of truth for verified versus planned
+- [[Remote Main 46fe51b Audit]] - pulled Reading Lens baseline, verification failures, and repair order
 - [[Backlog P0-P1-P2]] - prioritized work, merged from the project planning documents
 - [[Audit Compare Replan]] - Bookflow audited capability by capability against competitors
 - [[Massive Upgrade Backlog]] - the 24 item prioritized UI and experience upgrade list
@@ -26,8 +27,8 @@ What exists, what is next, and how progress will be measured.
 ## Priority order
 
 ```text
-Now       Recent books shelf, file-handle reopen, repeated import benchmarks
-Next      Durable document wiring, annotation export, scanned-PDF integration
+Now       Repair the 46fe51b build, route contract, and Reading Lens privacy boundary
+Next      Recent books shelf, file-handle reopen, repeated import benchmarks, durable document wiring
 Later     PWA install, TTS synchronization, concept graph
 Deferred  Persistent social layer, native wrappers
 ```

@@ -4,7 +4,7 @@ type: evidence
 status: verified
 updated: 2026-09-25
 tags: [bookflow, ux, figma, evidence]
-source-files: []
+source-files: [src/features/reader/components/FocusCard.jsx, src/features/reader/components/NotesPanel.jsx, src/features/reader/hooks/useReadingLens.js, src/features/reader/hooks/useReaderSelection.js, src/styles/reader.css, src/styles/reader-extras.css, src/styles/tokens.css]
 ---
 
 # Figma Inspection Evidence
@@ -19,6 +19,7 @@ reference evidence, not Bookflow runtime measurements.
 | --- | --- | --- | --- |
 | Scrollbar Kit MacOS & Windows (Community) | `P3q0Sh8EB8X5RohRRKZi9m` | `2402796419845960854` | `0:1`, `1:49`, `5:57`, `5:125`, `5:910`, `5:835`, `5:928`, `5:849` |
 | iOS 14 UI Kit for Figma (Community) | `pVgvrD6Wpi3VrjnTsyorIm` | `2402793645297850125` | `0:1`, `362:14390`, `362:14628`, `362:15609`, `362:15726`, `362:16094`, `362:16285`, `362:16324`, `362:16339`, `371:13138` |
+| AI Agent UI Kit - Reasoning, Tool Use & Response Components (Community) | `dhrZUoqIQzKnKQiADT3C1N` | current fetch 2026-09-25 | `70:967`, `70:985`, `70:2146`, `70:2482`, `70:2542`, `70:2601`, `70:2678`, `70:3111`, `70:3135`, `65:553`, `64:911`, `67:573`, `78:590` |
 
 Node IDs use the Figma API colon form; Figma URLs render the same IDs with hyphens.
 
@@ -43,16 +44,40 @@ Node IDs use the Figma API colon form; Figma URLs render the same IDs with hyphe
 | `pVgvrD6Wpi3VrjnTsyorIm` / `371:13138` | Share Sheet frame is `878 x 2092`; action row is `375 x 191` and action-row group is `375 x 558`. |
 | `pVgvrD6Wpi3VrjnTsyorIm` / `0:1` | The fetched file version contains no AirDrop node in the reviewed current tree; the older AirDrop measurements are not carried forward. |
 
+## AI Agent UI Kit measurements
+
+The following values were returned by the Figma MCP fetch and are design references, not Bookflow runtime measurements.
+
+| Node | Measured evidence |
+| --- | --- |
+| `70:967` Thumbnail | Background asset is `1920 x 1080`; title uses Maitree `140/0.95em`; supporting text uses Maitree `48/1.2em`; content is placed as a chat workspace. |
+| `70:985` Add menu | White surface, `20px` padding, `12px` gap, `40px` radius, `2.57px` border, soft shadow. |
+| `70:2146` AI Response | Row with `18px` gap; `42px` avatar; content column with `12px` gap; Instrument Sans `24/36px` response text; action row with `3px` gap and `24px` icons. |
+| `70:2678` User Message | Column with `8px` gap; bubble padding `24px 32px`, `#EBEEF0` fill, `24px` radius, soft shadow; text `32/48px`; action icons `32px`. |
+| `70:2482` Menu/Slash | `334 x 335`; white surface; `10px` padding, `5px` gap, `20px` radius, `1.25px` border; rows use `10px 15px` padding, `15px` gap, `10px` radius; scrollbar `7.5 x 315`, radius `3.75px`. |
+| `70:2542` Menu/Model | White surface; `11.2px` padding, `5.6px` gap, `22.4px` radius, `1.4px` border; rows use `11.2px 16.8px` padding, `16.8px` gap, `11.2px` radius. |
+| `70:2601` Status list | White surface; `32px` padding, `12px` gap, `40px` radius; status rows are `33.75px` high with `13.5px` gap and `33.75px` icons. |
+| `70:3111` Source Chip | White surface; `16px 24px` padding, `24px` gap, `16px` radius, `2px` border; number badge `36px`; title `26/32px`; source `24/32px`. |
+| `70:3135` Tool Call | `#F6F7F8` surface; `12px 18px` padding, `18px` gap, `1.5px` border, `18px` radius, soft shadow; icons `30px`; title `21/30px`; status `19.5/24px`. |
+| `65:553` / `64:911` / `67:573` variants | Hover states use `28px` avatar, `12px` row gap, `16/24px` text, `16px` icons; running state uses `8px 12px` padding, `12px` gap, `#F6F7F8` fill, `12px` radius, `20px` icons, and `14/20px` plus `13/16px` text. |
+
+### Bookflow mapping
+
+- The `AI Response` and `Tool Call` patterns map to a reading-only assistant response and provider status, not to a general chatbot.
+- The `Menu/Slash` pattern maps to quick reading actions: summarize, translate, explain, and a short custom instruction. It must remain selection-scoped.
+- The `Source Chip` pattern maps to the selected passage and paragraph location.
+- The `Menu/Model` pattern may show provider/fallback status, but must not expose or promise an unreliability-prone free quota.
+- Figma values inform spacing, radii, and hierarchy; Bookflow keeps its existing semantic tokens, 44px touch targets, reduced-motion behavior, and zero-overflow rule.
+
+
+
 ## State finding
 
-The current fetched Figma versions expose light/dark, pressed, selected, device, and orientation
-variants. No Figma hover state was present in the reviewed component names, variant properties,
-or fetched node names. Bookflow hover behavior is therefore an enhancement beyond these Figma
-references, not a copied Figma state; it remains restrained and must not change reading focus.
+The earlier scrollbar and iOS references expose light/dark, pressed, selected, device, and orientation variants, but no hover state was present in those reviewed nodes. The AI Agent UI Kit does expose `State=Hover` and `State=Running` component variants, so its hover and running states are measured references. Bookflow still keeps hover restrained and must not let it change reading focus.
 
 ## Bookflow implementation mapping
 
-The measured geometry is mapped to semantic tokens in `src/styles.css`: custom scrollbar track `8px`, thumb `8px`, minimum vertical length `33px`, radius `100px`, and card radius `13px`. The iOS reference contributes `44px` minimum controls, subtle separators, and restrained edge highlights. Three.js remains limited to the existing ambient atmosphere layer. Tailwind utilities are enabled without preflight and must not introduce a second visual token system. Functional progress/focus gradients remain separate from decorative card surfaces.
+The measured geometry is mapped to semantic tokens in `src/styles.css`: custom scrollbar track `8px`, thumb `8px`, minimum vertical length `33px`, radius `100px`, and card radius `13px`. The iOS reference contributes `44px` minimum controls, subtle separators, and restrained edge highlights. The AI Agent UI Kit contributes the assistant response rhythm, neutral surfaces, quiet status states, and command-menu hierarchy; its large showcase values must be scaled down for the reader. Three.js remains limited to the existing ambient atmosphere layer. Tailwind utilities are enabled without preflight and must not introduce a second visual token system. Functional progress/focus gradients remain separate from decorative card surfaces.
 
 ## Runtime evidence
 

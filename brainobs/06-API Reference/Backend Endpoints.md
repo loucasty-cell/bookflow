@@ -116,6 +116,23 @@ Request: `{ "wordCount": 440, "wordsPerMinute": 220 }`
 
 Response: `{ "wordCount": 440, "wordsPerMinute": 220, "minutes": 2, "seconds": 0, "formattedLabel": "2 min read" }`
 
+### `POST /api/reading-lens`
+
+Status: **Partial** — explicit opt-in, bounded, streaming.
+
+Sends only the selected passage and the reader's command to the configured Gemini model chain.
+The request must include `consent: true`; the endpoint rejects requests without it, bounds prompt and
+passage length, and never returns a fabricated answer when the provider is unconfigured.
+
+Request: `{ "prompt": "...", "passage": "...", "action": "summarize|explain|translate|trivia", "consent": true }`
+
+Response: `text/event-stream` with `start`, zero or more `delta`, and exactly one `completed` or `error`
+event. `completed` includes the model, fallback state, and attempted model chain. Provider keys are read
+from backend settings and sent upstream in a header. The endpoint is rate-limited per client and does
+not echo upstream credentials or raw provider errors.
+
+Consent and provider configuration live in [[Environment Config]].
+
 ### `POST /api/reader/notes/export` and `POST /api/reader/notes/import`
 
 Validate note and bookmark bundles for cross-device portability.

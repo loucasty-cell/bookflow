@@ -17,7 +17,7 @@ with this table, this table is correct until it is updated with evidence.
 | Capability | Status | Evidence |
 | --- | --- | --- |
 | Multi-format import | Verified | PDF, EPUB, TXT, Markdown up to 50 MB with drag and drop |
-| Local-first privacy | Verified | Book text stays in browser memory on default paths; localStorage stores metadata/session state only; accelerated OCR uploads only after explicit user action |
+| Local-first privacy | Partial | Default import/OCR paths stay local, but the pulled Reading Lens currently sends selected passages to Gemini without an explicit consent gate |
 | Sentence and paragraph focus rail | Verified | `FOCUS_RAIL_RATIO = 0.38` |
 | Pin and resume focus | Verified | Click/tap, focused-paragraph `Enter`/`Space`, `Escape`, Resume control; pin is transient and not persisted |
 | Static region handling | Verified | Front and end matter scroll without snapping |
@@ -28,6 +28,8 @@ with this table, this table is correct until it is updated with evidence.
 | Letter tracking options | Verified | normal, wide, spacious |
 | Theme atmospheres | Verified | Paper, Dusk, and additional exposed palettes |
 | Selection context tooltip | Verified | Note, copy, bookmark |
+| Reading Lens | Partial | Draggable focus card, selection hook, quick actions, and Gemini proxy exist; build, transport, consent, and drag gaps remain |
+| Notes PDF export | Partial | `notesPdfExport.js` and tests exist; long-note pagination and non-WinAnsi failures remain |
 | Margin notes | Verified | Persisted per document with quoted excerpt |
 | Bookmarks | Verified | Paragraph id references |
 | Deterministic progress | Verified | `readingProgress` from position |
@@ -59,7 +61,7 @@ with this table, this table is correct until it is updated with evidence.
 | Bounded concurrency | Verified | 1 mobile, 2 to 3 desktop by hardware concurrency |
 | Cancellation | Verified | Per-unit `AbortController`, `cancelStale` on jump |
 | Native PDF text fast path | Verified | Pages above the word threshold skip OCR |
-| Damaged PDF tolerance | Verified | Tolerant local parsing and local OCR; backend scan remains an explicit user action, not an automatic fallback |
+| Damaged PDF tolerance | Partial | Tolerant local parsing and local OCR; backend scan remains explicit, and the new empty-password unlock path lacks regression coverage |
 | Local English OCR | Verified | Tesseract WASM, locally served assets |
 | Bounded OCR workers | Verified | Worker pool capped, pages batched, cleanup called |
 | Blocking parse fallback | Verified | `parseDocument` remains as a safety path |
@@ -77,7 +79,7 @@ with this table, this table is correct until it is updated with evidence.
 | Retry and cold-start recovery | Verified | 3 attempts |
 | Partial failure reporting | Verified | Failed pages returned and surfaced |
 | Stale job pruning | Verified | TTL based cleanup |
-| Document and reader endpoints | Verified | Parse, validate, segment, reading-time, health |
+| Document and reader endpoints | Partial | Parse, validate, segment, reading-time, and health exist, but the pulled router prefix regression makes reading-time and notes export/import return 404 |
 | Backend upload ceiling | Verified | 50 MB in `backend/main.py` and `backend/app/core/config.py` |
 
 ## Behavioral layer
@@ -99,10 +101,10 @@ with this table, this table is correct until it is updated with evidence.
 | Safe storage fallback | Verified | `getSafeStorage()` with in-memory fallback |
 | Code splitting | Verified | Vendor chunks plus lazy modals and parsers |
 | Reduced motion support | Verified | Respected across the reader |
-| Frontend unit tests | Verified | 31 test files, 163 tests (2026-09-25) |
-| Playwright browser tests | Verified | 2 smoke tests plus 1 long-import test; 420-page probe measured at `3.7s` (2026-09-25) |
-| Backend test suite | Verified | 45 tests across 8 pytest modules (2026-09-25) |
-| Pyright type checking | Verified | Expected zero errors |
+| Frontend unit tests | Verified | 36 test files, 251 passing tests (2026-09-25) |
+| Playwright browser tests | Verified | 2 smoke tests, 1 long-import test, and 2 Reading Lens responsive tests; 420-page probe measured at `5.8s` (2026-09-25) |
+| Backend test suite | Verified | 75 passing tests across reader, Lens, PDF-guard, OCR, and existing modules (2026-09-25) |
+| Pyright type checking | Verified | 0 errors; 2 pre-existing missing-source warnings (2026-09-25) |
 | Performance marks | Verified | 7 named `bookflow:` marks plus measure helpers; no published p50/p95 aggregator |
 
 ## Gaps, stated plainly
@@ -119,6 +121,8 @@ with this table, this table is correct until it is updated with evidence.
 | No native wrappers | Web-polished only |
 | Import speed baseline partial | One 420-page browser probe is measured; p50/p95 by format and device are not published |
 | Resume without re-selection | Current `ResumeCard` requires the reader to choose the source file again |
+| Lens remote provider | SSE contract, consent, bounds, and fallback are tested; live provider quota, multi-user auth, and per-process rate limiting remain open |
+| Large Lens bundle | `pdf-lib` and Three.js remain in large main/vendor chunks; a strict bundle budget is not enforced |
 
 Detail: [[Backlog P0-P1-P2]], [[Success Metrics]], [[Competitor Analysis]].
 

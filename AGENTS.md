@@ -34,7 +34,7 @@ bookflow/
 └── backend/                           # FastAPI + Python 3.11/3.12 Backend
     ├── main.py                        # Runnable OCR router and SSE pipeline
     ├── app/                           # Routers, Pydantic v2 schemas, and services
-    └── tests/                         # Pytest suite (45 tests across 8 test modules)
+    └── tests/                         # Pytest suite (75 tests across the reader, Lens, PDF-guard, and OCR modules)
 ```
 
 ### Core Invariants:
@@ -64,6 +64,26 @@ bookflow/
 - Never log or commit secrets, API keys, tokens, credentials, or private documents.
 - Edit existing files when practical. Create files only when the requested change or established structure requires them.
 - Ask for clarification instead of guessing when project documentation and existing patterns do not resolve an important decision.
+
+## Skills And MCP Rules
+
+- Project skills are discovered only under `.agents/skills/`; verify with `npx skills@latest list`.
+- Do not recreate an `agent/skills/` duplicate tree and do not commit a second lockfile.
+- MCP configuration lives in the ignored local `opencode.json`; it must never be staged, printed, or committed.
+- Figma evidence must cite a real file key and node id. Never invent a node id, spacing value, or design token.
+- Rotate any design-tool or provider credential that appears in a transcript, log, or commit.
+
+## Subagent Evidence Protocol
+
+Every delegated task must follow this protocol:
+
+- Read the relevant files before making a claim or edit.
+- Cite concrete evidence as `path:line`, a measured command result, or a Figma node/file key.
+- Distinguish verified facts, reasonable inferences, and unknowns; never present an inference as measured fact.
+- Run the narrowest useful verification command and report the exact result, including failures.
+- Do not invent APIs, model names, design tokens, test results, or file contents.
+- Do not claim a task is complete because a diff looks plausible; verify the behavior or mark the gap explicitly.
+- Keep edits inside the assigned file boundary and report every touched file.
 
 ---
 
@@ -98,7 +118,7 @@ Bookflow is a private, browser-based reading application that turns PDFs, EPUB e
 - **Frontend**: React 19, Vite 8, Zustand (persisted state), Framer Motion, SWR, Lucide React, Three.js ambient layer, Tailwind CSS utility layer.
 - **Local Parsing**: `pdfjs-dist` (local worker), `jszip` (EPUB parsing), `tesseract.js` WASM (on-device OCR fallback).
 - **Typography & Ergonomics**: Bionic Reading fixations (`textFormatter.js`), accessible typefaces (Atkinson Hyperlegible, OpenDyslexic), and variable letter tracking.
-- **Testing & Quality**: Vitest (31 test files, 163 tests, measured 2026-09-25), ESLint, Playwright (2 smoke tests plus the long-import test).
+- **Testing & Quality**: Vitest (36 test files, 251 tests, measured 2026-09-25), ESLint, Playwright (2 smoke tests, the 420-page long-import test, and 2 Reading Lens responsive tests, run with `PLAYWRIGHT_CHANNEL=chrome`).
 - **Backend (Optional / Accelerated)**: FastAPI, Uvicorn ASGI, PyMuPDF (fitz) thread pool rasterization, PaddleOCR worker (`Dockerfile.ocr`), vLLM / Hugging Face OpenAI-compatible vision payloads (Qwen2-VL / DeepSeek-OCR-2), Server-Sent Events (SSE), Docker Compose.
 
 ---
@@ -127,6 +147,8 @@ Bookflow is a private, browser-based reading application that turns PDFs, EPUB e
 - Reward capsules and retention modals are opt-in only, disabled by default, never blocking reading, and must respect reduced-motion.
 - Bionic/salience formatting is opt-in, not the default.
 - Use deterministic progress, not variable-ratio rewards.
+- Reading Lens egress is opt-in per session: no selection means no request, the panel stays local until the reader grants consent, and the backend requires `consent: true` plus a bounded passage.
+- Never place a provider key in the browser bundle; all remote Lens traffic goes through the backend.
 
 ---
 
@@ -152,13 +174,15 @@ Run the available checks before committing:
 # Frontend quality, browser, and build checks
 npm run lint
 npm test
-npm run test:e2e
 npm run build
 npm run check:vault
 
+# Browser checks (system Chrome channel; bundled Chromium download is unreliable here)
+$env:PLAYWRIGHT_CHANNEL='chrome'; npm run test:e2e
+
 # Backend verification checks
 pytest backend/tests/
-npx pyright
+npx --no-install pyright
 ```
 
 For reader, parser, or visual changes, verify:
@@ -167,3 +191,6 @@ For reader, parser, or visual changes, verify:
 - Bionic reading fixations and typeface selections apply cleanly.
 - Notes, bookmarks, and settings persist across reloads.
 - Desktop and mobile layouts remain usable with zero horizontal overflow.
+- Reading Lens stays local-only until consent, and the card stays inside the viewport at `320px`, `390px`, and desktop widths.
+
+Known non-failing signals on the current baseline: `pyright` reports two environment warnings, `npm run build` warns about the large main and Three.js chunks, and full `npm audit` reports dev-only findings while `npm audit --omit=dev` is clean.

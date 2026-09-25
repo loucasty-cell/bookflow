@@ -20,8 +20,8 @@ npm run test:e2e  # 2 smoke tests plus the 420-page long-import test
 npm run build     # Production build
 ```
 
-Current command baseline measured 2026-09-25: Vitest reports 31 test files and 163 passing tests;
-`pytest backend/tests/ --collect-only -q` reports 45 tests across 8 modules. Re-run the commands
+Current command baseline measured 2026-09-25 after the 46fe51b repair: Vitest reports 36 test files and 251 passing tests;
+`pytest backend/tests/ -q` reports 75 passing tests across the reader, lens, PDF-guard, and existing OCR modules. Re-run the commands
 before relying on timings or counts.
 
 ### Vitest coverage areas
@@ -38,16 +38,20 @@ before relying on timings or counts.
 | Display formatting | Reading time and label output |
 | Library and durable adapter | Metadata normalization, caps, session totals, OPFS/IndexedDB fallback |
 | Long-book and reader helpers | Chapter windowing, dictionary, static-region alignment |
+| Reading Lens | Selection-only context, explicit consent, SSE parsing, abort/stale requests, provider fallback, chapter opt-in |
+| Notes export | Long-note pagination, non-WinAnsi glyph handling, filename and download behavior |
+| Lens browser behavior | Selection toolbar handoff, drag clamping, 320px and 390px no-overflow checks |
 
 ## Playwright browser coverage
 
 `tests/e2e/smoke.spec.js` contains two smoke tests: landing loads without fatal console errors and
-`390 x 844` has no horizontal overflow. `tests/e2e/long-import.spec.js` is the third spec and probes
-a generated 420-page selectable-text PDF.
+`390 x 844` has no horizontal overflow. `tests/e2e/long-import.spec.js` probes a generated 420-page
+selectable-text PDF. `tests/e2e/reading-lens.spec.js` verifies selection handoff, drag clamping, and
+zero overflow at `320px` and `390px`.
 
-The measured long-import run on 2026-09-25 observed progress `5 → 100`, mounted the reader only
+The measured long-import run on 2026-09-25 after the repair observed progress `5 → 100`, mounted the reader only
 after `100`, measured `0` horizontal overflow at `390 x 844`, mounted `2` reading sections, and
-completed in `3,847 ms` (about `3.7 s`). This is a single probe, not a p50/p95 benchmark.
+completed in `5,774 ms`. This is a single probe, not a p50/p95 benchmark.
 
 ## Backend
 
@@ -66,7 +70,9 @@ npx pyright
 | `test_ocr` | OCR service and mocked provider inference |
 | `test_ocr_worker` | Worker behaviour |
 | `test_accelerated_ocr` | Accelerated scan path |
-| `test_reader` | Reader utilities |
+| `test_reader` | Reader utilities and route contracts |
+| `test_reading_lens` | Consent, bounds, SSE, provider fallback, and error redaction |
+| `test_document_pdf_guards` | Encrypted PDF and zero-text rejection guards |
 | `test_config` | Configuration loading |
 
 `conftest.py` provides the test client and sample image fixtures.
@@ -139,11 +145,12 @@ Detail: [[Success Metrics]], [[File Placement Map]].
 
 | Gap | Priority |
 | --- | --- |
-| End-to-end coverage of real reading flows | High |
+| End-to-end coverage of real reading flows | High; selection Lens drag and responsive coverage now pass, but auth and provider-error browser flows remain open |
 | Long-book browser coverage | One 420-page terminal-import probe is verified; repeated p50/p95 and scanned-PDF integration remain open |
 | Scanned-PDF integration tests | P0 |
 | Accessibility checks in key flows | High |
 | OCR confidence benchmark corpus | Medium |
-| Bundle budget enforcement in CI | Medium |
+| Bundle budget enforcement in CI | Medium; current build warns on the 656 kB main chunk and 528 kB Three.js chunk |
+| Remote Lens provider browser verification | Medium; unit and backend contract tests pass, but no live provider key is committed or used in tests |
 
 Related: [[Backlog P0-P1-P2]], [[Debugging Playbook]], [[Invariants]].
