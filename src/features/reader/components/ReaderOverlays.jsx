@@ -3,8 +3,13 @@ import { FocusCard } from "./FocusCard.jsx";
 import { NotesPanel } from "./NotesPanel.jsx";
 import { SettingsPanel } from "./SettingsPanel.jsx";
 import { SelectionTooltip } from "./SelectionTooltip.jsx";
+import { useReaderSelection } from "../hooks/useReaderSelection.js";
 
 export function ReaderOverlays({
+  bookTitle,
+  bookId,
+  activeChapterTitle,
+  progress,
   isStaticFocusRegion,
   staticRegionLabel,
   focusedParagraph,
@@ -31,6 +36,12 @@ export function ReaderOverlays({
   focusId,
   lookupEnabled,
 }) {
+  const { selection, setSelection } = useReaderSelection({
+    containerRef: readerRef,
+    activeParagraphId: focusId,
+    bookId,
+  });
+
   return (
     <>
       {isStaticFocusRegion ? (
@@ -47,6 +58,7 @@ export function ReaderOverlays({
             copyFocusedParagraph={copyFocusedParagraph}
             moveFocus={moveFocus}
             resumeFlow={resumeFlow}
+            selectedText={selection.text}
           />
         </ErrorBoundary>
       )}
@@ -70,6 +82,10 @@ export function ReaderOverlays({
           setDraft={setNoteDraft}
           addNote={addNote}
           focusedParagraph={focusedParagraph}
+          bookTitle={bookTitle}
+          bookId={bookId}
+          activeChapterTitle={activeChapterTitle}
+          progress={progress}
         />
       </ErrorBoundary>
       <SelectionTooltip
@@ -79,9 +95,13 @@ export function ReaderOverlays({
           setNotesOpen(true);
         }}
         onBookmarkParagraph={toggleBookmark}
+        onAskLens={(text) => {
+          setSelection((prev) => ({ ...prev, text }));
+        }}
         activeParagraphId={focusId}
         lookupEnabled={lookupEnabled}
       />
     </>
   );
 }
+

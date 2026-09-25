@@ -199,6 +199,11 @@ class DocumentService:
         try:
             import fitz
             doc = fitz.open(stream=file_bytes, filetype="pdf")
+            if doc.is_encrypted:
+                try:
+                    doc.authenticate("")
+                except Exception:
+                    pass
             meta = doc.metadata or {}
             title = meta.get("title") or file_name.replace(".pdf", "").replace("_", " ").title()
             author = meta.get("author") or None
@@ -240,7 +245,12 @@ class DocumentService:
             )
         except Exception:
             # Fallback to pypdf
-            reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+            reader = pypdf.PdfReader(io.BytesIO(file_bytes), strict=False)
+            if reader.is_encrypted:
+                try:
+                    reader.decrypt("")
+                except Exception:
+                    pass
             meta = reader.metadata or {}
             title = meta.get("/Title") or file_name.replace(".pdf", "").replace("_", " ").title()
             author = meta.get("/Author") or None

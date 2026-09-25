@@ -18,8 +18,10 @@ export function BookOpeningIntro({ onComplete }) {
   useEffect(() => {
     const handleKeyDown = () => finish();
     window.addEventListener("keydown", handleKeyDown);
+    const safetyTimer = window.setTimeout(finish, 10500);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      window.clearTimeout(safetyTimer);
       window.clearTimeout(timerRef.current);
     };
   }, [finish]);

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Copy, Check, MessageSquareText, Bookmark, BookOpen } from "lucide-react";
+import { Copy, Check, MessageSquareText, Bookmark, BookOpen, Sparkles } from "lucide-react";
 import { triggerHaptic, HAPTIC_PATTERNS } from "../../../shared/lib/index.js";
 import { lookup, loadLicensedDictionary } from "../lib/dictionary.js";
 
@@ -7,6 +7,7 @@ export function SelectionTooltip({
   containerRef,
   onAddNoteFromSelection,
   onBookmarkParagraph,
+  onAskLens,
   activeParagraphId,
   lookupEnabled = false,
 }) {
@@ -194,6 +195,25 @@ export function SelectionTooltip({
       role="toolbar"
       aria-label="Text selection tools"
     >
+      {onAskLens && (
+        <button
+          type="button"
+          className="sel-tip-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+            onAskLens(selectedText);
+            setPosition(null);
+          }}
+          title="Ask Reading Lens about this selection"
+          aria-label="Ask Reading Lens"
+        >
+          <Sparkles size={14} className="text-amber-400" />
+          <span>Lens</span>
+        </button>
+      )}
+
       <button
         type="button"
         className="sel-tip-btn"

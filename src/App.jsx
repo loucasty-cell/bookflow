@@ -48,6 +48,12 @@ function App() {
   const { settings, setSettings, progress, setProgress, bookmarks, setBookmarks, notes, setNotes } =
     useReaderStore();
 
+  useEffect(() => {
+    const theme = settings?.theme || "paper";
+    document.documentElement.setAttribute("data-theme", theme);
+    document.body.setAttribute("data-theme", theme);
+  }, [settings?.theme]);
+
   const fileInputRef = useRef(null);
   const readerRef = useRef(null);
   const navigationRef = useRef(null);
@@ -352,7 +358,7 @@ function App() {
 
   // --- Reader view ---
   const readerViewProps = {
-    book, handleCloseBook, showIntervention, settings, setSettings,
+    book, bookId, handleCloseBook, showIntervention, settings, setSettings,
     setShowIntervention, chapters, activeChapter, progress, readerState,
     activeParagraphIsLarge, overStaticRegion, staticRegionLabel, notes, setNotes,
     bookmarks, noteDraft, setNoteDraft, sidebarOpen, setSidebarOpen,

@@ -9,6 +9,7 @@ import { ReaderOverlays } from "./ReaderOverlays.jsx";
 
 export function ReaderPage({
   book,
+  bookId,
   settings,
   setSettings,
   chapters,
@@ -181,6 +182,10 @@ export function ReaderPage({
         />
 
         <ReaderOverlays
+          bookTitle={book?.title}
+          bookId={bookId}
+          activeChapterTitle={safeChapters[activeChapter]?.title}
+          progress={progress}
           isStaticFocusRegion={isStaticFocusRegion}
           staticRegionLabel={staticRegionLabel}
           focusedParagraph={focusedParagraph}

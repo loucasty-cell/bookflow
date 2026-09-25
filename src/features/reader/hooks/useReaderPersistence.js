@@ -7,6 +7,8 @@ import { useEffect, useRef } from "react";
 import { useReaderStore } from "../../../store/readerStore.js";
 import {
   documentStorageKey,
+  getStorageItem,
+  safeParse,
   setStorageItem,
 } from "../../../shared/lib/index.js";
 
@@ -22,6 +24,26 @@ export function useReaderPersistence({ bookId, activeParagraphId, bookmarks, not
       document.documentElement.setAttribute("data-theme", settings.theme);
     }
   }, [settings]);
+
+  // Immediate persistence whenever notes change (saves quick notes without waiting for scroll throttle)
+  const prevNotesRef = useRef(notes);
+  useEffect(() => {
+    if (!bookId) return;
+    if (prevNotesRef.current !== notes) {
+      prevNotesRef.current = notes;
+      const docKey = documentStorageKey(bookId);
+      const current = safeParse(getStorageItem(docKey), {});
+      setStorageItem(docKey, {
+        ...(current && typeof current === "object" ? current : {}),
+        notes,
+        bookmarks,
+        progress,
+        activeParagraphId,
+        scrollTop: readerRef.current?.scrollTop ?? 0,
+      });
+      setStorageItem(`bookflow:quick-notes:${bookId}`, notes);
+    }
+  }, [bookId, notes, bookmarks, progress, activeParagraphId, readerRef]);
 
   // Persist per-document state (throttled: progress ticks on every scroll)
   const lastPersistRef = useRef(0);
@@ -46,6 +68,7 @@ export function useReaderPersistence({ bookId, activeParagraphId, bookmarks, not
         activeParagraphId,
         scrollTop: readerRef.current?.scrollTop ?? 0,
       });
+      setStorageItem(`bookflow:quick-notes:${bookId}`, notes);
     };
     const elapsed = now - lastPersistRef.current;
     if (elapsed >= PERSIST_THROTTLE_MS) {

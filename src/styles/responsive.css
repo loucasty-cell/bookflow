@@ -250,19 +250,24 @@
   }
 
   .focus-card {
-    right: 10px;
-    bottom: calc(10px + var(--safe-bottom));
-    width: calc(100vw - 20px);
+    top: calc(8px + var(--safe-top));
+    bottom: auto;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: auto;
+    max-width: calc(100vw - 20px);
   }
 
   .static-region-label {
+    top: calc(8px + var(--safe-top));
+    bottom: auto;
     right: 10px;
-    bottom: calc(10px + var(--safe-bottom));
     max-width: calc(100vw - 20px);
   }
 
   .focus-card > p {
-    -webkit-line-clamp: 1;
+    max-width: clamp(100px, 30vw, 180px);
   }
 
   .settings-popover,

@@ -683,8 +683,9 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
       // Resize handling
       const handleResize = () => {
         if (!container || !renderer) return;
-        const nw = container.offsetWidth || window.innerWidth;
-        const nh = container.offsetHeight || window.innerHeight;
+        const nw = container.offsetWidth || window.innerWidth || 1200;
+        const nh = container.offsetHeight || window.innerHeight || 800;
+        if (nh <= 0) return;
         camera.aspect = nw / nh;
         camera.updateProjectionMatrix();
         renderer.setSize(nw, nh);
@@ -1008,6 +1009,9 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
     let cleanupListeners = null;
     initScene().then((cleanup) => {
       cleanupListeners = cleanup;
+      if (isDisposed && typeof cleanup === "function") {
+        cleanup();
+      }
     });
 
     return () => {

@@ -14,6 +14,7 @@
     "check:vault": "node scripts/check-vault.mjs"
   },
   "dependencies": {
+    "@google/genai": "^2.24.0",
     "@tesseract.js-data/eng": "^1.0.0",
     "framer-motion": "^13.1.1",
     "jszip": "^3.10.1",

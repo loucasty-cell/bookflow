@@ -53,6 +53,24 @@ export function ThreeDBookCard({
     setIsHovered(false);
   };
 
+  const handleTouchStart = (e) => {
+    if (!cardRef.current || isOpening) return;
+    setIsHovered(true);
+    if (e.touches && e.touches[0]) {
+      const rect = cardRef.current.getBoundingClientRect();
+      const x = (e.touches[0].clientX - rect.left) / rect.width - 0.5;
+      const y = (e.touches[0].clientY - rect.top) / rect.height - 0.5;
+      mouseX.set(x * 0.5);
+      mouseY.set(y * 0.5);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsHovered(false);
+    mouseX.set(0);
+    mouseY.set(0);
+  };
+
   const handleClick = () => {
     if (!book || isOpening) return;
     const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
@@ -114,6 +132,9 @@ export function ThreeDBookCard({
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
         onClick={handleClick}
         style={{
           rotateX: reduceMotion ? 0 : isOpening ? 0 : rotateX,

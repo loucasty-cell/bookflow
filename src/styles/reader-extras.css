@@ -87,3 +87,795 @@
   opacity: 0.92;
   font-weight: 400;
 }
+
+/* ==========================================================================
+   LUXURY SESSION QUICK NOTES (DRAWER & MODAL)
+   ========================================================================== */
+
+/* Scrim / Backdrop when modal mode is active */
+.notes-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.72) 0%, rgba(9, 10, 15, 0.88) 100%);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  animation: notesBackdropFadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes notesBackdropFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Modal View override */
+.notes-drawer.is-modal-view {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: min(92vw, 560px) !important;
+  height: min(88dvh, 740px) !important;
+  z-index: 100 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 20px !important;
+  transform: translate(-50%, -50%) !important;
+  box-shadow: 0 25px 65px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 35px rgba(6, 182, 212, 0.12) !important;
+  overflow: hidden;
+  animation: notesModalPop 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes notesModalPop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -46%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.notes-drawer.is-modal-view::before {
+  display: none !important;
+}
+
+/* Header & Title Glow */
+.notes-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--app-line, rgba(255, 255, 255, 0.08));
+}
+
+.notes-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notes-title-glow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--reader-ink);
+}
+
+.notes-header-icon {
+  color: #06b6d4;
+}
+
+.notes-telemetry-badge {
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 9999px;
+  background: rgba(6, 182, 212, 0.12);
+  color: #06b6d4;
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  letter-spacing: 0.04em;
+}
+
+.notes-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.notes-action-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: var(--reader-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.notes-action-icon:hover {
+  color: var(--reader-ink);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+/* Session Strip */
+.notes-session-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 18px;
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid var(--app-line, rgba(255, 255, 255, 0.06));
+}
+
+.notes-session-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--reader-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 75%;
+}
+
+.notes-session-icon {
+  color: #8b5cf6;
+  flex-shrink: 0;
+}
+
+.notes-session-title {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.notes-session-progress {
+  color: var(--reader-muted);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+/* Bento Note Composer */
+.notes-bento-composer {
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-bottom: 1px solid var(--app-line, rgba(255, 255, 255, 0.08));
+}
+
+.notes-referenced-quote-card {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.notes-quote-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notes-quote-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #06b6d4;
+}
+
+.notes-detach-quote-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  background: transparent;
+  border: 0;
+  color: var(--reader-muted);
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 2px 6px;
+  transition: all 0.15s ease;
+}
+
+.notes-detach-quote-btn:hover {
+  color: var(--reader-ink);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.notes-quote-preview {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  font-style: italic;
+  color: var(--reader-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Format Option Bar */
+.notes-format-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.notes-bold-segmented {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  gap: 2px;
+}
+
+.notes-format-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--reader-muted);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.notes-format-pill:hover {
+  color: var(--reader-ink);
+}
+
+.notes-format-pill.is-active {
+  background: var(--chrome-solid, #1e293b);
+  color: var(--reader-ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.notes-format-pill.is-bold-pill.is-active {
+  background: rgba(6, 182, 212, 0.16);
+  color: #06b6d4;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+}
+
+.bold-status-tag {
+  font-size: 10.5px;
+  color: var(--reader-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bold-status-tag.is-bold {
+  color: #06b6d4;
+  font-weight: 600;
+}
+
+/* Notes Textarea */
+.notes-textarea {
+  width: 100%;
+  min-height: 84px;
+  resize: vertical;
+  padding: 12px;
+  color: var(--reader-ink);
+  background: var(--chrome-solid);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.55;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.notes-textarea:focus {
+  outline: none;
+  border-color: #06b6d4;
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.25);
+}
+
+.notes-textarea.is-bold {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Composer Footer */
+.notes-composer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.notes-char-telemetry {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 10px;
+  color: var(--reader-muted);
+}
+
+.notes-shortcut-hint kbd {
+  display: inline-block;
+  padding: 1px 4px;
+  font-size: 9px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--reader-muted);
+}
+
+.notes-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 650;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0284c7 0%, #06b6d4 100%);
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(6, 182, 212, 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.notes-save-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(6, 182, 212, 0.45);
+}
+
+.notes-save-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Toolbar (Search & Filter) */
+.notes-toolbar {
+  padding: 8px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid var(--app-line, rgba(255, 255, 255, 0.06));
+}
+
+.notes-search-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.notes-search-icon {
+  position: absolute;
+  left: 9px;
+  color: var(--reader-muted);
+  pointer-events: none;
+}
+
+.notes-search-input {
+  width: 100%;
+  height: 28px;
+  padding: 0 26px 0 28px;
+  font-size: 11.5px;
+  border-radius: 6px;
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.08));
+  background: var(--chrome-solid);
+  color: var(--reader-ink);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.notes-search-input:focus {
+  border-color: #06b6d4;
+}
+
+.notes-search-clear {
+  position: absolute;
+  right: 6px;
+  background: transparent;
+  border: 0;
+  color: var(--reader-muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  padding: 2px;
+}
+
+.notes-view-bold-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 9px;
+  font-size: 11px;
+  border-radius: 6px;
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.08));
+  background: transparent;
+  color: var(--reader-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.notes-view-bold-toggle.is-active {
+  background: rgba(6, 182, 212, 0.16);
+  border-color: rgba(6, 182, 212, 0.4);
+  color: #06b6d4;
+  font-weight: 700;
+}
+
+/* Notes List & Cards (macOS Bento Cards & macOS scrollbars) */
+.notes-bento-list {
+  flex: 1;
+  min-height: 0;
+  padding: 14px 18px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ==========================================================================
+   AUTHENTIC macOS SCROLLBARS
+   ========================================================================== */
+.macos-scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  -webkit-overflow-scrolling: touch;
+}
+
+.macos-scrollable::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.macos-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.macos-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 0.2s ease;
+}
+
+.macos-scrollable::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.36);
+}
+
+.macos-scrollable::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ==========================================================================
+   macOS WINDOW TITLEBAR & TRAFFIC LIGHTS
+   ========================================================================== */
+.macos-traffic-lights {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 6px;
+}
+
+.macos-traffic-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), filter 0.15s ease;
+}
+
+.macos-traffic-dot:hover {
+  transform: scale(1.15);
+  filter: brightness(1.1);
+}
+
+.macos-dot-close {
+  background: #ff5f56;
+}
+
+.macos-dot-minimize {
+  background: #ffbd2e;
+}
+
+.macos-dot-zoom {
+  background: #27c93f;
+}
+
+/* ==========================================================================
+   macOS PDF EXPORT BUTTON & ACTION CONTROLS
+   ========================================================================== */
+.notes-pdf-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--reader-ink);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.notes-pdf-export-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.22) 0%, rgba(6, 182, 212, 0.1) 100%);
+  border-color: rgba(6, 182, 212, 0.4);
+  color: #06b6d4;
+  transform: translateY(-0.5px);
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.notes-pdf-export-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.notes-pdf-export-btn.is-success {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #10b981;
+}
+
+.notes-check-downloaded {
+  color: #10b981;
+}
+
+/* ==========================================================================
+   macOS CARD UI DESIGNS (Apple Books & Kindle Notebook inspiration)
+   ========================================================================== */
+.notes-card {
+  position: relative;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--chrome-solid);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.08));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.notes-card.macos-card {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.01) 100%), var(--chrome-solid);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 16px -2px rgba(0, 0, 0, 0.3);
+}
+
+.notes-card.macos-card:hover {
+  border-color: rgba(6, 182, 212, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 24px -2px rgba(0, 0, 0, 0.45);
+  transform: translateY(-1.5px);
+}
+
+.notes-card.is-bold-card {
+  border-left: 3px solid #06b6d4 !important;
+}
+
+.macos-card-header {
+  padding-bottom: 2px;
+}
+
+.macos-card-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 3px;
+}
+
+.macos-card-dot {
+  width: 5.5px;
+  height: 5.5px;
+  border-radius: 9999px;
+  display: inline-block;
+  opacity: 0.75;
+}
+
+.macos-card-dot-red {
+  background: #ff5f56;
+}
+
+.macos-card-dot-yellow {
+  background: #ffbd2e;
+}
+
+.macos-card-dot-green {
+  background: #27c93f;
+}
+
+.notes-card-index {
+  font-size: 10px;
+  font-weight: 600;
+  color: #06b6d4;
+  letter-spacing: 0.02em;
+}
+
+.notes-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notes-card-tags {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.notes-card-bold-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+}
+
+.notes-card-bold-tag.is-bold {
+  background: rgba(6, 182, 212, 0.14);
+  color: #06b6d4;
+  border: 1px solid rgba(6, 182, 212, 0.25);
+}
+
+.notes-card-bold-tag.is-reg {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--reader-muted);
+}
+
+.notes-card-time {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--reader-muted);
+}
+
+.notes-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.notes-micro-btn {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: transparent;
+  border: 0;
+  color: var(--reader-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.notes-micro-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--reader-ink);
+}
+
+.notes-micro-btn.is-active-bold {
+  color: #06b6d4;
+}
+
+.notes-micro-btn.notes-delete-btn:hover {
+  color: #f43f5e;
+  background: rgba(244, 63, 94, 0.12);
+}
+
+.notes-check-copied {
+  color: #10b981;
+}
+
+.notes-card-quote {
+  margin: 0;
+  padding: 7px 11px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.15);
+  border-left: 2.5px solid #8b5cf6;
+  font-size: 11.5px;
+  font-style: italic;
+  color: var(--reader-muted);
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.45;
+}
+
+.notes-card-quote.macos-quote {
+  background: rgba(139, 92, 246, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.notes-card-quote-icon {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: #8b5cf6;
+}
+
+.notes-card-text {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--reader-ink);
+  word-break: break-word;
+}
+
+.notes-empty-bento {
+  padding: 36px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.notes-empty-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: rgba(6, 182, 212, 0.1);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  display: grid;
+  place-items: center;
+  color: #06b6d4;
+  margin-bottom: 12px;
+}
+
+.notes-no-results {
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--reader-muted);
+}
+

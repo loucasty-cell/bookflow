@@ -135,12 +135,93 @@
   border-color: var(--app-line);
 }
 
-.reader-layout {
-  height: calc(100dvh - 68px - var(--safe-top));
-  display: flex;
+/* Landing page space reduction: ensure landing library layer and resume wrap have compact space */
+div#root:nth-of-type(1) > div.landing-library-layer > div:nth-of-type(1),
+.landing-resume-wrap {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  margin: 0 auto;
+  padding: 0;
+  display: block;
   position: relative;
-  overflow: hidden;
-  overflow: clip;
+}
+
+.landing-library-layer {
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Reader layout styling (scoped strictly to reader view) */
+div#root:nth-of-type(1) > div.app-shell > div.reader-layout,
+.app-shell > .reader-layout,
+.reader-layout {
+  height: calc(100dvh - 68px - var(--safe-top)) !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  position: relative !important;
+  overflow: hidden !important;
+  overflow: clip !important;
+  pointer-events: auto !important;
+  background-color: var(--app-bg, #eef3f8);
+  background-image: none !important;
+  color: var(--reader-ink, #1b2633);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Dark mode: ensure this element and its layout context transition cleanly without staying in light mode and with NO AI gradient */
+.app-shell[data-theme="dusk"] > .reader-layout,
+.app-shell[data-theme="dusk"] .reader-layout,
+[data-theme="dusk"] .reader-layout {
+  background-color: var(--app-bg, #08080a) !important;
+  background-image: none !important;
+  background: #08080a !important;
+  color: var(--reader-ink, #f2f2f7) !important;
+  color-scheme: dark !important;
+}
+
+.app-shell[data-theme="dusk"] .reader-layout > aside#book-navigator,
+.app-shell[data-theme="dusk"] .reader-layout .contents-panel {
+  background-color: var(--sidebar-bg, #18181b) !important;
+  background-image: none !important;
+  border-right-color: var(--sidebar-border, rgba(255, 255, 255, 0.07)) !important;
+}
+
+.app-shell[data-theme="dusk"] .reader-layout > main.reader-canvas,
+.app-shell[data-theme="dusk"] .reader-layout .reader-canvas {
+  background-color: var(--reader-bg, #111113) !important;
+  background-image: none !important;
+}
+
+.app-shell[data-theme="dusk"] .reader-layout .contents-continue,
+.app-shell[data-theme="dusk"] .reader-layout .document-continue {
+  background-image: none !important;
+  background-color: var(--sidebar-hover, rgba(255, 255, 255, 0.055)) !important;
+}
+
+.app-shell[data-theme="dusk"] .reader-layout .focus-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(10, 14, 24, 0.65) 100%), rgba(16, 20, 30, 0.68) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(210%) !important;
+  backdrop-filter: blur(32px) saturate(210%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow:
+    0 20px 48px -8px rgba(0, 0, 0, 0.6),
+    0 4px 16px -2px rgba(0, 0, 0, 0.35),
+    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.32),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.4) !important;
+  color: #f2f2f7 !important;
+}
+
+.app-shell[data-theme="monocodex"] .reader-layout {
+  background-color: var(--app-bg, #0a0c0e) !important;
+  background-image: none !important;
+  background: #0a0c0e !important;
+  color: var(--reader-ink, #e6edf3) !important;
+  color-scheme: dark !important;
 }
 
 .reader-layout.has-settings-panel .reader-canvas {
@@ -158,6 +239,9 @@
 .contents-panel {
   width: 294px;
   flex: 0 0 294px;
+  max-width: 294px;
+  height: 100%;
+  pointer-events: auto !important;
   color: var(--sidebar-text);
   background: color-mix(in srgb, var(--sidebar-bg) 76%, transparent);
   border-right: 1px solid var(--sidebar-border);
@@ -167,6 +251,7 @@
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   backdrop-filter: blur(28px) saturate(180%);
   z-index: 20;
+  overflow: hidden;
 }
 
 .contents-panel button,
@@ -180,11 +265,14 @@
 
 .contents-shell {
   height: 100%;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
   background: transparent;
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   backdrop-filter: blur(28px) saturate(180%);
+  pointer-events: auto !important;
 }
 
 .panel-heading {
@@ -860,30 +948,426 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-
   border-color: color-mix(in srgb, var(--focus-edge) 28%, var(--app-line));
 }
 
+/* ==========================================================================
+   POPPED-UP TOP FOCUS FEATURE (Liquid Glass UI Card / HUD)
+   ========================================================================== */
+.reader-layout > section:nth-of-type(1),
+div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-type(1),
 .focus-card {
   position: absolute;
-  z-index: 12;
-  right: var(--space-5, 20px);
-  bottom: var(--space-5, 20px);
-  width: min(356px, calc(100vw - 320px));
-  padding: 13px 15px;
+  z-index: 45;
+  top: 14px;
+  bottom: auto;
+  left: 50%;
+  right: auto;
+  margin-left: -190px;
+  width: auto;
+  min-width: 340px;
+  max-width: min(94vw, 700px);
+  padding: 8px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
   color: var(--reader-ink);
-  background: var(--chrome);
-  border: 1px solid var(--app-line);
-  border-radius: var(--radius-card);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 255, 255, 0.72) 50%, rgba(240, 235, 225, 0.52) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 20px;
   font-family: var(--font-ios);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   box-shadow:
-    0 16px 36px -8px rgba(0, 0, 0, 0.14),
-    0 3px 10px -2px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.4);
-  -webkit-backdrop-filter: saturate(190%) blur(28px);
-  backdrop-filter: saturate(190%) blur(28px);
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, opacity 0.2s ease;
+    0 16px 40px -6px rgba(0, 0, 0, 0.16),
+    0 4px 12px -2px rgba(0, 0, 0, 0.08),
+    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.75),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.05);
+  -webkit-backdrop-filter: blur(32px) saturate(210%);
+  backdrop-filter: blur(32px) saturate(210%);
+  animation: focusPopDown 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: box-shadow 0.2s ease, opacity 0.2s ease, background 0.2s ease, border-color 0.2s ease, width 0.2s ease;
+  user-select: none;
 }
 
+.focus-card.is-dragging {
+  cursor: grabbing !important;
+  box-shadow:
+    0 24px 56px -8px rgba(0, 0, 0, 0.35),
+    0 8px 20px -2px rgba(0, 0, 0, 0.18),
+    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dusk"] .focus-card,
+[data-theme="monocodex"] .focus-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(10, 14, 24, 0.75) 100%), rgba(16, 20, 30, 0.82) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(210%) !important;
+  backdrop-filter: blur(32px) saturate(210%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow:
+    0 20px 48px -8px rgba(0, 0, 0, 0.65),
+    0 4px 16px -2px rgba(0, 0, 0, 0.35),
+    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.32),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.4) !important;
+  color: #f2f2f7 !important;
+}
+
+.focus-card.is-chat-expanded {
+  width: min(94vw, 680px);
+  padding: 10px 14px 12px;
+  border-radius: 22px;
+}
+
+.focus-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  cursor: grab;
+  padding-bottom: 2px;
+}
+
+.focus-card-drag-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--reader-muted);
+  opacity: 0.6;
+  padding: 2px 6px;
+  border-radius: 9999px;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.focus-card-drag-pill:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.focus-card-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.focus-card-icon-btn {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--reader-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.focus-card-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--reader-ink);
+}
+
+.focus-selection-tag {
+  font-size: 8.5px;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  background: rgba(234, 179, 8, 0.2);
+  color: #eab308;
+  border: 1px solid rgba(234, 179, 8, 0.35);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.focus-card-passage-preview {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--reader-ink);
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 2px 4px;
+}
+
+/* Middle Textbar */
+.focus-card-middle-bar {
+  width: 100%;
+}
+
+.focus-card-input-form {
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 9999px;
+  padding: 3px 6px 3px 12px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+[data-theme="paper"] .focus-card-input-form {
+  background: rgba(255, 255, 255, 0.7);
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.focus-card-input-form:focus-within {
+  border-color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15), inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="paper"] .focus-card-input-form:focus-within {
+  border-color: rgba(102, 59, 59, 0.45);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 2px rgba(102, 59, 59, 0.15);
+}
+
+.focus-card-prompt-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 11.5px;
+  color: var(--reader-ink);
+  padding: 2px 4px;
+}
+
+.focus-card-prompt-input::placeholder {
+  color: var(--reader-muted);
+  opacity: 0.7;
+}
+
+.focus-card-send-btn {
+  width: 24px;
+  height: 24px;
+  min-height: 24px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #783d31 0%, #421e17 100%) !important;
+  color: #fff2eb !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  cursor: pointer;
+  padding: 0 !important;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+}
+
+.focus-card-send-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.focus-card-send-btn:not(:disabled):hover {
+  transform: scale(1.05);
+}
+
+/* Quick Action Pills */
+.focus-card-quick-pills {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.focus-quick-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--reader-ink);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+
+[data-theme="paper"] .focus-quick-pill {
+  background: rgba(255, 255, 255, 0.65);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.focus-quick-pill:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.32);
+  transform: translateY(-0.5px);
+}
+
+/* Chat Space */
+.focus-card-chat-space {
+  width: 100%;
+  max-height: 240px;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 8px 10px;
+  gap: 6px;
+  backdrop-filter: blur(16px);
+}
+
+[data-theme="paper"] .focus-card-chat-space {
+  background: rgba(255, 255, 255, 0.5);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.focus-card-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.focus-card-chat-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--reader-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.focus-card-chat-clear:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.focus-card-chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  max-height: 180px;
+  padding-right: 4px;
+  user-select: text;
+}
+
+.focus-card-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px 8px;
+  color: var(--reader-muted);
+  font-size: 11px;
+  gap: 6px;
+}
+
+.focus-chat-bubble {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.focus-chat-bubble.is-user {
+  align-self: flex-end;
+  background: rgba(120, 61, 49, 0.35);
+  border: 1px solid rgba(120, 61, 49, 0.5);
+  color: #fff2eb;
+  max-width: 85%;
+}
+
+.focus-chat-bubble.is-assistant {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--reader-ink);
+  max-width: 95%;
+}
+
+[data-theme="paper"] .focus-chat-bubble.is-assistant {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.focus-chat-copy-btn {
+  background: transparent;
+  border: none;
+  color: var(--reader-muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.focus-chat-copy-btn:hover {
+  color: var(--reader-ink);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.focus-chat-loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+}
+
+.pulse-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #eab308;
+  animation: pulseDot 1s infinite alternate;
+}
+
+.pulse-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.pulse-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes pulseDot {
+  from { opacity: 0.3; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1.2); }
+}
+
+.focus-chat-error {
+  color: #f87171;
+  font-size: 11px;
+  padding: 4px 8px;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 6px;
+}
+
+@keyframes focusPopDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+.reader-layout > section:nth-of-type(1).is-collapsed,
+div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-type(1).is-collapsed,
 .focus-card.is-collapsed {
+  top: 14px !important;
+  bottom: auto !important;
+  left: 50% !important;
+  right: auto !important;
+  transform: translateX(-50%) !important;
   width: auto !important;
   min-width: 0 !important;
   max-width: fit-content !important;
@@ -900,35 +1384,37 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-
   pointer-events: auto !important;
   cursor: pointer !important;
   z-index: 100 !important;
-  min-height: 32px !important;
-  height: 32px;
+  min-height: 30px !important;
+  height: 30px;
   padding: 0 12px 0 10px !important;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   color: var(--reader-ink);
-  background: var(--chrome);
-  border: 1px solid var(--app-line) !important;
-  border-radius: 999px !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 40%, rgba(10, 14, 24, 0.65) 100%), rgba(16, 20, 30, 0.72) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 9999px !important;
   box-shadow:
-    0 10px 24px -4px rgba(0, 0, 0, 0.12),
-    0 2px 6px -1px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
+    0 12px 28px -4px rgba(0, 0, 0, 0.45),
+    0 3px 8px -1px rgba(0, 0, 0, 0.2),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25) !important;
   font-size: 11px;
   font-weight: 650;
   letter-spacing: 0.02em;
   cursor: pointer;
-  -webkit-backdrop-filter: saturate(190%) blur(24px);
-  backdrop-filter: saturate(190%) blur(24px);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  backdrop-filter: blur(28px) saturate(200%);
   transition: background 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .focus-card-pill-btn:hover {
-  background: var(--chrome-strong);
-  border-color: color-mix(in srgb, var(--reader-ink) 20%, var(--app-line)) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.08) 40%, rgba(10, 14, 24, 0.75) 100%), rgba(20, 26, 40, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.32) !important;
   box-shadow:
-    0 14px 28px -4px rgba(0, 0, 0, 0.16),
-    0 4px 10px -1px rgba(0, 0, 0, 0.08) !important;
+    0 16px 36px -4px rgba(0, 0, 0, 0.55),
+    0 4px 12px -1px rgba(0, 0, 0, 0.25),
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.45) !important;
   transform: translateY(-1px);
 }
 
@@ -936,22 +1422,31 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-
   transform: translateY(0);
 }
 
+[data-theme="paper"] .focus-card-pill-btn {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 60%, rgba(240, 235, 225, 0.5) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.75) !important;
+  box-shadow: 0 10px 24px -4px rgba(40, 30, 20, 0.14), inset 0 1.5px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-of-type(1) > .focus-card-label,
 .focus-card-label {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  color: var(--focus-edge);
-  font-size: 10.5px;
+  gap: 6px;
+  color: var(--focus-edge, #06b6d4);
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .focus-status-indicator {
-  width: 7px;
-  height: 7px;
+  width: 6.5px;
+  height: 6.5px;
   border-radius: 50%;
-  flex: 0 0 7px;
+  flex: 0 0 6.5px;
   display: inline-block;
 }
 
@@ -966,21 +1461,20 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-
 }
 
 .focus-card-label small {
-  margin-left: auto;
-  padding: 2px 7px;
+  padding: 1px 5px;
   color: var(--reader-muted);
   background: var(--chrome-strong);
   border: 1px solid var(--app-line);
-  border-radius: 999px;
-  font-size: 9px;
+  border-radius: 9999px;
+  font-size: 8.5px;
   font-weight: 650;
   letter-spacing: 0.05em;
 }
 
 .focus-card-dismiss-btn {
-  width: 44px;
-  height: 44px;
-  min-height: 44px !important;
+  width: 22px;
+  height: 22px;
+  min-height: 22px !important;
   padding: 0 !important;
   margin-left: 2px;
   display: inline-flex;
@@ -989,90 +1483,116 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-
   color: var(--reader-muted);
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 9999px;
   cursor: pointer;
   transition: color 0.15s ease, background 0.15s ease;
+  flex-shrink: 0;
 }
 
 .focus-card-dismiss-btn:hover {
   color: var(--reader-ink);
-  background: var(--chrome-strong);
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.focus-card > p,
-div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-of-type(1) > p:nth-of-type(1) {
-  margin: 8px 0 11px;
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-of-type(1) > p,
+.focus-card > p {
+  margin: 0;
+  padding: 0 8px;
+  max-width: clamp(140px, 25vw, 320px);
+  white-space: nowrap;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  display: block;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: unset;
   font-family: var(--font-ios);
-  font-size: 13px;
-  line-height: 1.52;
+  font-size: 11.5px;
+  line-height: 1.4;
   font-weight: 420;
-  letter-spacing: -0.012em;
+  letter-spacing: -0.01em;
   color: var(--reader-ink);
-  overflow-wrap: break-word;
-  hyphens: auto;
-  text-wrap: pretty;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  opacity: 0.88;
+  border-left: 1px solid var(--app-line);
+  border-right: 1px solid var(--app-line);
+  flex-shrink: 1;
 }
 
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-of-type(1) > .focus-card-actions,
 .focus-card-actions {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
+  flex-wrap: nowrap;
+  gap: 4px;
+  margin: 0;
+  flex-shrink: 0;
 }
 
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-of-type(1) button:not(.focus-card-dismiss-btn):not(.focus-card-pill-btn),
 .focus-card button:not(.focus-card-dismiss-btn):not(.focus-card-pill-btn) {
-  min-height: 44px;
-  padding: 6px 12px;
+  min-height: 26px;
+  height: 26px;
+  padding: 0 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
+  gap: 4px;
   color: var(--reader-ink);
-  background: var(--chrome-solid);
-  border: 1px solid var(--app-line);
-  border-radius: 8px;
-  font-size: 11px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  font-size: 10.5px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+[data-theme="paper"] .focus-card button:not(.focus-card-dismiss-btn):not(.focus-card-pill-btn) {
+  background: rgba(255, 255, 255, 0.65);
+  border-color: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
 .focus-card button:not(.focus-card-dismiss-btn):not(.focus-card-pill-btn):hover {
   color: var(--reader-ink);
-  background: var(--chrome-strong);
-  border-color: color-mix(in srgb, var(--reader-ink) 18%, var(--app-line));
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-0.5px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+[data-theme="paper"] .focus-card button:not(.focus-card-dismiss-btn):not(.focus-card-pill-btn):hover {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.18);
+}
+
+.focus-card-step {
+  width: 26px !important;
+  height: 26px !important;
+  min-height: 26px !important;
+  max-width: 26px !important;
+  padding: 0 !important;
+  flex: 0 0 26px !important;
+  border-radius: 50% !important;
 }
 
 .focus-card button:not(.focus-card-dismiss-btn):not(.focus-card-pill-btn):active {
   transform: translateY(0);
 }
 
-.focus-card-step {
-  width: 44px !important;
-  height: 44px !important;
-  min-height: 44px !important;
-  padding: 0 !important;
-  flex: 0 0 44px;
-  border-radius: 8px !important;
-}
-
 .focus-card-actions .focus-card-primary {
-  color: #ffffff !important;
-  background: var(--accent) !important;
-  border-color: transparent !important;
-  box-shadow: 0 2px 6px -1px color-mix(in srgb, var(--accent) 45%, transparent) !important;
+  color: #fff2eb !important;
+  background: linear-gradient(135deg, #783d31 0%, #421e17 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 10px rgba(102, 59, 59, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
 }
 
 .focus-card-actions .focus-card-primary:hover {
-  background: var(--accent-strong) !important;
+  background: linear-gradient(135deg, #8c4739 0%, #50251c 100%) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45), 0 0 14px rgba(102, 59, 59, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
   color: #ffffff !important;
 }
 

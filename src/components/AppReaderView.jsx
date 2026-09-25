@@ -2,6 +2,7 @@ import { ReaderPage, ReaderShell } from "../features/reader/index.js";
 
 export function AppReaderView({
   book,
+  bookId,
   handleCloseBook,
   showIntervention,
   settings,
@@ -58,6 +59,7 @@ export function AppReaderView({
       >
         <ReaderPage
           book={book}
+          bookId={bookId}
           settings={settings}
           setSettings={setSettings}
           chapters={chapters}

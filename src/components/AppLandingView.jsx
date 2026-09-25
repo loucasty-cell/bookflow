@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { X } from "lucide-react";
 import { BookOpeningIntro, LandingPage } from "../features/landing/index.js";
+import { SAMPLE_BOOK } from "../features/landing/sampleBook.js";
 import {
   BadgeGallery,
   ResumeCard,
@@ -38,6 +39,14 @@ export function AppLandingView({
 }) {
   const resumeEntry = settings.showResumeCard ? getResumeEntry() : null;
 
+  const handleResume = (entry) => {
+    if (entry?.documentId === "bookflow-sample" || entry?.kind === "SAMPLE") {
+      openBook(SAMPLE_BOOK, "bookflow-sample");
+    } else {
+      fileInputRef.current?.click();
+    }
+  };
+
   return (
     <>
       <a className="skip-link" href="#main-content">Skip to main content</a>
@@ -48,6 +57,7 @@ export function AppLandingView({
           <div className="landing-resume-wrap">
             <ResumeCard
               entry={resumeEntry}
+              onResume={handleResume}
               onReopen={() => fileInputRef.current?.click()}
             />
           </div>

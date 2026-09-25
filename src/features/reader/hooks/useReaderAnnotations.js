@@ -28,21 +28,37 @@ export function useReaderAnnotations({ focusId, focusedParagraph, setBookmarks, 
     return timestampNoteId();
   }, []);
 
-  const addNote = useCallback(() => {
-    const text = noteDraft.trim();
-    if (!text || !focusId) return;
+  const addNote = useCallback(
+    (customNote) => {
+      const isCustom = typeof customNote === "object" && customNote !== null;
+      const text = (isCustom && typeof customNote.text === "string" ? customNote.text : noteDraft)?.trim();
+      if (!text) return null;
 
-    setNotes((current) => [
-      {
-        id: newNoteId(),
-        paragraphId: focusId,
-        quote: focusedParagraph?.text ?? "",
+      const isBold = Boolean(isCustom ? (customNote.bold ?? customNote.isBold) : false);
+      const paragraphId = isCustom && customNote.paragraphId !== undefined
+        ? customNote.paragraphId
+        : (focusId || "");
+      const quote = isCustom && customNote.quote !== undefined
+        ? customNote.quote
+        : (paragraphId && paragraphId === focusId ? (focusedParagraph?.text ?? "") : "");
+
+      const entry = {
+        id: (isCustom && customNote.id) ? customNote.id : newNoteId(),
+        paragraphId,
+        quote,
         text,
-      },
-      ...current,
-    ]);
-    setNoteDraft("");
-  }, [noteDraft, focusId, focusedParagraph, setNotes, newNoteId]);
+        bold: isBold,
+        createdAt: (isCustom && customNote.createdAt) ? customNote.createdAt : Date.now(),
+      };
+
+      setNotes((current) => [entry, ...(Array.isArray(current) ? current : [])]);
+      if (!isCustom || !customNote.preserveDraft) {
+        setNoteDraft("");
+      }
+      return entry;
+    },
+    [noteDraft, focusId, focusedParagraph, setNotes, newNoteId]
+  );
 
   const copyFocusedParagraph = useCallback(async () => {
     if (!focusedParagraph) return;

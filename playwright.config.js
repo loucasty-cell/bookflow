@@ -7,7 +7,7 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: 'http://localhost:4175',
-    channel: process.env.PLAYWRIGHT_CHANNEL || 'chrome',
+    channel: process.env.PLAYWRIGHT_CHANNEL || undefined,
   },
   webServer: {
     command: 'npm run preview -- --port 4175 --strictPort',

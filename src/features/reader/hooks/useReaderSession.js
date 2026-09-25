@@ -87,9 +87,13 @@ export function useReaderSession({ clearTimers }) {
       pendingRestoreParagraphRef.current = restoredActive;
       pendingRestoreScrollTopRef.current = restoreScrollTop;
       hasRestorePositionRef.current = Boolean(restoredActive || restoreScrollTop);
+      const quickNotes = safeParse(getStorageItem(`bookflow:quick-notes:${id}`), null);
+      const restoredNotes = Array.isArray(saved.notes) && saved.notes.length > 0
+        ? saved.notes
+        : (Array.isArray(quickNotes) ? quickNotes : (saved.notes ?? []));
       setBook(nextBook);
       setBookId(id);
-      setNotes(saved.notes ?? []);
+      setNotes(restoredNotes);
       setBookmarks(saved.bookmarks ?? []);
       setProgress(saved.progress ?? 0);
       setActiveParagraphId(restoredActive);

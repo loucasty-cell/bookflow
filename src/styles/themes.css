@@ -34,9 +34,23 @@
   background: var(--app-bg);
 }
 
+html[data-theme="paper"],
+body[data-theme="paper"],
+:root[data-theme="paper"] {
+  color-scheme: light;
+  --app-bg: #faf7f2;
+  background: #faf7f2;
+  background-color: #faf7f2;
+}
+
+html[data-theme="dusk"],
+body[data-theme="dusk"],
+:root[data-theme="dusk"],
 .app-shell[data-theme="dusk"] {
   color-scheme: dark;
-  --app-bg: #08080a;
+  --app-bg: #090a0f;
+  background: #090a0f;
+  background-color: #090a0f;
   --reader-bg: #111113;
   --reader-ink: #f2f2f7;
   --reader-muted: rgba(235, 235, 245, 0.62);
