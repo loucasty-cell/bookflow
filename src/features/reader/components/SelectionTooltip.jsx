@@ -1,194 +1,154 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Copy, Check, MessageSquareText, Bookmark, BookOpen, Sparkles } from "lucide-react";
 import { triggerHaptic, HAPTIC_PATTERNS } from "../../../shared/lib/index.js";
 import { lookup, loadLicensedDictionary } from "../lib/dictionary.js";
 
+const TOOLBAR_OFFSET = 48;
+const TOOLBAR_EDGE = 12;
+const TOOLBAR_HALF_WIDTH = 90;
+const COPY_FEEDBACK_MS = 1200;
+
+function resolvePosition(anchorRect) {
+  if (!anchorRect) return null;
+  const viewportWidth = typeof window === "undefined" ? 1024 : window.innerWidth;
+  const left = Math.max(
+    TOOLBAR_EDGE,
+    Math.min(viewportWidth - TOOLBAR_HALF_WIDTH * 2 - TOOLBAR_EDGE, anchorRect.left + anchorRect.width / 2),
+  );
+  return { top: Math.max(TOOLBAR_EDGE, anchorRect.top - TOOLBAR_OFFSET), left };
+}
+
 export function SelectionTooltip({
-  containerRef,
+  anchorRect,
+  selectedText = "",
+  selectedParagraphId = "",
   onAddNoteFromSelection,
   onBookmarkParagraph,
   onAskLens,
+  onDismiss,
   activeParagraphId,
   lookupEnabled = false,
 }) {
-  const [position, setPosition] = useState(null);
-  const [selectedText, setSelectedText] = useState("");
-  const [selectedParagraphId, setSelectedParagraphId] = useState("");
+  const [dismissed, setDismissed] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const [definition, setDefinition] = useState(null);
   const [lookupMiss, setLookupMiss] = useState(false);
-  const timersRef = useRef([]);
-
-  const handleSelectionChange = useCallback(() => {
-    const selection = window.getSelection();
-    if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
-      setPosition(null);
-      setSelectedText("");
-      setSelectedParagraphId("");
-      return;
-    }
-
-    const text = selection.toString().trim();
-    if (!text || text.length < 2) {
-      setPosition(null);
-      setSelectedText("");
-      setSelectedParagraphId("");
-      return;
-    }
-
-    const range = selection.getRangeAt(0);
-    const container = containerRef?.current;
-    if (container && !container.contains(range.commonAncestorContainer)) {
-      setPosition(null);
-      setSelectedText("");
-      setSelectedParagraphId("");
-      return;
-    }
-
-    const rect = range.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) {
-      setPosition(null);
-      setSelectedParagraphId("");
-      return;
-    }
-
-    const anchorNode = selection.anchorNode ?? range.commonAncestorContainer;
-    const anchorElement = anchorNode?.nodeType === 1 ? anchorNode : anchorNode?.parentElement;
-    const paragraphId = anchorElement?.closest?.("[data-paragraph-id]")?.getAttribute("data-paragraph-id") || "";
-
-    // Position tooltip right above the center of selected range
-    const top = Math.max(10, rect.top - 48);
-    const left = Math.max(12, Math.min(window.innerWidth - 180, rect.left + rect.width / 2));
-
-    setSelectedText(text);
-    setSelectedParagraphId(paragraphId);
-    setDefinition(null);
-    setLookupMiss(false);
-    setCopied(false);
-    setCopyFailed(false);
-    setPosition({ top, left });
-  }, [containerRef]);
+  const timerRef = useRef(null);
 
   useEffect(() => {
-    const later = (fn, ms) => {
-      const id = window.setTimeout(() => {
-        timersRef.current = timersRef.current.filter((timer) => timer !== id);
-        fn();
-      }, ms);
-      timersRef.current.push(id);
-    };
-    const handleMouseUp = () => {
-      later(handleSelectionChange, 20);
-    };
+    setDismissed(false);
+    setCopied(false);
+    setCopyFailed(false);
+    setDefinition(null);
+    setLookupMiss(false);
+  }, [selectedText, selectedParagraphId, anchorRect?.top, anchorRect?.left]);
 
-    const handleKeyUp = (e) => {
-      if (e.key === "Escape") {
-        setPosition(null);
-        setSelectedText("");
-        setSelectedParagraphId("");
+  useEffect(
+    () => () => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+    },
+    [],
+  );
+
+  const hide = useCallback(
+    (preserveSelection = false) => {
+      setDismissed(true);
+      if (!preserveSelection) onDismiss?.();
+    },
+    [onDismiss],
+  );
+
+  const close = useCallback(() => hide(false), [hide]);
+
+  const handleCopy = useCallback(
+    async (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      if (!selectedText) return;
+      try {
+        if (!navigator.clipboard) throw new Error("clipboard unavailable");
+        await navigator.clipboard.writeText(selectedText);
+        setCopied(true);
+        setCopyFailed(false);
+        triggerHaptic(HAPTIC_PATTERNS.SUCCESS);
+        if (timerRef.current) window.clearTimeout(timerRef.current);
+        timerRef.current = window.setTimeout(() => {
+          timerRef.current = null;
+          close();
+        }, COPY_FEEDBACK_MS);
+      } catch {
+        setCopyFailed(true);
+      }
+    },
+    [close, selectedText],
+  );
+
+  const handleNote = useCallback(
+    (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      if (!selectedText) return;
+      triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+      onAddNoteFromSelection?.(selectedText);
+      close();
+    },
+    [close, onAddNoteFromSelection, selectedText],
+  );
+
+  const handleBookmark = useCallback(
+    (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      triggerHaptic(HAPTIC_PATTERNS.MEDIUM);
+      const bookmarkId = selectedParagraphId || activeParagraphId;
+      if (bookmarkId) onBookmarkParagraph?.(bookmarkId);
+      close();
+    },
+    [activeParagraphId, close, onBookmarkParagraph, selectedParagraphId],
+  );
+
+  const handleAskLens = useCallback(
+    (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+      onAskLens?.(selectedText, selectedParagraphId);
+      hide(true);
+    },
+    [hide, onAskLens, selectedParagraphId, selectedText],
+  );
+
+  const handleLookup = useCallback(
+    async (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      const firstWord = selectedText.trim().split(/\s+/)[0] ?? "";
+      if (!firstWord) return;
+      await loadLicensedDictionary().catch(() => null);
+      const entry = lookup(firstWord);
+      if (entry) {
+        setDefinition(entry);
+        setLookupMiss(false);
       } else {
-        later(handleSelectionChange, 20);
+        setDefinition(null);
+        setLookupMiss(true);
       }
-    };
+      triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+    },
+    [selectedText],
+  );
 
-    const handleScroll = () => {
-      // Reposition or dismiss on scroll
-      handleSelectionChange();
-    };
+  const position = dismissed ? null : resolvePosition(anchorRect);
+  if (!position || !selectedText) return null;
 
-    document.addEventListener("mouseup", handleMouseUp);
-    document.addEventListener("touchend", handleMouseUp);
-    document.addEventListener("keyup", handleKeyUp);
-    
-    const container = containerRef?.current;
-    if (container) {
-      container.addEventListener("scroll", handleScroll, { passive: true });
-    }
-
-    return () => {
-      document.removeEventListener("mouseup", handleMouseUp);
-      document.removeEventListener("touchend", handleMouseUp);
-      document.removeEventListener("keyup", handleKeyUp);
-      if (container) {
-        container.removeEventListener("scroll", handleScroll);
-      }
-      for (const id of timersRef.current) window.clearTimeout(id);
-      timersRef.current = [];
-    };
-  }, [containerRef, handleSelectionChange]);
-
-  const handleCopy = async (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (!selectedText) return;
-
-    try {
-      if (!navigator.clipboard) throw new Error("clipboard unavailable");
-      await navigator.clipboard.writeText(selectedText);
-      setCopied(true);
-      setCopyFailed(false);
-      triggerHaptic(HAPTIC_PATTERNS.SUCCESS);
-      const id = window.setTimeout(() => {
-        setCopied(false);
-        setPosition(null);
-      }, 1200);
-      timersRef.current.push(id);
-    } catch {
-      setCopyFailed(true);
-    }
-  };
-
-  const handleNote = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (!selectedText) return;
-
-    triggerHaptic(HAPTIC_PATTERNS.LIGHT);
-    if (onAddNoteFromSelection) {
-      onAddNoteFromSelection(selectedText);
-    }
-    setPosition(null);
-  };
-
-  const handleBookmark = (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    triggerHaptic(HAPTIC_PATTERNS.MEDIUM);
-    const bookmarkId = selectedParagraphId || activeParagraphId;
-    if (onBookmarkParagraph && bookmarkId) {
-      onBookmarkParagraph(bookmarkId);
-    }
-    setPosition(null);
-  };
-
-  const handleLookup = async (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    const firstWord = selectedText.trim().split(/\s+/)[0] ?? "";
-    if (!firstWord) return;
-    await loadLicensedDictionary().catch(() => null);
-    const entry = lookup(firstWord);
-    if (entry) {
-      setDefinition(entry);
-      setLookupMiss(false);
-    } else {
-      setDefinition(null);
-      setLookupMiss(true);
-    }
-    triggerHaptic(HAPTIC_PATTERNS.LIGHT);
-  };
-
-  if (!position) return null;
-
-  const clampedLeft = Math.max(90, Math.min(window.innerWidth - 90, position.left));
   return (
     <div
       className="sel-tip"
       style={{
         position: "fixed",
         top: `${position.top}px`,
-        left: `${clampedLeft}px`,
+        left: `${position.left}px`,
         transform: "translateX(-50%)",
         zIndex: 1000,
       }}
@@ -199,17 +159,11 @@ export function SelectionTooltip({
         <button
           type="button"
           className="sel-tip-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            triggerHaptic(HAPTIC_PATTERNS.LIGHT);
-            onAskLens(selectedText);
-            setPosition(null);
-          }}
+          onClick={handleAskLens}
           title="Ask Reading Lens about this selection"
-          aria-label="Ask Reading Lens"
+          aria-label="Ask Reading Lens about this selection"
         >
-          <Sparkles size={14} className="text-amber-400" />
+          <Sparkles size={14} aria-hidden="true" />
           <span>Lens</span>
         </button>
       )}
@@ -221,7 +175,7 @@ export function SelectionTooltip({
         title="Add margin note from selection"
         aria-label="Add margin note"
       >
-        <MessageSquareText size={14} />
+        <MessageSquareText size={14} aria-hidden="true" />
         <span>Note</span>
       </button>
 
@@ -232,7 +186,7 @@ export function SelectionTooltip({
         title="Copy selected text"
         aria-label="Copy selected text"
       >
-        {copied ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+        {copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}
         <span>{copied ? "Copied" : copyFailed ? "Copy failed" : "Copy"}</span>
       </button>
 
@@ -244,7 +198,7 @@ export function SelectionTooltip({
           title="Bookmark paragraph"
           aria-label="Bookmark paragraph"
         >
-          <Bookmark size={14} />
+          <Bookmark size={14} aria-hidden="true" />
           <span>Save</span>
         </button>
       )}
@@ -257,7 +211,7 @@ export function SelectionTooltip({
           title="Look up first selected word locally"
           aria-label="Look up word locally"
         >
-          <BookOpen size={14} />
+          <BookOpen size={14} aria-hidden="true" />
           <span>Define</span>
         </button>
       )}

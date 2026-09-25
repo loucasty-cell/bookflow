@@ -1,5 +1,8 @@
 """Tests for reader utilities endpoints."""
 
+from app.main import app
+
+
 def test_segment_endpoint(client):
     payload = {
         "text": "First sentence. Second sentence with detail.\n\nNew paragraph begins here."
@@ -52,3 +55,45 @@ def test_notes_export_import(client):
     assert res_import.status_code == 200
     assert res_import.json()["valid"] is True
     assert res_import.json()["notes_count"] == 1
+
+
+def test_reader_routes_are_registered_under_api_reader():
+    paths = {path for path in app.openapi()["paths"] if path.startswith("/api/reader")}
+
+    assert paths == {
+        "/api/reader/segment",
+        "/api/reader/reading-time",
+        "/api/reader/notes/export",
+        "/api/reader/notes/import",
+    }
+
+
+def test_unprefixed_reader_routes_are_not_exposed(client):
+    assert client.post("/reading-time", json={"wordCount": 220}).status_code == 404
+    assert client.post("/notes/export", json={}).status_code == 404
+    assert client.post("/notes/import", json={}).status_code == 404
+    assert client.post("/segment", json={"text": "One. Two."}).status_code == 404
+
+
+def test_reading_lens_stays_on_its_own_path():
+    paths = {path for path in app.openapi()["paths"] if "reading-lens" in path}
+
+    assert paths == {"/api/reading-lens"}
+
+
+def test_all_reader_routes_still_answer_over_http(client):
+    segment = client.post("/api/reader/segment", json={"text": "One. Two."})
+    reading_time = client.post("/api/reader/reading-time", json={"wordCount": 220})
+    notes_export = client.post(
+        "/api/reader/notes/export",
+        json={"exportedAt": "2026-08-20T00:00:00Z", "documentId": "book-1"},
+    )
+    notes_import = client.post(
+        "/api/reader/notes/import",
+        json={"exportedAt": "2026-08-20T00:00:00Z", "documentId": "book-1"},
+    )
+
+    assert segment.status_code == 200
+    assert reading_time.status_code == 200
+    assert notes_export.status_code == 200
+    assert notes_import.status_code == 200

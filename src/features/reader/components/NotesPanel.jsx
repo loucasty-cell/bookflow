@@ -1,5 +1,6 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  AlertTriangle,
   Bold,
   BookOpen,
   Check,
@@ -26,9 +27,43 @@ import {
   useModalFocus,
 } from "../../../shared/lib/index.js";
 import { exportNotesAsPdf } from "../lib/notesPdfExport.js";
+import {
+  NOTES_EXPORT_STATUS,
+  describeReplacedGlyphs,
+  downloadBlob,
+  notesFilename,
+  runNotesPdfExport,
+} from "../lib/notesExport.js";
 
 const VIEW_MODE_STORAGE_KEY = "bookflow:notes-view-mode";
 const BOLD_PREF_STORAGE_KEY = "bookflow:notes-bold-preference";
+
+const ERROR_BUBBLE_STYLE = {
+  display: "flex",
+  alignItems: "flex-start",
+  gap: "10px",
+  padding: "12px 20px",
+  borderRadius: "24px",
+  border: "1px solid rgba(244,63,94,0.35)",
+  background: "rgba(244,63,94,0.1)",
+  color: "#fecdd3",
+  fontSize: "11px",
+  lineHeight: "1.45",
+};
+
+const GLYPH_CHIP_STYLE = {
+  display: "inline-flex",
+  alignItems: "center",
+  alignSelf: "flex-start",
+  gap: "6px",
+  padding: "6px 12px",
+  borderRadius: "16px",
+  border: "1px solid rgba(252,211,77,0.25)",
+  background: "rgba(251,191,36,0.1)",
+  color: "rgba(254,243,199,0.92)",
+  fontSize: "10.5px",
+  lineHeight: "1.4",
+};
 
 function formatTimestamp(timestamp) {
   if (!timestamp) return "Just now";
@@ -43,6 +78,40 @@ function formatTimestamp(timestamp) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+export function NotesExportStatus({ status, message = "", replacedGlyphs = 0, onDismiss }) {
+  if (status === NOTES_EXPORT_STATUS.ERROR) {
+    return (
+      <div className="notes-export-alert" role="alert" aria-live="assertive" style={ERROR_BUBBLE_STYLE}>
+        <AlertTriangle size={15} aria-hidden="true" style={{ flexShrink: 0, color: "#fb7185" }} />
+        <div style={{ minWidth: 0, flex: "1 1 auto" }}>
+          <strong style={{ display: "block", fontWeight: 600, color: "#fda4af" }}>PDF export failed</strong>
+          <span style={{ color: "rgba(254,205,211,0.85)" }}>{message}</span>
+        </div>
+        <button
+          type="button"
+          className="notes-micro-btn"
+          onClick={onDismiss}
+          aria-label="Dismiss export error"
+          title="Dismiss"
+          style={{ flexShrink: 0 }}
+        >
+          <X size={12} />
+        </button>
+      </div>
+    );
+  }
+
+  const glyphNotice = describeReplacedGlyphs(replacedGlyphs);
+  if (!glyphNotice) return null;
+
+  return (
+    <div className="notes-export-notice" role="status" aria-live="polite" style={GLYPH_CHIP_STYLE}>
+      <AlertTriangle size={12} aria-hidden="true" style={{ flexShrink: 0, color: "#fcd34d" }} />
+      <span>{glyphNotice}</span>
+    </div>
+  );
 }
 
 export function NotesPanel({
@@ -90,8 +159,15 @@ export function NotesPanel({
   const [quoteDetached, setQuoteDetached] = useState(false);
 
   // PDF Export state
-  const [isExportingPdf, setIsExportingPdf] = useState(false);
-  const [pdfExportSuccess, setPdfExportSuccess] = useState(false);
+  const [exportState, setExportState] = useState({
+    status: NOTES_EXPORT_STATUS.IDLE,
+    message: "",
+    replacedGlyphs: 0,
+  });
+  const exportResetTimerRef = useRef(null);
+
+  const isExportingPdf = exportState.status === NOTES_EXPORT_STATUS.WORKING;
+  const pdfExportSuccess = exportState.status === NOTES_EXPORT_STATUS.SUCCESS;
 
   // Local draft sync
   const currentDraft = draft ?? "";
@@ -234,24 +310,54 @@ export function NotesPanel({
   // Export session notes to PDF (Maintaining bold formatting & macOS card styles)
   const handleExportPdf = useCallback(async () => {
     const list = Array.isArray(notes) ? notes : [];
-    if (!list.length || isExportingPdf) return;
+    if (!list.length || exportState.status === NOTES_EXPORT_STATUS.WORKING) return;
 
-    try {
-      setIsExportingPdf(true);
-      await exportNotesAsPdf({
-        notes: list,
-        bookTitle: bookTitle || "Bookflow Reading Session",
-        chapterTitle: activeChapterTitle || "",
-        progress,
-      });
-      setPdfExportSuccess(true);
-      setTimeout(() => setPdfExportSuccess(false), 2400);
-    } catch (err) {
-      console.error("Failed to export notes as PDF:", err);
-    } finally {
-      setIsExportingPdf(false);
+    if (exportResetTimerRef.current) {
+      clearTimeout(exportResetTimerRef.current);
+      exportResetTimerRef.current = null;
     }
-  }, [notes, isExportingPdf, bookTitle, activeChapterTitle, progress]);
+
+    setExportState({ status: NOTES_EXPORT_STATUS.WORKING, message: "", replacedGlyphs: 0 });
+
+    const outcome = await runNotesPdfExport({
+      notes: list,
+      bookTitle: bookTitle || "Bookflow Reading Session",
+      chapterTitle: activeChapterTitle || "",
+      progress,
+      exportPdf: exportNotesAsPdf,
+    });
+
+    if (outcome.status === NOTES_EXPORT_STATUS.SUCCESS) {
+      const replacedGlyphs = Number.isFinite(outcome.result?.replacedGlyphs)
+        ? outcome.result.replacedGlyphs
+        : 0;
+      setExportState({ status: NOTES_EXPORT_STATUS.SUCCESS, message: "", replacedGlyphs });
+      exportResetTimerRef.current = setTimeout(() => {
+        setExportState((prev) => (prev.status === NOTES_EXPORT_STATUS.SUCCESS
+          ? { ...prev, status: NOTES_EXPORT_STATUS.IDLE }
+          : prev));
+      }, 2400);
+      return;
+    }
+
+    if (outcome.status === NOTES_EXPORT_STATUS.ERROR) {
+      setExportState({ status: NOTES_EXPORT_STATUS.ERROR, message: outcome.message, replacedGlyphs: 0 });
+    }
+  }, [notes, exportState.status, bookTitle, activeChapterTitle, progress]);
+
+  const dismissExportStatus = useCallback(() => {
+    if (exportResetTimerRef.current) {
+      clearTimeout(exportResetTimerRef.current);
+      exportResetTimerRef.current = null;
+    }
+    setExportState({ status: NOTES_EXPORT_STATUS.IDLE, message: "", replacedGlyphs: 0 });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (exportResetTimerRef.current) clearTimeout(exportResetTimerRef.current);
+    };
+  }, []);
 
   // Export session notes to Markdown
   const handleExportMarkdown = useCallback(() => {
@@ -271,13 +377,7 @@ export function NotesPanel({
       })
       .join("\n---\n\n");
 
-    const blob = new Blob([header + body], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${(title || "notes").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-notes.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(new Blob([header + body], { type: "text/markdown;charset=utf-8" }), notesFilename(title, "md"));
   }, [notes, bookTitle]);
 
   // Handle keyboard shortcuts in textarea
@@ -596,6 +696,14 @@ export function NotesPanel({
             </button>
           </div>
         )}
+
+        {/* Export outcome: user-visible error state and glyph replacement notice */}
+        <NotesExportStatus
+          status={exportState.status}
+          message={exportState.message}
+          replacedGlyphs={exportState.replacedGlyphs}
+          onDismiss={dismissExportStatus}
+        />
 
         {/* Saved Notes List (macOS Bento Cards & macOS scrollbars) */}
         <div className="notes-list notes-bento-list macos-scrollable">

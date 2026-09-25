@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import { ErrorBoundary } from "../../../shared/components/index.js";
 import { FocusCard } from "./FocusCard.jsx";
 import { NotesPanel } from "./NotesPanel.jsx";
@@ -9,6 +10,7 @@ export function ReaderOverlays({
   bookTitle,
   bookId,
   activeChapterTitle,
+  chapterText = "",
   progress,
   isStaticFocusRegion,
   staticRegionLabel,
@@ -36,11 +38,28 @@ export function ReaderOverlays({
   focusId,
   lookupEnabled,
 }) {
-  const { selection, setSelection } = useReaderSelection({
+  const { selection, anchorRect, clearSelection, selectText } = useReaderSelection({
     containerRef: readerRef,
     activeParagraphId: focusId,
     bookId,
   });
+  const [lensOpenRequest, setLensOpenRequest] = useState(0);
+
+  const addNoteFromSelection = useCallback(
+    (text) => {
+      setNoteDraft(text);
+      setNotesOpen(true);
+    },
+    [setNoteDraft, setNotesOpen],
+  );
+
+  const openLensForSelection = useCallback(
+    (text, paragraphId) => {
+      selectText(text, paragraphId || selection.paragraphId);
+      setLensOpenRequest((value) => value + 1);
+    },
+    [selectText, selection.paragraphId],
+  );
 
   return (
     <>
@@ -59,6 +78,12 @@ export function ReaderOverlays({
             moveFocus={moveFocus}
             resumeFlow={resumeFlow}
             selectedText={selection.text}
+             boundsRef={readerRef}
+             chapterTitle={activeChapterTitle}
+             chapterText={chapterText}
+             onClearSelection={clearSelection}
+             onAddNoteFromSelection={addNoteFromSelection}
+            lensOpenRequest={lensOpenRequest}
           />
         </ErrorBoundary>
       )}
@@ -89,19 +114,16 @@ export function ReaderOverlays({
         />
       </ErrorBoundary>
       <SelectionTooltip
-        containerRef={readerRef}
-        onAddNoteFromSelection={(text) => {
-          setNoteDraft(text);
-          setNotesOpen(true);
-        }}
-        onBookmarkParagraph={toggleBookmark}
-        onAskLens={(text) => {
-          setSelection((prev) => ({ ...prev, text }));
-        }}
+        anchorRect={anchorRect}
+        selectedText={selection.text}
+        selectedParagraphId={selection.paragraphId}
         activeParagraphId={focusId}
         lookupEnabled={lookupEnabled}
+        onAddNoteFromSelection={addNoteFromSelection}
+        onBookmarkParagraph={toggleBookmark}
+        onAskLens={openLensForSelection}
+        onDismiss={clearSelection}
       />
     </>
   );
 }
-

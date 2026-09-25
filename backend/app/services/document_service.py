@@ -1,6 +1,8 @@
 """Document parsing service supporting PDF, EPUB, TXT, and Markdown files."""
 
+import contextlib
 import io
+import logging
 import re
 import zipfile
 import xml.etree.ElementTree as ET
@@ -23,6 +25,12 @@ from ..models.document import (
 )
 from .text_service import TextService, get_text_service, text_service
 from ..core.config import Settings, get_settings, settings
+
+logger = logging.getLogger(__name__)
+
+
+class DocumentPasswordRequired(ValueError):
+    """Raised when a PDF cannot be opened because it needs an unsupported password."""
 
 
 class DocumentService:
@@ -198,86 +206,114 @@ class DocumentService:
         """Parse selectable text from PDF pages with high precision using PyMuPDF and pypdf fallback."""
         try:
             import fitz
-            doc = fitz.open(stream=file_bytes, filetype="pdf")
-            if doc.is_encrypted:
-                try:
-                    doc.authenticate("")
-                except Exception:
-                    pass
-            meta = doc.metadata or {}
-            title = meta.get("title") or file_name.replace(".pdf", "").replace("_", " ").title()
-            author = meta.get("author") or None
+        except ImportError:
+            fitz = None
 
-            chapters: List[Chapter] = []
-            for idx in range(len(doc)):
-                page = doc.load_page(idx)
-                raw_blocks = page.get_text("blocks")
-                blocks = [b for b in raw_blocks if isinstance(b, (tuple, list)) and len(b) >= 5] if isinstance(raw_blocks, list) else []
-                # Sort blocks by vertical and horizontal reading coordinates to prevent multi-column interleaving
-                sorted_blocks = sorted(blocks, key=lambda b: (round(float(b[1]) / 15.0), float(b[0])))
-                paragraphs: List[str] = []
-                for b in sorted_blocks:
-                    text = (str(b[4]) or "").strip()
-                    if text and len(text) > 2:
-                        paragraphs.append(text)
-
-                if not paragraphs:
-                    raw_text_val = page.get_text("text")
-                    raw_text = str(raw_text_val).strip() if raw_text_val else ""
-                    paragraphs = text_service.extract_paragraphs(raw_text)
-
-                page_title = f"Page {idx + 1}"
-                chapters.append(
-                    Chapter(
-                        title=page_title,
-                        paragraphs=paragraphs,
-                        focus_eligible=not text_service.is_likely_front_or_end_matter(
-                            page_title, paragraphs
-                        ),
+        fallback_error: Optional[Exception] = None
+        if fitz is not None:
+            doc = None
+            try:
+                doc = fitz.open(stream=file_bytes, filetype="pdf")
+                if doc.is_encrypted and doc.needs_pass and doc.authenticate("") == 0:
+                    raise DocumentPasswordRequired(
+                        "PDF is password-protected and cannot be parsed."
                     )
+                meta = doc.metadata or {}
+                title = meta.get("title") or file_name.replace(".pdf", "").replace("_", " ").title()
+                author = meta.get("author") or None
+
+                chapters: List[Chapter] = []
+                for idx in range(len(doc)):
+                    page = doc.load_page(idx)
+                    raw_blocks = page.get_text("blocks")
+                    blocks = [b for b in raw_blocks if isinstance(b, (tuple, list)) and len(b) >= 5] if isinstance(raw_blocks, list) else []
+                    # Sort blocks by vertical and horizontal reading coordinates to prevent multi-column interleaving
+                    sorted_blocks = sorted(blocks, key=lambda b: (round(float(b[1]) / 15.0), float(b[0])))
+                    paragraphs: List[str] = []
+                    for b in sorted_blocks:
+                        text = (str(b[4]) or "").strip()
+                        if text and len(text) > 2:
+                            paragraphs.append(text)
+
+                    if not paragraphs:
+                        raw_text_val = page.get_text("text")
+                        raw_text = str(raw_text_val).strip() if raw_text_val else ""
+                        paragraphs = text_service.extract_paragraphs(raw_text)
+
+                    page_title = f"Page {idx + 1}"
+                    chapters.append(
+                        Chapter(
+                            title=page_title,
+                            paragraphs=paragraphs,
+                            focus_eligible=not text_service.is_likely_front_or_end_matter(
+                                page_title, paragraphs
+                            ),
+                        )
+                    )
+                book = NormalizedBook(
+                    title=title,
+                    author=author,
+                    kind="PDF",
+                    chapters=chapters,
                 )
-            doc.close()
-            return NormalizedBook(
-                title=title,
-                author=author,
-                kind="PDF",
-                chapters=chapters,
+                DocumentService._require_pdf_text(book)
+                return book
+            except DocumentPasswordRequired:
+                raise
+            except Exception as exc:
+                fallback_error = exc
+            finally:
+                if doc is not None:
+                    with contextlib.suppress(Exception):
+                        doc.close()
+
+        if fallback_error is not None:
+            logger.info("PyMuPDF PDF extraction failed, falling back to pypdf: %s", fallback_error)
+
+        reader = pypdf.PdfReader(io.BytesIO(file_bytes), strict=False)
+        if reader.is_encrypted:
+            decrypt_result = reader.decrypt("")
+            if not decrypt_result:
+                raise DocumentPasswordRequired(
+                    "PDF is password-protected and cannot be parsed."
+                )
+        meta = reader.metadata or {}
+        title = meta.get("/Title") or file_name.replace(".pdf", "").replace("_", " ").title()
+        author = meta.get("/Author") or None
+
+        chapters = []
+        for idx, page in enumerate(reader.pages):
+            try:
+                page_text = page.extract_text() or ""
+            except Exception:
+                page_text = ""
+            paragraphs = text_service.extract_paragraphs(page_text)
+            page_title = f"Page {idx + 1}"
+            chapters.append(
+                Chapter(
+                    title=page_title,
+                    paragraphs=paragraphs,
+                    focus_eligible=not text_service.is_likely_front_or_end_matter(
+                        page_title, paragraphs
+                    ),
+                )
             )
-        except Exception:
-            # Fallback to pypdf
-            reader = pypdf.PdfReader(io.BytesIO(file_bytes), strict=False)
-            if reader.is_encrypted:
-                try:
-                    reader.decrypt("")
-                except Exception:
-                    pass
-            meta = reader.metadata or {}
-            title = meta.get("/Title") or file_name.replace(".pdf", "").replace("_", " ").title()
-            author = meta.get("/Author") or None
 
-            chapters = []
-            for idx, page in enumerate(reader.pages):
-                try:
-                    page_text = page.extract_text() or ""
-                except Exception:
-                    page_text = ""
-                paragraphs = text_service.extract_paragraphs(page_text)
-                page_title = f"Page {idx + 1}"
-                chapters.append(
-                    Chapter(
-                        title=page_title,
-                        paragraphs=paragraphs,
-                        focus_eligible=not text_service.is_likely_front_or_end_matter(
-                            page_title, paragraphs
-                        ),
-                    )
-                )
+        book = NormalizedBook(
+            title=title,
+            author=author,
+            kind="PDF",
+            chapters=chapters,
+        )
+        DocumentService._require_pdf_text(book)
+        return book
 
-            return NormalizedBook(
-                title=title,
-                author=author,
-                kind="PDF",
-                chapters=chapters,
+    @staticmethod
+    def _require_pdf_text(book: NormalizedBook) -> None:
+        """Reject PDFs that yield no extractable text instead of reporting an empty success."""
+        if not any(chapter.paragraphs for chapter in book.chapters):
+            raise ValueError(
+                "PDF contains no selectable text. Run accelerated OCR to read this document."
             )
 
     @staticmethod

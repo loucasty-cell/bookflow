@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     def normalize_ocr_model(cls, v: str) -> str:
         return (v or "").strip()
 
+    @field_validator("gemini_base_url", mode="before")
+    @classmethod
+    def normalize_gemini_base_url(cls, v: str) -> str:
+        return (v or "").strip().rstrip("/")
+
     # Hugging Face Settings for OCR
     hf_token: str = Field(default_factory=lambda: os.getenv("HF_TOKEN", os.getenv("HF_API_KEY", "")))
     hf_api_key: str = Field(default_factory=lambda: os.getenv("HF_TOKEN", os.getenv("HF_API_KEY", "")))
@@ -63,6 +68,24 @@ class Settings(BaseSettings):
         validation_alias="OCR_PROMPT",
     )
 
+
+    # Reading Lens (explicitly consented remote inference)
+    gemini_api_key: str = Field(default_factory=lambda: os.getenv("GEMINI_API_KEY", ""))
+    gemini_base_url: str = Field(
+        default="https://generativelanguage.googleapis.com/v1beta",
+        validation_alias="GEMINI_BASE_URL",
+    )
+    gemini_model: str = Field(default="gemini-2.5-flash", validation_alias="GEMINI_MODEL")
+    gemini_fallback_model: str = Field(
+        default="gemini-2.5-flash-lite", validation_alias="GEMINI_FALLBACK_MODEL"
+    )
+    gemini_timeout_seconds: float = Field(default=12.0, validation_alias="GEMINI_TIMEOUT_SECONDS")
+    reading_lens_max_prompt_chars: int = 8000
+    reading_lens_max_passage_chars: int = 24000
+    reading_lens_max_output_tokens: int = 800
+    reading_lens_rate_limit_max: int = 40
+    reading_lens_rate_limit_window_seconds: int = 900
+    reading_lens_max_tracked_clients: int = 512
 
     # Processing Limits
     max_upload_size_mb: int = 50

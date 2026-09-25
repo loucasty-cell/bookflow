@@ -1,4 +1,5 @@
 @import "tailwindcss/utilities.css";
+@source "../**/*.{js,jsx}";
 
 @theme {
   --color-bookflow-blue: #507b9c;

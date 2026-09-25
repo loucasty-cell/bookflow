@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { DEFAULT_SETTINGS } from "../config.js";
 import { useReaderWindowEffects } from "../hooks/useReaderWindowEffects.js";
 import { useScrollPosition } from "../lib/useScrollPosition.js";
@@ -53,7 +53,15 @@ export function ReaderPage({
     ...DEFAULT_SETTINGS,
     ...(settings || {}),
   };
-  const safeChapters = Array.isArray(chapters) ? chapters : [];
+  const safeChapters = useMemo(() => (Array.isArray(chapters) ? chapters : []), [chapters]);
+  const activeChapterText = useMemo(
+    () =>
+      (safeChapters[activeChapter]?.paragraphs || [])
+        .map((paragraph) => String(paragraph?.text ?? ""))
+        .filter(Boolean)
+        .join("\n\n"),
+    [activeChapter, safeChapters],
+  );
   const totalParagraphs = Number(
     chapterWindow?.totalParagraphs ??
       safeChapters.reduce(
@@ -184,8 +192,9 @@ export function ReaderPage({
         <ReaderOverlays
           bookTitle={book?.title}
           bookId={bookId}
-          activeChapterTitle={safeChapters[activeChapter]?.title}
-          progress={progress}
+           activeChapterTitle={safeChapters[activeChapter]?.title}
+           chapterText={activeChapterText}
+           progress={progress}
           isStaticFocusRegion={isStaticFocusRegion}
           staticRegionLabel={staticRegionLabel}
           focusedParagraph={focusedParagraph}

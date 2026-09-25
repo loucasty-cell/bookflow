@@ -1,0 +1,691 @@
+.focus-card {
+  position: fixed !important;
+  z-index: 60;
+  left: 12px;
+  top: calc(var(--safe-top) + 76px);
+  right: auto;
+  bottom: auto;
+  margin: 0 !important;
+  width: min(380px, calc(100vw - 24px)) !important;
+  min-width: 0 !important;
+  max-width: calc(100vw - 24px) !important;
+  max-height: min(720px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px));
+  overflow: auto;
+  transform: none !important;
+  animation: none !important;
+  padding: 0 !important;
+  border-radius: 20px !important;
+  color: var(--reader-ink);
+  background: color-mix(in srgb, var(--chrome-solid) 94%, transparent);
+  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.1));
+  box-shadow: 0 20px 50px -18px rgba(15, 23, 42, 0.28), 0 4px 14px -6px rgba(15, 23, 42, 0.16);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(22px) saturate(150%);
+  scrollbar-width: thin;
+}
+
+.focus-card.is-chat-expanded {
+  width: min(380px, calc(100vw - 24px)) !important;
+  min-width: 0 !important;
+  max-width: calc(100vw - 24px) !important;
+  padding: 0 !important;
+  border-radius: 20px !important;
+}
+
+.focus-card.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+  box-shadow: 0 28px 60px -18px rgba(15, 23, 42, 0.34), 0 6px 18px -6px rgba(15, 23, 42, 0.2);
+}
+
+.focus-card.is-collapsed {
+  left: 20px !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: calc(20px + var(--safe-bottom)) !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  overflow: visible;
+  transform: none !important;
+  animation: none !important;
+}
+
+.focus-card-header {
+  min-height: 48px;
+  padding: 6px 8px 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-bottom: 1px solid var(--app-line, rgba(0, 0, 0, 0.08));
+}
+
+.focus-card-label {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.focus-card-label > span:not(.focus-status-indicator) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.focus-card-label small {
+  margin-left: 0;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  line-height: 1.2;
+}
+
+.focus-card-drag-pill {
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 44px;
+  color: var(--reader-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: grab;
+}
+
+.focus-card-drag-pill:active {
+  cursor: grabbing;
+}
+
+.focus-card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+.focus-card-icon-btn,
+.focus-card-dismiss-btn {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  color: var(--reader-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.focus-card-icon-btn:hover,
+.focus-card-dismiss-btn:hover {
+  color: var(--reader-ink);
+  background: var(--chrome-strong);
+  border-color: var(--app-line, rgba(0, 0, 0, 0.08));
+}
+
+.lens-passage-figure {
+  margin: 0;
+  padding: 10px 12px 8px;
+  display: grid;
+  gap: 5px;
+}
+
+.lens-passage-caption {
+  color: var(--reader-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.lens-passage {
+  margin: 0;
+  padding: 10px 12px;
+  max-height: 7.5em;
+  overflow: auto;
+  color: var(--reader-ink);
+  background: color-mix(in srgb, var(--chrome-solid) 82%, var(--reader-accent-soft, transparent));
+  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.08));
+  border-radius: 12px;
+  font-family: var(--font-ios);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.lens-focus-preview {
+  margin: 0;
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+  color: var(--reader-muted);
+  background: color-mix(in srgb, var(--chrome-strong) 36%, transparent);
+  border: 1px dashed var(--app-line, rgba(0, 0, 0, 0.1));
+  border-radius: 12px;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.lens-focus-preview p {
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  color: var(--reader-ink);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.lens-consent {
+  margin: 0 12px 8px;
+  padding: 6px 8px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 0 8px;
+  align-items: center;
+  background: color-mix(in srgb, var(--chrome-strong) 55%, transparent);
+  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.08));
+  border-radius: 12px;
+}
+
+.lens-consent[data-lens-consent="granted"] {
+  border-color: color-mix(in srgb, var(--focus-edge) 32%, var(--app-line));
+}
+
+.lens-consent-toggle,
+.lens-chapter-toggle {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--focus-edge);
+}
+
+.lens-consent-label {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--reader-ink);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lens-consent-hint,
+.lens-chapter-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--reader-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.focus-card-middle-bar {
+  padding: 0 12px 8px;
+}
+
+.focus-card-input-form {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  background: var(--chrome-solid);
+  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.1));
+  border-radius: 14px;
+}
+
+.focus-card-prompt-input {
+  min-width: 0;
+  flex: 1 1 auto;
+  height: 36px;
+  padding: 0 8px;
+  color: var(--reader-ink);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font-size: 12px;
+}
+
+.focus-card-prompt-input::placeholder {
+  color: var(--reader-muted);
+}
+
+.focus-card-send-btn {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  color: #fff;
+  background: var(--focus-edge);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.focus-card-send-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.lens-quick-actions {
+  padding: 0 12px 8px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.lens-quick-action {
+  min-width: 0;
+  min-height: 62px;
+  padding: 7px 6px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  color: var(--reader-ink);
+  background: transparent;
+  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.08));
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.lens-quick-action:hover:not(:disabled) {
+  background: var(--chrome-strong);
+  border-color: color-mix(in srgb, var(--focus-edge) 28%, var(--app-line));
+}
+
+.lens-quick-action:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.lens-quick-action-icon {
+  width: 30px;
+  height: 30px;
+  display: inline-grid;
+  place-items: center;
+  color: var(--focus-edge);
+  background: color-mix(in srgb, var(--reader-accent-soft, #dbeafe) 72%, transparent);
+  border-radius: 10px;
+}
+
+.lens-quick-action-text {
+  min-width: 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.lens-quick-action-title {
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--reader-ink);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lens-quick-action-status {
+  color: var(--reader-muted);
+  font-size: 9px;
+  line-height: 1.1;
+}
+
+.lens-quick-action[data-lens-action-status="running"] {
+  background: #f6f7f8;
+  border-color: #d6dde0;
+  box-shadow: 0 8px 18px -12px rgba(0, 0, 0, 0.12);
+}
+
+.lens-quick-action[data-lens-action-status="running"] .lens-quick-action-icon {
+  color: #515c67;
+  background: #eef1f3;
+}
+
+.lens-chapter-scope {
+  margin: 0 12px 8px;
+  padding: 6px 8px;
+  display: grid;
+  gap: 2px;
+  background: color-mix(in srgb, var(--chrome-strong) 42%, transparent);
+  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.07));
+  border-radius: 12px;
+}
+
+.lens-chapter-label {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--reader-ink);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.lens-chapter-label:has(input:disabled) {
+  color: var(--reader-muted);
+  cursor: not-allowed;
+}
+
+.lens-chapter-hint {
+  padding: 0 0 4px 28px;
+}
+
+.focus-card-lens-status {
+  margin: 0 12px 8px;
+  color: var(--reader-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.focus-card-chat-space {
+  margin: 0 12px 8px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--chrome-strong) 45%, transparent);
+  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.08));
+  border-radius: 14px;
+}
+
+.focus-card-chat-header {
+  min-height: 40px;
+  padding: 4px 8px 4px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid var(--app-line, rgba(0, 0, 0, 0.07));
+}
+
+.focus-card-chat-title {
+  color: var(--reader-ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.lens-chat-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.focus-card-chat-clear,
+.lens-chat-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: var(--reader-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.focus-card-chat-clear:hover,
+.lens-chat-btn:hover {
+  color: var(--reader-ink);
+  background: var(--chrome-strong);
+  border-color: var(--app-line, rgba(0, 0, 0, 0.08));
+}
+
+.focus-card-chat-messages {
+  max-height: min(280px, 34dvh);
+  padding: 8px;
+  display: grid;
+  gap: 8px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.focus-card-empty-state {
+  padding: 18px 12px;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  color: var(--reader-muted);
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.lens-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.lens-message.is-user {
+  justify-content: flex-end;
+  padding: 0;
+}
+
+.lens-message.is-user .lens-response-text {
+  max-width: 88%;
+  padding: 10px 12px;
+  color: var(--reader-ink);
+  background: #ebeeeF;
+  border-radius: 12px;
+}
+
+.lens-message.is-assistant {
+  padding: 2px 0;
+}
+
+.lens-message-avatar {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: inline-grid;
+  place-items: center;
+  color: #fff;
+  background: #00a6f4;
+  border-radius: 999px;
+}
+
+.lens-response-text {
+  min-width: 0;
+  flex: 1 1 auto;
+  color: var(--reader-ink);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.lens-message.is-user .lens-response-text {
+  flex: 0 1 auto;
+  font-size: 11px;
+}
+
+.focus-chat-copy-btn {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 44px;
+  color: var(--reader-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.focus-chat-copy-btn:hover {
+  color: var(--reader-ink);
+  background: var(--chrome-strong);
+  border-color: var(--app-line, rgba(0, 0, 0, 0.08));
+}
+
+.focus-chat-error {
+  padding: 10px 12px;
+  color: #b91c1c;
+  background: color-mix(in srgb, #ef4444 10%, transparent);
+  border: 1px solid color-mix(in srgb, #ef4444 24%, var(--app-line));
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.focus-card-actions {
+  margin: 0;
+  padding: 8px 12px 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-top: 1px solid var(--app-line, rgba(0, 0, 0, 0.08));
+}
+
+.focus-card-actions button {
+  min-height: 44px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: var(--reader-ink);
+  background: var(--chrome-solid);
+  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.08));
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.focus-card-actions .focus-card-primary {
+  color: #fff;
+  background: var(--focus-edge);
+  border-color: transparent;
+}
+
+.focus-card-actions .focus-card-step {
+  width: 44px;
+  padding: 0;
+  flex: 0 0 44px;
+}
+
+.focus-card-actions button:hover:not(:disabled) {
+  background: var(--chrome-strong);
+}
+
+.focus-card-actions .focus-card-primary:hover:not(:disabled) {
+  background: var(--focus-edge);
+  filter: brightness(1.05);
+}
+
+.sel-tip {
+  gap: 4px;
+  padding: 6px;
+  background: color-mix(in srgb, var(--chrome-solid) 96%, transparent);
+  border: 1px solid color-mix(in srgb, var(--focus-edge) 22%, var(--app-line));
+  border-radius: 16px;
+  box-shadow: 0 12px 30px -8px rgba(15, 23, 42, 0.24);
+}
+
+.sel-tip-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 9px;
+  gap: 5px;
+  color: var(--reader-ink);
+  background: transparent;
+  border: 0;
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+.sel-tip-btn:hover {
+  background: color-mix(in srgb, var(--focus-edge) 12%, transparent);
+}
+
+.sel-tip-definition {
+  max-width: 220px;
+  padding: 8px 10px;
+  color: var(--reader-ink);
+  background: var(--chrome-strong);
+  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.08));
+  border-radius: 10px;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+@media (max-width: 660px) {
+  .focus-card {
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: min(76dvh, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 20px));
+    border-radius: 18px !important;
+  }
+
+#root .reader-layout .focus-card {
+  left: 12px;
+  top: calc(var(--safe-top) + 76px);
+  right: auto;
+  bottom: auto;
+}
+
+.focus-card.is-chat-expanded {
+    width: calc(100vw - 20px) !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+
+  .focus-card.is-collapsed {
+    left: 10px !important;
+    bottom: calc(10px + var(--safe-bottom)) !important;
+  }
+
+  .lens-quick-actions {
+    gap: 4px;
+  }
+
+  .lens-quick-action {
+    min-height: 58px;
+    padding-inline: 3px;
+  }
+
+  .lens-quick-action-title {
+    font-size: 9px;
+  }
+
+  .lens-quick-action-status {
+    font-size: 8px;
+  }
+
+  .focus-card-chat-messages {
+    max-height: min(240px, 32dvh);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focus-card,
+  .focus-card * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
