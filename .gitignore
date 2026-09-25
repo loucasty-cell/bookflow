@@ -17,3 +17,26 @@ public/ocr/
 public/pdf.worker.min.mjs
 /*.pdf
 feismo.com-*.pdf
+opencode.json
+.cursor/
+.playwright-mcp/
+.vscode/
+brainobs/.obsidian/
+
+# Locally installed skill packages (not part of the tracked 46fe51b baseline)
+.agents/skills/archify/
+.agents/skills/archify-review/
+.agents/skills/brandkit/
+.agents/skills/design-motion-principles/
+.agents/skills/design-taste-frontend/
+.agents/skills/design-taste-frontend-v1/
+.agents/skills/full-output-enforcement/
+.agents/skills/gpt-taste/
+.agents/skills/high-end-visual-design/
+.agents/skills/image-to-code/
+.agents/skills/imagegen-frontend-mobile/
+.agents/skills/imagegen-frontend-web/
+.agents/skills/industrial-brutalist-ui/
+.agents/skills/minimalist-ui/
+.agents/skills/redesign-existing-projects/
+.agents/skills/stitch-design-taste/
