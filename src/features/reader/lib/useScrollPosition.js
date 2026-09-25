@@ -23,7 +23,10 @@ export function useScrollPosition(containerRef, options = {}) {
     onScroll = null,
     onParagraphChange = null,
     disabled = false,
+    measureParagraphs = true,
+    trackParagraphs = measureParagraphs,
   } = options;
+  const shouldMeasureParagraphs = measureParagraphs && trackParagraphs;
 
   const [scrollInfo, setScrollInfo] = useState({
     scrollTop: 0,
@@ -61,27 +64,28 @@ export function useScrollPosition(containerRef, options = {}) {
     lastScrollTopRef.current = metrics.scrollTop;
     lastScrollTimeRef.current = now;
 
-    // Detect paragraph at focus rail
-    const anchorY = metrics.scrollTop + metrics.clientHeight * focusRailRatio;
-    const paragraphElements = container.querySelectorAll("[data-paragraph-id]");
-    const containerRect = container.getBoundingClientRect();
-
     let closestId = "";
-    if (paragraphElements.length > 0) {
-      const paragraphItems = Array.from(paragraphElements).map((el, index) => {
-        const rect = el.getBoundingClientRect();
-        return {
-          id: el.dataset.paragraphId,
-          chapter: Number(el.dataset.chapter) || 0,
-          index,
-          top: rect.top - containerRect.top + metrics.scrollTop,
-          bottom: rect.bottom - containerRect.top + metrics.scrollTop,
-        };
-      });
+    if (shouldMeasureParagraphs) {
+      const anchorY = metrics.scrollTop + metrics.clientHeight * focusRailRatio;
+      const paragraphElements = container.querySelectorAll("[data-paragraph-id]");
+      const containerRect = container.getBoundingClientRect();
 
-      const closest = selectClosestParagraph(paragraphItems, anchorY, activeParagraphIdRef.current);
-      if (closest?.id) {
-        closestId = closest.id;
+      if (paragraphElements.length > 0) {
+        const paragraphItems = Array.from(paragraphElements).map((el, index) => {
+          const rect = el.getBoundingClientRect();
+          return {
+            id: el.dataset.paragraphId,
+            chapter: Number(el.dataset.chapter) || 0,
+            index,
+            top: rect.top - containerRect.top + metrics.scrollTop,
+            bottom: rect.bottom - containerRect.top + metrics.scrollTop,
+          };
+        });
+
+        const closest = selectClosestParagraph(paragraphItems, anchorY, activeParagraphIdRef.current);
+        if (closest?.id) {
+          closestId = closest.id;
+        }
       }
     }
 
@@ -117,7 +121,14 @@ export function useScrollPosition(containerRef, options = {}) {
         velocity: 0,
       }));
     }, 150);
-  }, [containerRef, disabled, focusRailRatio, onParagraphChange, onScroll]);
+  }, [
+    containerRef,
+    disabled,
+    focusRailRatio,
+    onParagraphChange,
+    onScroll,
+    shouldMeasureParagraphs,
+  ]);
 
   useEffect(() => {
     const container = containerRef.current;

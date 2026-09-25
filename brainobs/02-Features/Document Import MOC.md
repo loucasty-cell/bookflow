@@ -2,7 +2,7 @@
 title: Document Import MOC
 type: MOC
 status: living
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, import, moc]
 ---
 
@@ -22,18 +22,20 @@ Everything between a file on disk and a readable book in the reader.
 ## The import promise
 
 ```text
-first readable unit appears fast, in source order,
+local work stays in source order,
+progress is monotonic and reaches a terminal 100%,
 unreadable content is reported rather than dropped,
-and cancelling actually stops the work
+and cancelling actually stops the work before the reader opens
 ```
 
-That promise is what separates Bookflow from a viewer that freezes on page one of a 600 page
-scan.
+The PDF coordinator can mark an early unit ready internally, but the app waits for the terminal
+100% state before mounting the reader. EPUB, TXT, and Markdown still wait for the blocking parser.
 
 ## Pipeline
 
 ```text
-validate -> manifest -> scheduler -> per-unit parse or skipped -> normalize -> open reader
+validate -> PDF: manifest -> scheduler -> per-unit parse or failed -> terminal 100% -> open reader
+        -> EPUB/TXT/Markdown: blocking parse -> terminal 100% -> open reader
                                   -> report failures
 ```
 
@@ -46,8 +48,8 @@ From `src/features/document-import/index.js`:
 | `parseDocument`, `ACCEPTED_FILES` | Blocking parse path |
 | `createManifest`, `addUnit`, `mark*`, `getUnitById`, `manifestProgress`, `UnitStatus`, `JobPriority` | Manifest state |
 | `createImportScheduler`, `getConcurrency` | Bounded priority queue |
-| `progressivePdfImport`, `progressiveEpubImport`, `progressiveTextImport` | Progressive entry points |
-| `scanPdfViaBackend`, `isBackendFallbackError` | Backend OCR fallback |
+| `progressivePdfImport`, `progressiveEpubImport`, `progressiveTextImport` | Progressive coordinators; only the PDF coordinator is wired into `handleFile` |
+| `scanPdfViaBackend`, `isBackendFallbackError` | Explicit optional accelerated OCR seam; not an automatic frontend fallback |
 
 Detail: [[Frontend Public APIs]].
 

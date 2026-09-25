@@ -2,9 +2,9 @@
 title: Navigation and Controls
 type: feature
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, reader, navigation, keyboard, touch]
-source-files: [src/features/reader/hooks/useReaderNavigation.js, src/features/reader/lib/readingController.js, src/features/reader/components/ContentsPanel.jsx, src/App.jsx]
+source-files: [src/features/reader/hooks/useReaderNavigation.js, src/features/reader/hooks/useReaderInput.js, src/features/reader/hooks/useReaderMeasurement.js, src/features/reader/hooks/useReaderStaticRegion.js, src/features/reader/lib/readingController.js, src/features/reader/components/ReaderPage.jsx, src/features/reader/components/ContentsPanel.jsx, src/App.jsx]
 ---
 
 # Navigation and Controls
@@ -16,15 +16,18 @@ device is required.
 
 | Key | Action |
 | --- | --- |
-| `Down` | Advance focus |
-| `Up` | Move focus back |
-| `J` | Advance focus |
-| `K` | Move focus back |
-| `Space` | Pin or resume the active paragraph |
-| `Enter` | Pin the active paragraph |
-| `Escape` | Pin, or dismiss the open panel |
+| `ArrowDown` | Advance focus |
+| `ArrowUp` | Move focus back |
+| `J` / `K` | Advance / move focus back |
+| `PageDown` / `PageUp` | Move three paragraphs rapidly |
+| `Space` / `Shift+Space` | Advance / move focus back |
+| `Enter` / `Space` on a focused paragraph | Toggle that paragraph's pin |
+| `Escape` | Hold or release the active focus; panels also use it to dismiss |
 
-Both arrow-style and vim-style keys are supported because both habits exist.
+Both arrow-style and vim-style keys are supported because both habits exist. The global reader
+handler ignores form controls and other interactive descendants. Global `Space` navigates focus;
+`Enter` or `Space` on a focused paragraph toggles that paragraph's pin. `Escape` toggles the
+active hold and is also used by the focus-managed panels to dismiss them.
 
 ## Wheel and trackpad
 
@@ -51,8 +54,12 @@ Detail: [[Focus Rail]], [[Cognitive Ergonomics]].
 | Hover | Does not change focus |
 | Drag over the landing intake | Import affordance |
 
-Hover is deliberately inert. Accidental focus changes while moving the pointer around the page
-are a common complaint in reading apps, and Bookflow avoids it.
+Hover is deliberately inert for focus. Bookflow may use restrained hover feedback for controls,
+but that is a Bookflow enhancement: the reviewed Figma files contain no hover state. Accidental
+focus changes while moving the pointer around the page are a common complaint in reading apps,
+and Bookflow avoids them.
+
+Detail: [[Figma Inspection Evidence]].
 
 ## Touch
 

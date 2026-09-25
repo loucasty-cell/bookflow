@@ -2,7 +2,7 @@
 title: Backend Endpoints
 type: reference
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, api, backend, endpoints]
 source-files: [backend/main.py, backend/app/routers/health.py, backend/app/routers/ocr.py, backend/app/routers/documents.py, backend/app/routers/reader.py, api.md]
 ---
@@ -10,6 +10,7 @@ source-files: [backend/main.py, backend/app/routers/health.py, backend/app/route
 # Backend Endpoints
 
 Complete route reference. All routes are optional: the app reads documents without the backend.
+The OCR scan route is called only after the user explicitly starts the accelerated OCR flow.
 
 Base URL in development: `http://127.0.0.1:8000`, reached through the Vite `/api` proxy.
 
@@ -20,6 +21,7 @@ Base URL in development: `http://127.0.0.1:8000`, reached through the Vite `/api
 Starts a scanned-PDF job. Returns immediately with a job id.
 
 - Content-Type: `multipart/form-data`
+- Maximum PDF size: `50` MB
 - Fields: `file` (PDF), `batch_size` (default 16), `ocr_profile` (`small` or `medium`)
 
 ```json
@@ -128,12 +130,13 @@ Service health check.
 
 Configuration and model information.
 
-## Planned
+## Current and planned
 
 | Route | Purpose | Status |
 | --- | --- | --- |
-| `GET /api/social/resonance/{hash}` | Aggregated reflections for a paragraph hash | Planned |
-| `POST /api/social/reactions` | Record a reaction against a hash | Planned |
+| `GET /api/social/resonance/{paragraph_hash}` | Mock paragraph-hash resonance response | Partial scaffold |
+| `POST /api/social/events/session-pulse` | Mock session-pulse event intake | Partial scaffold |
+| `POST /api/social/reactions` | Persistent social reactions | Planned |
 | `POST /api/ai/intervention` | Drop-off detection micro-intervention | Planned |
 
 Detail: [[Social Resonance]], [[Intervention Engine]].

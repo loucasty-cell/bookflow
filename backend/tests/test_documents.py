@@ -1,5 +1,11 @@
 """Tests for document parsing endpoints and service."""
 
+import io
+import zipfile
+import importlib
+
+import pytest
+
 from app.services.document_service import document_service
 
 
@@ -39,3 +45,20 @@ def test_parse_endpoint(client, sample_markdown_content):
     assert data["success"] is True
     assert data["book"]["kind"] == "MARKDOWN"
     assert len(data["book"]["chapters"]) == 2
+
+
+def test_epub_xml_rejects_entity_declarations_without_defusedxml(monkeypatch):
+    document_module = importlib.import_module("app.services.document_service")
+    monkeypatch.setattr(document_module, "defused_ET", None)
+    archive = io.BytesIO()
+    with zipfile.ZipFile(archive, "w") as epub:
+        epub.writestr(
+            "META-INF/container.xml",
+            """<?xml version="1.0"?>
+<!DOCTYPE container [<!ENTITY payload "expanded">]>
+<container xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles><rootfile full-path="content.opf" /></rootfiles>
+</container>""",
+        )
+    with pytest.raises(ValueError, match="DTD and entity"):
+        document_service.parse_epub(archive.getvalue(), "unsafe.epub")

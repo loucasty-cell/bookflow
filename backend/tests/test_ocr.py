@@ -1,6 +1,7 @@
 """Tests for Hugging Face OCR service and endpoints."""
 
 import asyncio
+import pytest
 from unittest.mock import AsyncMock, patch
 from app.services.huggingface_ocr import HuggingFaceOCRService, hf_ocr_service
 from app.models.ocr import OCRPageResult
@@ -51,9 +52,24 @@ def test_ocr_image_endpoint(mock_scan, client, sample_image_bytes):
     files = {
         "file": ("page1.jpg", sample_image_bytes, "image/jpeg")
     }
-    response = client.post("/api/ocr/image", files=files)
+    response = client.post(
+        "/api/ocr/image",
+        files=files,
+        data={"api_key": "caller-supplied-secret"},
+    )
     assert response.status_code == 200
+    assert "no-store" in response.headers["cache-control"]
+    assert mock_scan.await_args.kwargs["custom_api_key"] is None
     data = response.json()
     assert data["success"] is True
     assert data["text"] == "Chapter 1. A beginning in the dark."
     assert len(data["paragraphs"]) == 2
+
+
+def test_ocr_image_rejects_unsafe_model_id(client, sample_image_bytes):
+    response = client.post(
+        "/api/ocr/image",
+        files={"file": ("page1.jpg", sample_image_bytes, "image/jpeg")},
+        data={"model_id": "https://evil.example/steal"},
+    )
+    assert response.status_code == 400

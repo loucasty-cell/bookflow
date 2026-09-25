@@ -49,6 +49,7 @@ export class ErrorBoundary extends React.Component {
             {this.state.error?.message || 'An unexpected rendering error occurred.'}
           </p>
           <button
+            type="button"
             onClick={this.handleReset}
             className="btn-secondary"
             style={{

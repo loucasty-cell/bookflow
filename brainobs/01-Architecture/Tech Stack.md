@@ -2,7 +2,7 @@
 title: Tech Stack
 type: reference
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, architecture, stack, dependencies]
 source-files: [package.json, backend/requirements.txt, vite.config.js]
 ---
@@ -19,7 +19,7 @@ Every dependency with the exact job it does. Nothing here is decorative.
 | `react-dom` | 19.0.0 | DOM renderer, root mount |
 | `zustand` | 5.0.15 | Global state, persisted settings |
 | `framer-motion` | 13.1.1 | Spring physics, `AnimatePresence` transitions |
-| `swr` | 2.5.1 | Reactive fetch and cache for remote endpoints |
+| `swr` | 2.5.1 | Available for future remote integrations; not used by the current reader path |
 | `lucide-react` | 0.468.0 | Interface icons |
 | `pdfjs-dist` | 4.10.38 | Local PDF text extraction and page rendering |
 | `jszip` | 3.10.1 | Local EPUB archive reading |
@@ -33,6 +33,8 @@ Every dependency with the exact job it does. Nothing here is decorative.
 | Package | Version | Responsibility |
 | --- | --- | --- |
 | `vite` | 8.2.2 | Dev server and bundler |
+| `tailwindcss` | 4.3.3 | Utility-only Vite layer; no preflight or second token system |
+| `@tailwindcss/vite` | 4.3.3 | Tailwind Vite integration |
 | `@vitejs/plugin-react` | 6.1.0 | React fast refresh and JSX transform |
 | `vitest` | 2.1.8 | Unit test runner |
 | `eslint` | 9.17.0 | Lint with `@eslint/js`, react-hooks, react-refresh |
@@ -79,7 +81,7 @@ Every dependency with the exact job it does. Nothing here is decorative.
 
 | Not used | Why |
 | --- | --- |
-| CSS frameworks | Semantic tokens in `styles.css` are sufficient and smaller |
+| CSS preflight/reset | Disabled; semantic tokens in `styles.css` remain authoritative |
 | Charting libraries | The flow sparkline is drawn, not imported |
 | Analytics SDKs | Book text must never reach a third party |
 | UI component kits | Bespoke reader ergonomics, not generic components |

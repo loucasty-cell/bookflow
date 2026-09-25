@@ -2,9 +2,9 @@
 title: Backend Architecture
 type: concept
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, architecture, backend, fastapi]
-source-files: [backend/main.py, backend/app/core/config.py, backend/app/routers/ocr.py, backend/app/services/ocr_service.py, backend/requirements.txt]
+source-files: [backend/main.py, backend/app/main.py, backend/app/core/config.py, backend/app/routers/ocr.py, backend/app/services/ocr_service.py, backend/requirements.txt]
 ---
 
 # Backend Architecture
@@ -12,7 +12,8 @@ source-files: [backend/main.py, backend/app/core/config.py, backend/app/routers/
 ## Purpose
 
 An optional FastAPI service that accelerates scanned-page OCR and exposes document, reader,
-and health utilities. It is never required for reading digital documents.
+and health utilities. It is never required for reading digital documents, and the browser only
+contacts it after the user explicitly starts the accelerated OCR flow.
 
 ## Application layout
 
@@ -29,13 +30,14 @@ backend/
     routers/                        health, ocr, documents, reader
     services/                       ocr_service, huggingface_ocr, paddle_ocr,
                                     document_service, text_service
-  tests/                            Pytest suite (8 test modules)
-  .env.example                      Configuration template
+  tests/                            Pytest suite (45 tests across 8 test modules)
   Dockerfile.ocr                    PaddleOCR container
 ```
 
-`main.py` conditionally imports the `app.routers` package inside a `try`/`except ImportError`,
-so the streaming engine still runs if the legacy app package is absent.
+`main.py` is the runnable OCR entrypoint used by the current launch path. It also imports the
+modular `app.routers` package for document, reader, and OCR routes, so the backend refactor is
+incremental rather than a clean replacement. `backend/app/main.py` remains a separate modular app
+factory for deployments that target `app.main:app`.
 
 ## Runtime configuration
 
@@ -62,6 +64,7 @@ Detail: [[Environment Config]].
 | `RENDER_SCALE` | `96 / 72 = 1.3333` | PyMuPDF zoom factor |
 | `MAX_RETRIES` | `3` | Survives cold starts and transient provider errors |
 | `THREAD_POOL_WORKERS` | `min(32, cpu_count * 4)` | Caps rasterization parallelism |
+| `MAX_UPLOAD_MB` | `50` | Matches the modular settings limit |
 
 ## Concurrency model
 
@@ -123,7 +126,7 @@ OpenAI-compatible vision routes; `sse-starlette` complements the manual SSE impl
 
 ## Test coverage
 
-`backend/tests/` contains `test_health`, `test_text`, `test_documents`, `test_ocr`,
+`backend/tests/` contains 45 tests across `test_health`, `test_text`, `test_documents`, `test_ocr`,
 `test_ocr_worker`, `test_accelerated_ocr`, `test_reader`, and `test_config`, with `conftest.py`
 providing a test client and sample image fixtures.
 

@@ -29,15 +29,6 @@ export function BookOpeningIntro({ onComplete }) {
       className={`book-opening-intro ${isExiting ? "is-exiting" : ""}`}
       onClick={finish}
       style={{ cursor: "pointer" }}
-      role="button"
-      tabIndex={0}
-      aria-label="Book opening intro. Activate to skip."
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          finish();
-        }
-      }}
     >
       <video
         autoPlay

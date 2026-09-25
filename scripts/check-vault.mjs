@@ -111,7 +111,8 @@ const total =
   problems.missingFrontmatter.length +
   problems.missingFields.length +
   problems.badSourcePaths.length +
-  problems.brokenLinks.length
+  problems.brokenLinks.length +
+  problems.orphaned.length
 
 console.log(`Vault notes: ${notes.length}`)
 console.log(`Wikilinks checked against ${noteNames.size} note names`)

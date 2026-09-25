@@ -29,10 +29,10 @@
   max-width: 720px;
   margin: 0 auto var(--space-6);
   padding: var(--space-4) var(--space-5);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--landing-line, rgba(0, 0, 0, 0.08));
-  background: var(--landing-surface-strong, #ffffff);
-  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--app-line, var(--landing-line, rgba(0, 0, 0, 0.08)));
+  background: var(--app-surface, var(--landing-surface-strong, #ffffff));
+  box-shadow: var(--shadow-sm);
   text-align: left;
 }
 
@@ -121,7 +121,8 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 10px 16px;
+  min-height: var(--control-size);
+  padding: 0 16px;
   border: none;
   border-radius: var(--radius-full);
   font-size: 14px;
@@ -132,8 +133,12 @@
 }
 
 .resume-card-secondary {
-  padding: 8px 14px;
-  border: 1px solid var(--landing-line, rgba(0, 0, 0, 0.1));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-size);
+  padding: 0 14px;
+  border: 1px solid var(--app-line, var(--landing-line, rgba(0, 0, 0, 0.1)));
   border-radius: var(--radius-full);
   font-size: 12px;
   color: var(--landing-muted, #5e6674);
@@ -148,12 +153,10 @@
   max-width: 720px;
   margin: 0 auto var(--space-6);
   padding: var(--space-5);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--landing-line, rgba(0, 0, 0, 0.08));
-  background:
-    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--badge-gold) 8%, transparent), transparent 60%),
-    var(--landing-surface-strong, #ffffff);
-  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--app-line, var(--landing-line, rgba(0, 0, 0, 0.08)));
+  background: var(--app-surface, var(--landing-surface-strong, #ffffff));
+  box-shadow: var(--shadow-sm);
 }
 
 .badge-gallery-header {
@@ -162,6 +165,8 @@
   justify-content: space-between;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--app-line, var(--landing-line, rgba(0, 0, 0, 0.08)));
 }
 
 .badge-gallery-heading {
@@ -187,9 +192,12 @@
 .badge-gallery-dismiss {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  border: none;
+  width: var(--control-size);
+  height: var(--control-size);
+  min-width: var(--control-size);
+  min-height: var(--control-size);
+  padding: 0;
+  border: 1px solid var(--app-line, var(--landing-line, rgba(0, 0, 0, 0.08)));
   border-radius: var(--radius-full);
   color: var(--landing-muted, #5e6674);
   background: transparent;
@@ -215,8 +223,8 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-4);
-  border-radius: var(--radius-md);
-  border: 1px solid transparent;
+  border-radius: var(--radius-card);
+  border: 1px solid var(--app-line, transparent);
   background: color-mix(in srgb, var(--badge-parchment) 40%, transparent);
   text-align: center;
   transition:
@@ -325,11 +333,14 @@
 }
 
 .badge-gallery-award {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
+  min-height: var(--control-size);
   margin-top: var(--space-4);
-  padding: 12px;
-  border: none;
+  padding: 0 12px;
+  border: 1px solid var(--app-line, transparent);
   border-radius: var(--radius-full);
   font-size: 14px;
   font-weight: 600;
@@ -359,10 +370,10 @@
   width: 100%;
   max-width: 440px;
   padding: var(--space-6);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--landing-line, rgba(0, 0, 0, 0.08));
-  background: var(--landing-surface-strong, #ffffff);
-  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--app-line, var(--landing-line, rgba(0, 0, 0, 0.08)));
+  background: var(--app-surface, var(--landing-surface-strong, #ffffff));
+  box-shadow: var(--shadow-md);
   text-align: center;
 }
 
@@ -372,9 +383,12 @@
   right: var(--space-3);
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  border: none;
+  width: var(--control-size);
+  height: var(--control-size);
+  min-width: var(--control-size);
+  min-height: var(--control-size);
+  padding: 0;
+  border: 1px solid var(--app-line, var(--landing-line, rgba(0, 0, 0, 0.08)));
   border-radius: var(--radius-full);
   color: var(--landing-muted, #5e6674);
   background: transparent;
@@ -425,7 +439,7 @@
   align-items: center;
   gap: 4px;
   padding: var(--space-3);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-card);
   color: var(--badge-sepia);
   background: color-mix(in srgb, var(--badge-gold) 8%, transparent);
 }
@@ -447,9 +461,13 @@
 }
 
 .session-recap-dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  padding: 12px;
-  border: none;
+  min-height: var(--control-size);
+  padding: 0 12px;
+  border: 1px solid transparent;
   border-radius: var(--radius-full);
   font-size: 14px;
   font-weight: 600;
@@ -464,6 +482,23 @@
   0% { transform: scale(1); }
   40% { transform: scale(1.05); }
   100% { transform: scale(1); }
+}
+
+@media (hover: hover) {
+  .resume-card:hover,
+  .badge-gallery:hover {
+    border-color: color-mix(in srgb, var(--app-accent, #4169e1) 22%, var(--app-line, rgba(80, 123, 156, 0.18)));
+  }
+
+  .badge-card:not(.is-earned):hover {
+    border-color: color-mix(in srgb, var(--app-accent, #4169e1) 24%, var(--app-line, rgba(80, 123, 156, 0.18)));
+  }
+
+  .resume-card-secondary:hover,
+  .badge-gallery-award:hover {
+    background: color-mix(in srgb, var(--app-accent, #4169e1) 8%, transparent);
+    border-color: color-mix(in srgb, var(--app-accent, #4169e1) 24%, var(--app-line, rgba(80, 123, 156, 0.18)));
+  }
 }
 
 /* ---------- Responsive ---------- */

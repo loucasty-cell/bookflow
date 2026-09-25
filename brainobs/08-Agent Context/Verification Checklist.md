@@ -2,7 +2,7 @@
 title: Verification Checklist
 type: reference
 status: verified
-updated: 2026-09-18
+updated: 2026-09-24
 tags: [bookflow, agent, verification, checklist]
 source-files: [AGENTS.md, scripts/bench.md, .agents/skills/reader-ergonomics-qa/SKILL.md]
 ---
@@ -16,7 +16,9 @@ What to run and inspect before declaring a change complete. Scale the depth to t
 ```bash
 npm run lint
 npm test
+npm run test:e2e
 npm run build
+npm run check:vault
 git diff --check
 ```
 
@@ -34,7 +36,7 @@ Use a real browser and check:
 - [ ] Landing page and sample-book entry work.
 - [ ] A representative document imports.
 - [ ] The focus rail follows scroll to the correct unit.
-- [ ] Pin works via click, `Space`, and `Escape`. Resume restores auto-focus.
+- [ ] Pin works via click, focused-paragraph `Enter`/`Space`, and `Escape`. Resume restores auto-focus.
 - [ ] Step controls advance and reset pin state.
 - [ ] Static regions scroll without snapping and show the reading label.
 - [ ] Notes, bookmarks, and settings work and persist across reload.
@@ -45,6 +47,7 @@ Use a real browser and check:
 - [ ] Long book and chapter titles wrap rather than overflow.
 - [ ] Every changed theme renders correct token values, including near-black.
 - [ ] Loading reaches a visible 100 percent before the surface changes.
+- [ ] Long-book import is measured with a generated 400+ page fixture and reports progress, mounted sections, and overflow.
 - [ ] Logo assets load and the console shows no warnings or errors.
 
 Use computed styles and measured dimensions as evidence. A screenshot alone is weak proof of

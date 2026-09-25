@@ -1,0 +1,146 @@
+@font-face {
+  font-family: 'New Romantics';
+  src: url('/fonts/new-romantics.ttf') format('truetype'),
+       url('/fonts/romantic.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  color: #171d3a;
+  background: #fffefa;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --font-system: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --font-ios: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", system-ui, -apple-system-subheadline, sans-serif;
+  --font-reading: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --brand-blue: #507b9c;
+  --brand-soft: #c2dcff;
+  --brand-red: #e3242b;
+  --brand-navy: #171d3a;
+  --brand-royal: #4169e1;
+  --brand-wine: #7b1020;
+  --brand-cream: #f3ead9;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-card: 13px;
+  --radius-full: 999px;
+  --control-size: 44px;
+  --scrollbar-track-size: 8px;
+  --scrollbar-thumb-size: 8px;
+  --scrollbar-thumb-min-length: 33px;
+  --scrollbar-radius: 100px;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.08), 0 10px 30px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 22px rgba(0, 0, 0, 0.1), 0 24px 70px rgba(0, 0, 0, 0.16);
+  --hairline: 0.5px;
+  --ui-text: 13px;
+  --ui-label: 11px;
+  --ui-title: 15px;
+  --spring: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --duration-micro: 120ms;
+  --duration-short: 220ms;
+  --duration-medium: 320ms;
+  --safe-top: env(safe-area-inset-top);
+  --safe-bottom: env(safe-area-inset-bottom);
+  --safe-left: env(safe-area-inset-left);
+  --safe-right: env(safe-area-inset-right);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-width: 320px;
+  background: #fffefa;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  color: inherit;
+  touch-action: manipulation;
+  transition:
+    transform var(--duration-micro) var(--spring),
+    opacity var(--duration-micro) ease,
+    color var(--duration-short) ease,
+    background-color var(--duration-short) ease,
+    border-color var(--duration-short) ease,
+    box-shadow var(--duration-short) ease;
+}
+
+button:active {
+  transform: scale(0.97);
+  opacity: 0.84;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent, var(--brand-royal)) 34%, transparent);
+  outline-offset: 3px;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+.skip-link {
+  position: fixed;
+  top: calc(var(--space-3) + var(--safe-top));
+  left: calc(var(--space-3) + var(--safe-left));
+  z-index: 1000;
+  padding: 10px 14px;
+  color: #ffffff;
+  background: var(--brand-navy);
+  border: 2px solid #ffffff;
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-md);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transform: translateY(-180%);
+  transition: transform var(--duration-short) var(--spring);
+}
+
+.skip-link:focus-visible {
+  outline: 3px solid var(--brand-royal);
+  outline-offset: 3px;
+  transform: translateY(0);
+}

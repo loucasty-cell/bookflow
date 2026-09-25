@@ -2,24 +2,30 @@
 title: Storage and Persistence
 type: contract
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, architecture, storage, persistence]
-source-files: [src/shared/lib/storage.js, src/store/readerStore.js, src/features/reader/config.js, src/features/reader/hooks/useReaderPersistence.js]
+source-files: [src/shared/lib/storage.js, src/store/readerStore.js, src/features/reader/config.js, src/features/reader/hooks/useReaderPersistence.js, src/features/reader/hooks/useReaderSession.js, src/features/library/hooks/useReadingSession.js, src/features/library/lib/libraryStore.js, src/features/library/lib/durableStorage.js]
 ---
 
 # Storage and Persistence
 
 ## Layers
 
-Bookflow stores three kinds of state, in three places, on purpose.
+Bookflow stores four kinds of state, in separate places, on purpose.
 
 | Layer | Where | Lifetime | Contents |
 | --- | --- | --- | --- |
 | Global settings | `localStorage` via Zustand persist | Until cleared | Reader preferences |
 | Document session | `localStorage` per identity | Until cleared | progress, chapter, pin, bookmarks, notes, scroll |
+| Library metadata | `localStorage` under `bookflow:library` | Until cleared | title, author, progress, shelf, measured session totals |
 | Import working state | Memory only | Until import ends | Manifest units, buffers, job ids |
 
-No book text is persisted. No document content leaves the device on the default path.
+A feature-local OPFS/IndexedDB adapter exists in `src/features/library/lib/durableStorage.js`, but
+it is not yet wired into the app's document lifecycle. Its public API can store a caller-supplied
+document or unit, but the active app lifecycle does not call it.
+
+The active browser lifecycle does not persist book text. No document content leaves the device on
+the default path.
 
 ## Global settings
 
@@ -40,7 +46,13 @@ Key: `bookflow-reader-storage` (Zustand persist name). Reader state key document
   "letterSpacing": "normal",
   "showRewardCapsules": false,
   "showInterventionModals": false,
-  "useProgressiveImport": true
+  "useProgressiveImport": true,
+  "showResumeCard": true,
+  "showSessionRecap": false,
+  "showAchievements": false,
+  "showDefinitionLookup": false,
+  "enableAnnualGoal": false,
+  "annualGoalTarget": 12
 }
 ```
 
@@ -68,15 +80,17 @@ Session contents:
 ```json
 {
   "progress": 42.5,
-  "activeChapter": 1,
-  "pinnedId": "paragraph-1-3",
+  "activeParagraphId": "paragraph-1-3",
   "bookmarks": ["paragraph-0-2", "paragraph-1-3"],
   "notes": [
-    { "id": 1691823000000, "quote": "Paragraph excerpt", "text": "User note" }
+    { "id": "note-id", "quote": "Paragraph excerpt", "text": "User note" }
   ],
   "scrollTop": 1420
 }
 ```
+
+Chapter selection and pin state are currently transient in `useReaderSession`; they are not fields
+written by `useReaderPersistence`.
 
 Consequence worth stating plainly: editing a filename, changing file size, or touching the
 modification time makes the app treat the file as a new document. Nothing is lost, but the
@@ -107,11 +121,20 @@ same fallback, and `safeParse` returns a supplied default instead of throwing on
 | File edited | New identity, previous session unmatched |
 | Markdown or EPUB reordered | Paragraph ids may shift, annotations can orphan |
 
+## Library metadata
+
+`libraryStore.js` stores versioned metadata under `bookflow:library`, bounds the collection at
+60 entries, and records measured words, active reading time, sessions, notes, bookmarks, and
+completion state. `useReadingSession` records the session on close, and `App.jsx` uses the most
+recent honest in-progress entry for `ResumeCard`; the current card requests file re-selection
+rather than reopening a handle.
+
 ## Planned
 
-- OPFS or IndexedDB storage adapter with fallback for large documents.
-- Annotation export and import bundles for cross-device portability.
-- Persistent library so recent books survive without the original file open.
+- Wire OPFS or IndexedDB storage into the document lifecycle if large-document persistence is
+  still required.
+- Add a recent-books shelf and file-handle reuse so a return does not require re-finding a file.
+- Add annotation export and import bundles for cross-device portability.
 
 Detail: [[Library and Reading Stats]], [[Notes and Bookmarks]], [[Roadmap MOC]].
 

@@ -1,4 +1,6 @@
+import { useRef } from "react";
 import { MessageSquareText, Plus, X } from "lucide-react";
+import { useModalFocus } from "../../../shared/lib/index.js";
 // TODO(backlog-11): add cross-chapter note search + jump-to-quote (Kindle My
 // Notebook analogue). Notes already carry `quote`; resolve jumps by paragraph
 // id first, quote match second, and show "Review location" on ambiguity.
@@ -13,21 +15,45 @@ export function NotesPanel({
   close,
   notes,
   setNotes,
+  deleteNote,
   draft,
   setDraft,
   addNote,
   focusedParagraph,
+  returnFocusRef,
 }) {
+  const panelRef = useRef(null);
+  const closeButtonRef = useRef(null);
+
+  useModalFocus({
+    open,
+    containerRef: panelRef,
+    onClose: close,
+    initialFocusRef: closeButtonRef,
+    returnFocusRef,
+  });
+
   return (
     <aside
+      ref={panelRef}
+      id="reader-notes-panel"
       className={`notes-drawer ${open ? "is-open" : ""}`}
+      role="dialog"
+      aria-modal={open ? "true" : undefined}
+      aria-labelledby="reader-notes-title"
       aria-hidden={!open}
-      aria-label="Margin notes"
       inert={open ? undefined : true}
+      tabIndex={-1}
     >
       <div className="panel-heading">
-        <span><MessageSquareText size={16} /> Margin notes</span>
-        <button type="button" className="icon-button" onClick={close} aria-label="Close notes">
+        <span id="reader-notes-title"><MessageSquareText size={16} /> Margin notes</span>
+        <button
+          ref={closeButtonRef}
+          type="button"
+          className="icon-button"
+          onClick={close}
+          aria-label="Close notes"
+        >
           <X size={18} />
         </button>
       </div>
@@ -57,9 +83,15 @@ export function NotesPanel({
             <p>{note.text}</p>
             <button
               type="button"
-              onClick={() =>
-                setNotes((current) => current.filter((item) => item.id !== note.id))
-              }
+              onClick={() => {
+                if (deleteNote) {
+                  deleteNote(note.id);
+                  return;
+                }
+                setNotes((current) =>
+                  (Array.isArray(current) ? current : []).filter((item) => item.id !== note.id)
+                );
+              }}
               aria-label={`Delete note: ${String(note.text ?? "").slice(0, 80)}`}
             >
               <X size={14} />

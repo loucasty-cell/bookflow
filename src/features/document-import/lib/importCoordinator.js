@@ -19,6 +19,7 @@ import {
   manifestProgress,
   UnitStatus,
   getUnitsByStatus,
+  requeueUnit,
 } from "./documentManifest.js";
 import { createImportScheduler } from "./importScheduler.js";
 import { mark } from "../../../shared/lib/perfMarks.js";
@@ -44,268 +45,463 @@ const MAX_ARCHIVE_ENTRIES = 3000;
 const MAX_ENTRY_BYTES = 20 * 1024 * 1024;
 const MAX_TOTAL_TEXT_BYTES = 50 * 1024 * 1024;
 
+function createImportAbortError() {
+  const error = new Error("Import canceled.");
+  error.name = "AbortError";
+  return error;
+}
+
+function isTerminalUnit(unit) {
+  return unit.status === UnitStatus.READY ||
+    unit.status === UnitStatus.FAILED ||
+    unit.status === UnitStatus.CANCELLED;
+}
+
+async function terminateOcrScheduler(scheduler) {
+  if (!scheduler?.terminate) return;
+  try {
+    await scheduler.terminate();
+  } catch {
+    return;
+  }
+}
+
+async function destroyPdfDocument(pdf) {
+  if (!pdf?.destroy) return;
+  try {
+    await pdf.destroy();
+  } catch {
+    return;
+  }
+}
+
+async function readPdfMetadata(pdf, signal) {
+  const metadataPromise = Promise.resolve(pdf.getMetadata()).catch(() => null);
+  if (!signal) return metadataPromise;
+  let abortHandler;
+  const abortPromise = new Promise((_, reject) => {
+    abortHandler = () => reject(createImportAbortError());
+    if (signal.aborted) abortHandler();
+    else signal.addEventListener("abort", abortHandler, { once: true });
+  });
+  try {
+    return await Promise.race([metadataPromise, abortPromise]);
+  } finally {
+    if (abortHandler) signal.removeEventListener("abort", abortHandler);
+  }
+}
+
+function cancelWithoutThrow(action) {
+  try {
+    const result = action?.();
+    if (result && typeof result.catch === "function") result.catch(() => undefined);
+  } catch {
+    return;
+  }
+}
+
 // --- PDF progressive import ---
 
-export async function progressivePdfImport(file, onProgress) {
+export async function progressivePdfImport(file, onProgress, options = {}) {
+  const { signal } = options;
   mark("import-selected");
   await validateBookFile(file);
+  if (signal?.aborted) throw createImportAbortError();
 
   const [pdfjs] = await Promise.all([import("pdfjs-dist")]);
+  if (signal?.aborted) throw createImportAbortError();
 
   const data = new Uint8Array(await file.arrayBuffer());
   let pdf;
   try {
     pdf = await openPdfDocument(pdfjs, data);
   } catch (error) {
+    if (signal?.aborted) throw createImportAbortError();
     throw classifyPdfOpenError(error) ?? new Error(
       "This PDF looks damaged, but the accelerated backend scan may still read it.",
     );
   }
+  if (signal?.aborted) {
+    await destroyPdfDocument(pdf);
+    throw createImportAbortError();
+  }
 
-  const metadata = await pdf.getMetadata().catch(() => null);
+  let metadata;
+  try {
+    metadata = await readPdfMetadata(pdf, signal);
+  } catch (error) {
+    await destroyPdfDocument(pdf);
+    throw error;
+  }
+  if (signal?.aborted) {
+    await destroyPdfDocument(pdf);
+    throw createImportAbortError();
+  }
   const documentTitle = normalizeText(metadata?.info?.Title) || cleanT(file.name);
-  const documentId = `${file.name}:${file.size}:${file.lastModified}`;
+  const id = `${file.name}:${file.size}:${file.lastModified}`;
 
   mark("validation-done");
 
-  // Create manifest with one unit per PDF page
   const manifest = createManifest({
-    documentId,
+    documentId: id,
     title: documentTitle,
     author: normalizeText(metadata?.info?.Author),
     kind: "PDF",
     totalUnits: pdf.numPages,
   });
-
-  // Add all units as UNSEEN
   const unitEntries = [];
-  for (let i = 1; i <= pdf.numPages; i++) {
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
     const unit = addUnit(manifest, {
-      label: `Page ${i}`,
-      sourcePage: i,
+      label: `Page ${pageNumber}`,
+      sourcePage: pageNumber,
       kind: "PDF_PAGE",
     });
-    unitEntries.push({ unit, pageNumber: i });
+    unitEntries.push({ unit });
   }
 
-  onProgress?.({ manifest, phase: "manifest-ready" });
+  let lastProgress = 0;
+  const reportProgress = (phase, unit, value, extra = {}) => {
+    if (teardownStarted && phase !== "cancelled") return;
+    const numeric = Number.isFinite(Number(value)) ? Number(value) : manifestProgress(manifest);
+    const progress = phase === "complete" || phase === "failed"
+      ? 100
+      : Math.max(lastProgress, Math.min(99, Math.round(numeric)));
+    lastProgress = progress;
+    try {
+      onProgress?.({ manifest, phase, unit, progress, ...extra });
+    } catch {
+      return;
+    }
+  };
 
-  // Create scheduler
   let firstReadyResolve = null;
   let firstReadyReject = null;
   const firstReadyPromise = new Promise((resolve, reject) => {
     firstReadyResolve = resolve;
     firstReadyReject = reject;
   });
-
-  let readyCount = 0;
-  let failedCount = 0;
-  const totalUnits = unitEntries.length;
-  let _userPositionIndex = 0; // tracks user's current reading position for stale cancellation
+  let terminalResolve;
+  const completion = new Promise((resolve) => {
+    terminalResolve = resolve;
+  });
+  let terminalSettled = false;
+  let cancelled = false;
+  let teardownStarted = false;
+  let teardownPromise = null;
+  let scheduler = null;
   let sharedOcrScheduler = null;
   let sharedOcrReady = null;
+  let abortHandler = null;
+  const pendingJobs = new Set();
+  const settledUnitIds = new Set();
+  let readyCount = 0;
+  const totalUnits = unitEntries.length;
 
-  const getSharedOcrScheduler = () => {
+  const getFailedUnits = () => manifest.units
+    .filter((unit) => unit.status === UnitStatus.FAILED || unit.status === UnitStatus.CANCELLED)
+    .map((unit) => ({
+      id: unit.id,
+      sourcePage: unit.sourcePage,
+      label: unit.label,
+      error: unit.error || "Page processing was canceled.",
+    }));
+
+  const settleCancelled = () => {
+    if (terminalSettled) return;
+    terminalSettled = true;
+    terminalResolve({
+      cancelled: true,
+      failedUnits: getFailedUnits(),
+      progress: manifestProgress(manifest),
+      status: "cancelled",
+    });
+  };
+
+  const teardown = () => {
+    if (teardownPromise) return teardownPromise;
+    teardownStarted = true;
+    const pendingOcr = sharedOcrReady ? sharedOcrReady.catch(() => null) : null;
+    const currentOcr = sharedOcrScheduler;
+    teardownPromise = (async () => {
+      scheduler?.cancelAll();
+      const workerCleanup = (async () => {
+        const resolvedOcr = pendingOcr ? await pendingOcr : currentOcr;
+        const schedulers = [...new Set([currentOcr, resolvedOcr].filter(Boolean))];
+        await Promise.all(schedulers.map(terminateOcrScheduler));
+        if (sharedOcrScheduler === currentOcr || sharedOcrScheduler === resolvedOcr) {
+          sharedOcrScheduler = null;
+          sharedOcrReady = null;
+        }
+      })();
+      const pendingCleanup = Promise.allSettled([...pendingJobs, workerCleanup]);
+      if (cancelled) {
+        await destroyPdfDocument(pdf);
+        void pendingCleanup;
+      } else {
+        await pendingCleanup;
+        await destroyPdfDocument(pdf);
+      }
+      if (signal && abortHandler) signal.removeEventListener("abort", abortHandler);
+    })();
+    return teardownPromise;
+  };
+
+  const terminateCurrentOcr = (workerScheduler) => {
+    if (sharedOcrScheduler === workerScheduler) {
+      sharedOcrScheduler = null;
+      sharedOcrReady = null;
+    }
+    cancelWithoutThrow(() => terminateOcrScheduler(workerScheduler));
+  };
+
+  const getSharedOcrScheduler = async () => {
+    if (cancelled || teardownStarted || signal?.aborted) throw createImportAbortError();
+    if (sharedOcrScheduler) return sharedOcrScheduler;
     if (!sharedOcrReady) {
-      sharedOcrReady = createPdfOcrScheduler(() => {}).then((s) => {
-        sharedOcrScheduler = s;
-        return s;
-      });
-      sharedOcrReady.catch(() => {
-        sharedOcrReady = null;
-        sharedOcrScheduler = null;
-      });
+      sharedOcrReady = createPdfOcrScheduler(() => {})
+        .then(async (workerScheduler) => {
+          if (cancelled || teardownStarted || signal?.aborted) {
+            await terminateOcrScheduler(workerScheduler);
+            throw createImportAbortError();
+          }
+          sharedOcrScheduler = workerScheduler;
+          return workerScheduler;
+        })
+        .catch((error) => {
+          sharedOcrReady = null;
+          sharedOcrScheduler = null;
+          throw error;
+        });
     }
     return sharedOcrReady;
   };
 
-  const terminateSharedOcr = () => {
-    if (sharedOcrScheduler) {
-      sharedOcrScheduler.terminate().catch(() => undefined);
-      sharedOcrScheduler = null;
-      sharedOcrReady = null;
+  const trackJob = (job) => {
+    const promise = job();
+    pendingJobs.add(promise);
+    return promise.finally(() => pendingJobs.delete(promise));
+  };
+
+  const processPage = async (unit, abortSignal) => {
+    let page = null;
+    try {
+      page = await pdf.getPage(unit.sourcePage);
+      if (abortSignal.aborted) throw createImportAbortError();
+
+      const content = await page.getTextContent({ normalizeWhitespace: true });
+      if (abortSignal.aborted) throw createImportAbortError();
+      const lines = [];
+      let currentLine = [];
+      let lastY = null;
+      for (const item of content.items ?? []) {
+        const value = item.str?.trim();
+        if (!value) continue;
+        const y = Math.round(item.transform?.[5] ?? 0);
+        if (lastY !== null && Math.abs(y - lastY) > 4 && currentLine.length) {
+          lines.push(currentLine.join(" "));
+          currentLine = [];
+        }
+        currentLine.push(value);
+        if (item.hasEOL) {
+          lines.push(currentLine.join(" "));
+          currentLine = [];
+        }
+        lastY = y;
+      }
+      if (currentLine.length) lines.push(currentLine.join(" "));
+
+      const nativeText = lines.join("\n");
+      if (!pageNeedsOcr(nativeText)) {
+        const cleaned = lines
+          .filter((line) => !(unit.sourcePage === 1 && normalizeText(line) === documentTitle))
+          .join("\n");
+        const paragraphs = splitParagraphs(cleaned).filter((paragraph) => paragraph.length > 15);
+        if (!paragraphs.length) return null;
+        return {
+          text: cleaned,
+          paragraphs,
+          confidence: null,
+          ocrStatus: "native",
+        };
+      }
+
+      const workerScheduler = await getSharedOcrScheduler();
+      if (abortSignal.aborted) throw createImportAbortError();
+      let recognized;
+      try {
+        recognized = await recognizePdfPage(workerScheduler, page);
+      } catch (ocrError) {
+        if (/timed out/i.test(ocrError?.message ?? "")) terminateCurrentOcr(workerScheduler);
+        throw ocrError;
+      }
+      if (abortSignal.aborted) throw createImportAbortError();
+      if (!recognized.paragraphs?.length) return null;
+      return {
+        text: recognized.paragraphs.join("\n"),
+        paragraphs: recognized.paragraphs,
+        confidence: recognized.confidence,
+        ocrStatus: "ocr-ready",
+      };
+    } finally {
+      if (page) {
+        try {
+          await page.cleanup();
+        } catch {
+          void 0;
+        }
+      }
     }
   };
 
-  const maybeFinishSharedOcr = () => {
-    if (readyCount + failedCount >= totalUnits) terminateSharedOcr();
+  const finishTerminal = () => {
+    if (terminalSettled || cancelled) return;
+    if (manifest.units.some((unit) => !isTerminalUnit(unit))) return;
+    terminalSettled = true;
+    const failedUnits = getFailedUnits();
+    if (readyCount === 0 && firstReadyReject) {
+      const error = new Error("Local OCR could not find readable English text in this PDF. Try a clearer, upright scan or an OCR-ready copy.");
+      error.importTerminal = true;
+      firstReadyReject(error);
+      firstReadyResolve = null;
+      firstReadyReject = null;
+    }
+    const phase = failedUnits.length ? "failed" : "complete";
+    reportProgress(phase, null, 100, { failedUnits });
+    terminalResolve({
+      cancelled: false,
+      failedUnits,
+      progress: 100,
+      status: phase,
+    });
+    void teardown();
   };
 
-  const scheduler = createImportScheduler({
+  scheduler = createImportScheduler({
     onUnitReady: (unit) => {
+      if (settledUnitIds.has(unit.id)) return;
+      settledUnitIds.add(unit.id);
       readyCount += 1;
-      onProgress?.({ manifest, phase: "unit-ready", unit, progress: manifestProgress(manifest) });
+      reportProgress("unit-ready", unit, manifestProgress(manifest));
       if (readyCount === 1 && firstReadyResolve) {
         firstReadyResolve(unit);
         firstReadyResolve = null;
         firstReadyReject = null;
       }
-      maybeFinishSharedOcr();
+      finishTerminal();
     },
     onUnitFailed: (unit) => {
-      failedCount += 1;
-      onProgress?.({ manifest, phase: "unit-failed", unit, progress: manifestProgress(manifest) });
-      maybeFinishSharedOcr();
-      if (readyCount === 0 && failedCount >= totalUnits && firstReadyReject) {
-        firstReadyReject(
-          new Error("Local OCR could not find readable English text in this PDF. Try a clearer, upright scan or an OCR-ready copy."),
-        );
-        firstReadyResolve = null;
-        firstReadyReject = null;
-      }
+      if (settledUnitIds.has(unit.id)) return;
+      settledUnitIds.add(unit.id);
+      reportProgress("unit-failed", unit, manifestProgress(manifest));
+      finishTerminal();
     },
     onProgress: () => {
-      onProgress?.({ manifest, phase: "scheduler-tick", progress: manifestProgress(manifest) });
+      if (!terminalSettled) {
+        reportProgress("scheduler-tick", null, manifestProgress(manifest));
+        finishTerminal();
+      }
     },
   });
 
-  // Schedule units: current + next 2 immediately, rest as BACKGROUND
   const scheduleFromPosition = (startIndex) => {
-    for (let i = startIndex; i < unitEntries.length; i++) {
-      const { unit } = unitEntries[i];
+    if (cancelled || teardownStarted) return;
+    const safeStart = Math.max(0, Math.min(startIndex, unitEntries.length));
+    for (let index = safeStart; index < unitEntries.length; index += 1) {
+      const { unit } = unitEntries[index];
+      if (unit.status === UnitStatus.CANCELLED) {
+        requeueUnit(unit);
+        settledUnitIds.delete(unit.id);
+      }
       if (unit.status !== UnitStatus.UNSEEN) continue;
-
-      const dist = i - startIndex;
-      let priority;
-      if (dist === 0) priority = 0; // CURRENT
-      else if (dist <= 2) priority = 1; // NEXT
-      else priority = 3; // BACKGROUND
-
-      scheduler.enqueue(unit, priority, async (u, abortSignal) => {
-        const page = await pdf.getPage(u.sourcePage);
-        if (abortSignal.aborted) {
-          try {
-            await page.cleanup();
-          } catch (cleanupError) {
-            void cleanupError;
-          }
-          throw new DOMException("Import cancelled", "AbortError");
-        }
-
-        // Try native text first
-        const content = await page.getTextContent({ normalizeWhitespace: true });
-        const lines = [];
-        let currentLine = [];
-        let lastY = null;
-
-        for (const item of content.items) {
-          const value = item.str?.trim();
-          if (!value) continue;
-          const y = Math.round(item.transform?.[5] ?? 0);
-          if (lastY !== null && Math.abs(y - lastY) > 4 && currentLine.length) {
-            lines.push(currentLine.join(" "));
-            currentLine = [];
-          }
-          currentLine.push(value);
-          if (item.hasEOL) {
-            lines.push(currentLine.join(" "));
-            currentLine = [];
-          }
-          lastY = y;
-        }
-        if (currentLine.length) lines.push(currentLine.join(" "));
-
-        const nativeText = lines.join("\n");
-        const needsOcr = pageNeedsOcr(nativeText);
-
-        if (!needsOcr) {
-          // Native text is usable
-          const cleaned = lines
-            .filter((l) => !(u.sourcePage === 1 && normalizeText(l) === documentTitle))
-            .join("\n");
-          const paragraphs = splitParagraphs(cleaned).filter((p) => p.length > 15);
-          page.cleanup();
-          return {
-            text: cleaned,
-            paragraphs,
-            confidence: null,
-            ocrStatus: "native",
-          };
-        }
-
-        // Needs OCR — run Tesseract via shared scheduler
-        try {
-          const tessScheduler = await getSharedOcrScheduler();
-
-          if (abortSignal.aborted) {
-            try {
-              await page.cleanup();
-            } catch (cleanupError) {
-              void cleanupError;
-            }
-            throw new DOMException("Import cancelled", "AbortError");
-          }
-
-          let recognized;
-          try {
-            recognized = await recognizePdfPage(tessScheduler, page);
-          } catch (ocrError) {
-            if (/timed out/i.test(ocrError?.message ?? "")) {
-              terminateSharedOcr();
-            }
-            throw ocrError;
-          }
-          page.cleanup();
-
-          return {
-            text: recognized.paragraphs.join("\n"),
-            paragraphs: recognized.paragraphs,
-            confidence: recognized.confidence,
-            ocrStatus: "ocr-ready",
-          };
-        } catch (err) {
-          try {
-            page.cleanup();
-          } catch (cleanupError) {
-            void cleanupError;
-          }
-          throw err;
-        }
-      });
+      const distance = index - safeStart;
+      const priority = distance === 0 ? 0 : distance <= 2 ? 1 : 3;
+      scheduler.enqueue(unit, priority, (queuedUnit, abortSignal) =>
+        trackJob(() => processPage(queuedUnit, abortSignal)),
+      );
     }
   };
 
-  // Start scheduling from position 0
+  if (signal) {
+    abortHandler = () => {
+      if (cancelled) return;
+      cancelled = true;
+      scheduler.cancelAll();
+      if (firstReadyReject) {
+        firstReadyReject(createImportAbortError());
+        firstReadyResolve = null;
+        firstReadyReject = null;
+      }
+      settleCancelled();
+      void teardown();
+    };
+    if (signal.aborted) abortHandler();
+    else signal.addEventListener("abort", abortHandler, { once: true });
+  }
+
+  reportProgress("manifest-ready", null, 0);
   scheduleFromPosition(0);
+  if (totalUnits === 0) {
+    const error = new Error("This PDF does not contain any pages.");
+    error.importTerminal = true;
+    firstReadyReject?.(error);
+    finishTerminal();
+  }
 
-  // Wait for first ready unit
-  const firstUnit = await firstReadyPromise;
-
-  // Cancel stale background work if user jumps far
-  const jumpToUnit = (unitIndex) => {
-    _userPositionIndex = unitIndex;
-    const { unit } = unitEntries[unitIndex] || {};
-    if (unit) {
-      scheduler.cancelStale(unit.id);
-      // Schedule next 2 from new position
-      scheduleFromPosition(unitIndex);
-    }
-  };
+  let firstUnit;
+  try {
+    firstUnit = await firstReadyPromise;
+  } catch (error) {
+    await teardown();
+    throw error;
+  }
+  if (cancelled || signal?.aborted) {
+    await teardown();
+    throw createImportAbortError();
+  }
 
   const cancel = () => {
-    scheduler.cancelAll();
-    terminateSharedOcr();
+    if (!cancelled) {
+      cancelled = true;
+      scheduler.cancelAll();
+      settleCancelled();
+    }
+    return teardown();
   };
 
   const dispose = () => {
-    scheduler.cancelAll();
-    terminateSharedOcr();
+    if (!terminalSettled && !cancelled) {
+      cancelled = true;
+      scheduler.cancelAll();
+      settleCancelled();
+    }
+    return teardown();
   };
 
   return {
     manifest,
     firstUnit,
     scheduler,
-    jumpToUnit,
+    jumpToUnit: (unitIndex) => {
+      if (cancelled || teardownStarted) return;
+      const index = Math.max(0, Math.min(unitIndex, unitEntries.length - 1));
+      const unit = unitEntries[index]?.unit;
+      if (!unit) return;
+      scheduler.cancelStale(unit.id);
+      scheduleFromPosition(index);
+    },
     cancel,
     dispose,
+    completion,
+    waitForCompletion: () => completion,
     getProgress: () => manifestProgress(manifest),
     getStats: () => scheduler.stats(),
     getReadyUnits: () => getUnitsByStatus(manifest, UnitStatus.READY),
+    getFailedUnits,
   };
 }
 
 // --- Epub progressive import ---
+
 
 export async function progressiveEpubImport(file, onProgress, options = {}) {
   const { signal } = options;

@@ -1,25 +1,25 @@
 ---
 title: Library and Reading Stats
 type: spec
-status: planned
-updated: 2026-09-18
-tags: [bookflow, roadmap, library, stats, planned]
-source-files: [detailsinfo.md, goals.md, src/shared/lib/storage.js, src/features/reader/config.js]
+status: partial
+updated: 2026-09-25
+tags: [bookflow, roadmap, library, stats, partial]
+source-files: [detailsinfo.md, goals.md, src/App.jsx, src/features/library/index.js, src/features/library/hooks/useReadingSession.js, src/features/library/lib/libraryStore.js, src/features/library/lib/readingStats.js, src/features/library/lib/readingGoals.js, src/features/library/lib/achievements.js, src/features/library/lib/durableStorage.js, src/features/library/components/ResumeCard.jsx, src/features/library/components/SessionRecap.jsx, src/features/library/components/BadgeGallery.jsx, src/shared/lib/storage.js, src/features/reader/config.js]
 ---
 
 # Library and Reading Stats
 
-Planned. A persistent library and honest reading statistics. This closes the single largest gap
-in the retention design: today, once a book is closed, there is no surface that brings it back.
-
-Status: **planned**. The documentation currently states there is no persistent library or
-recent-books screen.
+Partial. The metadata library, session recording, resume card, session recap, opt-in goals, and
+deterministic achievements now exist. Stats, goals, and achievements are exposed through the
+library feature; the landing surface currently shows the resume card and optional milestone gallery,
+not a complete statistics dashboard. The recent-books shelf, file-handle reuse, automatic reopen
+without re-selection, and durable document persistence remain open.
 
 ## Why this is the top feature
 
 ```text
 Without a library:  reader must remember the file, find it, and re-import it
-With a library:     reader taps continue and lands exactly where they stopped
+With a complete library: reader taps continue and lands exactly where they stopped
 ```
 
 The second version converts a multi-step task with friction into a single action with none.
@@ -50,23 +50,22 @@ Detail: [[Storage and Persistence]], [[Privacy Model]].
 ## Resume surface
 
 ```text
-Component   src/features/landing/components/ResumeCard.jsx
+Component   src/features/library/components/ResumeCard.jsx
 Content     Title, chapter label, progress percent, last opened
-Action      Continue, landing on the exact restored position
-Fallback    Hidden with no library entries. Never an empty shell.
-Edge case   If the source file is unavailable, say so plainly and
-            offer re-selection instead of failing silently.
+Action      Re-select the source file; the session position is restored after import
+Fallback    Hidden with no honest in-progress entry. Never an empty shell.
+Edge case   The card must not claim automatic reopen or re-parsing until file-handle reuse is wired.
 ```
 
 ## Reading statistics
 
-| Statistic | Definition | Honest? |
+| Statistic | Definition | Current state |
 | --- | --- | --- |
-| Words read | Accumulated from actual progress deltas | Yes |
-| Time reading | Intervals with real navigation or scroll activity | Yes, with idle time excluded |
-| Sessions | Open to close, above a minimum duration | Yes |
-| Continuity | Distinct days read in the last 7 and 30 | Yes |
-| Books finished | Documents reaching a completion threshold | Yes |
+| Words read | Accumulated from measured paragraph activity | Implemented |
+| Time reading | Intervals with real navigation or scroll activity | Implemented, idle time excluded |
+| Sessions | Open to close with measured words and activity | Implemented |
+| Continuity | Distinct days read in the last 7 and 30 | Planned; streak metrics are rejected |
+| Books finished | Documents reaching a completion threshold | Implemented at 98% |
 
 Rules:
 
@@ -103,24 +102,24 @@ guardrails forbid.
 
 | Concern | Approach |
 | --- | --- |
-| Where the library lives | New feature folder `src/features/library/` with a public `index.js` |
-| Landing integration | `LandingPage` consumes the library through its public API only |
+| Where the library lives | `src/features/library/` with a public `index.js` |
+| Landing integration | `App.jsx` renders `ResumeCard`; a recent shelf remains open |
 | Versioning | `version` field checked on read; unknown versions ignored rather than thrown |
 | Migration | Merge over defaults, consistent with the settings store pattern |
-| File handle reuse | Feature-detect the File System Access API, fall back to re-selection |
-| Tests | Store logic, eviction, version handling, and stats math all unit tested |
+| File handle reuse | Planned; current resume flow asks the reader to re-select the file |
+| Tests | Store, stats, goals, achievements, and durable adapter unit tested |
 
 Detail: [[File Placement Map]], [[Frontend Architecture]].
 
 ## Acceptance criteria
 
-- [ ] Library persists metadata only, with no document text.
+- [x] Library persists metadata only, with no document text.
 - [ ] Resume reaches the exact restored position without re-parsing when the file is available.
-- [ ] Missing file produces a clear, actionable message.
-- [ ] Statistics never count idle or background time.
-- [ ] No penalty or decay mechanic exists anywhere.
-- [ ] Entry count is bounded with deterministic eviction.
-- [ ] Unknown schema versions do not crash on read.
-- [ ] Verified at 320px, 390x844, and desktop with no overflow.
+- [ ] Missing file produces a clear, actionable message and re-selection path.
+- [x] Statistics never count idle or background time.
+- [x] No penalty or decay mechanic exists anywhere.
+- [x] Entry count is bounded with deterministic eviction.
+- [x] Unknown schema versions do not crash on read.
+- [ ] Recent shelf, file-handle reuse, and automatic reopen are verified at 320px, 390x844, and desktop.
 
 Related: [[Future Features MOC]], [[Success Metrics]], [[Feature Spec Template]].

@@ -2,16 +2,16 @@
 title: PDF Parsing
 type: feature
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, import, pdf, parser]
-source-files: [src/features/document-import/lib/pdfParser.js, src/features/document-import/lib/pdfOcr.js, src/features/document-import/lib/documentParsers.js]
+source-files: [src/features/document-import/lib/pdfParser.js, src/features/document-import/lib/pdfOcr.js, src/features/document-import/lib/importCoordinator.js, src/features/document-import/hooks/useDocumentImport.js, src/features/document-import/lib/documentParsers.js]
 ---
 
 # PDF Parsing
 
 PDF is the hard format: fixed layout, unreliable text layers, and frequent damage. Bookflow's
-approach is native text first, OCR only where text is missing, and never a blocking full-book
-wait.
+approach is native text first, OCR only where text is missing, and bounded per-page work with a
+truthful terminal progress state before the reader opens.
 
 ## Pipeline
 
@@ -40,15 +40,13 @@ Detail: [[OCR Decision Tree]].
 
 ## Damaged file tolerance
 
-The parser is written to tolerate damaged PDFs and missing workers rather than fail outright,
-and the import path has explicit commits behind this behaviour:
+The local parser and progressive coordinator tolerate recoverable page and worker errors, but
+they do not silently route a document to the backend. A local failure produces a clear error and
+leaves the user in control. The optional accelerated OCR button is a separate, explicit action;
+its upload does not begin until the user presses Start.
 
-- `fix: make PDF import tolerant of damaged files and missing worker`
-- `feat: fall back to backend OCR scan when local PDF parsing fails`
-
-If local extraction cannot proceed, control moves to the backend scan path rather than
-presenting a dead end. `isBackendFallbackError` identifies when a failure should trigger that
-handoff.
+`isBackendFallbackError` only classifies the local error hint for that explicit seam. The current
+`useDocumentImport` path does not call `scanPdfViaBackend` automatically.
 
 Detail: [[OCR-Frontend Sync Contract]].
 
@@ -91,7 +89,8 @@ Detail: [[Backlog P0-P1-P2]], [[Roadmap MOC]].
 
 - Import a native-text PDF and confirm extraction without OCR.
 - Import a scanned PDF and confirm only image-only pages are OCRed.
-- Import a damaged or renamed PDF and confirm a clear error or a successful fallback.
+- Import a damaged or renamed PDF and confirm a clear local error; choose optional accelerated OCR
+  only when the user intentionally starts it.
 - Confirm page order in the reader matches the source.
 - Check console for worker loading errors.
 

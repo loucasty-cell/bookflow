@@ -53,7 +53,7 @@ Comprehensive technical guide, React/Vite workflow standards, cognitive ergonomi
 
 ### 3.1 Focal Reading Rail & Saccadic Regression Reduction
 - **Empirical Foundation**: Keith Rayner's E-Z Reader model and psychophysiological research (*PLoS ONE 2025; Cognitive Science 2026*) show that digital readers suffer cognitive fatigue and frequent regressive eye movements when reading unguided text.
-- **Golden Ratio Focal Line**: Positions the active focal rail at `FOCUS_RAIL_RATIO = 0.42` (~42% of viewport height).
+- **Golden Ratio Focal Line**: Positions the active focal rail at `FOCUS_RAIL_RATIO = 0.38` (~38% of viewport height).
 - **Smooth Highlighting**: Active sentence/paragraph receives high-contrast prominence while surrounding text softly softens without losing legibility.
 
 ### 3.2 Bionic Reading & Saccadic Fixation Engine
@@ -127,7 +127,7 @@ Run the verification pipeline before pushing changes:
 # 1. Static code analysis and linting
 npm run lint
 
-# 2. Automated unit and component test suites (12 suites, 44 tests)
+# 2. Automated unit and component test suites (31 files, 163 tests)
 npm test
 
 # 3. Production Vite build verification

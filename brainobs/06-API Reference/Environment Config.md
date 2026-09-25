@@ -2,7 +2,7 @@
 title: Environment Config
 type: reference
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, api, environment, configuration]
 source-files: [backend/main.py, vite.config.js, src/features/document-import/lib/backendOcrFallback.js]
 ---
@@ -37,7 +37,7 @@ Backend processing limits are code constants rather than environment variables:
 
 | Constant | Value | Meaning |
 | --- | --- | --- |
-| `max_upload_size_mb` | `500` | Server-side upload ceiling |
+| `max_upload_size_mb` | `50` | Server-side upload ceiling; matches `backend/main.py` |
 | `max_batch_images` | `32` | Maximum images per batch request |
 | `max_pdf_pages_ocr` | `1000` | Maximum pages OCRed per PDF |
 
@@ -99,11 +99,12 @@ PADDLEOCR_URL configured, no token required.
 Preferred accelerated path: deterministic, self-hosted, no per-page bill.
 ```
 
-### Backend with provider fallback
+### Explicit accelerated OCR with provider failover
 
 ```text
 OCR_MODEL and HF_TOKEN configured.
-Used when self-hosted OCR is unavailable or insufficient.
+The user starts the optional accelerated scan; inside that job, self-hosted OCR can fall back to
+the configured Hugging Face route when necessary.
 ```
 
 ## Verification

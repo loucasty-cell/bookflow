@@ -2,7 +2,7 @@
 title: UX Playbook MOC
 type: MOC
 status: living
-updated: 2026-09-18
+updated: 2026-09-24
 tags: [bookflow, ux, design, moc]
 ---
 
@@ -18,6 +18,7 @@ How Bookflow looks, moves, lays out, and stays accessible.
 - [[Premium Micro-interactions]] - build-ready specs for polish features
 - [[Accessibility Rules]] - targets, names, focus order, contrast
 - [[Responsive Breakpoints]] - desktop, tablet, mobile behaviour and overflow rules
+- [[Figma Inspection Evidence]] - inspected Figma file keys, node IDs, and measured values
 
 ## The design position
 

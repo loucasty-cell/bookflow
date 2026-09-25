@@ -2,7 +2,7 @@
 title: Vault Maintenance
 type: process
 status: living
-updated: 2026-09-18
+updated: 2026-09-24
 tags: [bookflow, process, maintenance, obsidian]
 source-files: [brainobs]
 ---
@@ -51,7 +51,8 @@ If a number cannot be verified, write "to measure" rather than guessing.
 | Version bump | Update the tables in [[Tech Stack]] and [[Agent Quickstart]] |
 | Status change | Update [[Current State Matrix]] with evidence |
 | Feature shipped | Move the note from planned to verified, update links |
-| Refactor | Update `source-files` paths and the placement map |
+| Refactor | Update `source-files` paths, `refactor` status, and the placement map |
+| Graph metadata | Reconcile `type`, `status`, `tags`, `aliases`, and MOC links |
 | Quarterly | Re-read [[Current State Matrix]] and confirm every row against source |
 
 ## Health checks
@@ -101,6 +102,7 @@ This comparison is a candidate for the `scripts/check-vault.mjs` automation desc
 | Every note linked from exactly one MOC | Prevents orphans |
 | Folder names numbered `NN-Area Name` | Stable reading order |
 | Note names in Title Case | Consistent wikilinks |
+| Graph metadata follows [[Context Sync Protocol]] | Stable nodes and meaningful graph edges |
 | Templates kept in `Templates/` | Excluded from status reviews |
 
 ## What to do with an obsolete note
@@ -124,6 +126,7 @@ possible stale note, because an agent will try to use or preserve it.
 4  Is it a template?                      -> Templates/
 5  Link it from a MOC and from [[00-Dashboard]] if it is a new area
 6  Set frontmatter: title, type, status, updated, tags, source-files
+7  Add `refactor` only when architecture status is part of the note
 ```
 
 Detail: [[Context Sync Protocol]], [[File Placement Map]].

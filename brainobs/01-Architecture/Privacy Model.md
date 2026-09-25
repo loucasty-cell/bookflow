@@ -2,9 +2,9 @@
 title: Privacy Model
 type: concept
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, architecture, privacy, trust]
-source-files: [AGENTS.md, README.md, src/features/document-import/lib/backendOcrFallback.js, backend/main.py, updateOCRdata.md]
+source-files: [AGENTS.md, README.md, src/features/document-import/lib/backendOcrFallback.js, src/features/document-import/hooks/useOcrSession.js, src/features/document-import/components/OcrUploader.jsx, src/features/library/lib/durableStorage.js, backend/main.py, updateOCRdata.md]
 ---
 
 # Privacy Model
@@ -15,11 +15,12 @@ Privacy is a product feature here, not a compliance footnote. It is also the hon
 ## The default
 
 ```text
-Import -> browser memory -> normalize -> render -> local storage of settings only
+Import -> browser memory -> normalize -> render -> local metadata only
 ```
 
-On this path nothing about the document leaves the device. No account, no upload, no
-telemetry containing book text.
+On this default path, document text stays in browser memory. Bookflow stores settings, progress,
+bookmarks, notes, and library metadata locally; the active lifecycle does not send book contents
+to a server. No account, no upload, and no telemetry containing book text.
 
 ## What each path does
 
@@ -28,7 +29,7 @@ telemetry containing book text.
 | Native PDF text | None | Nothing |
 | Local Tesseract OCR | None (assets served locally) | Nothing |
 | EPUB / TXT / Markdown | None | Nothing |
-| Backend OCR scan | Only when the user starts it | Page images for pages the browser could not read |
+| Backend OCR scan | Only after the user explicitly starts the optional scan | Page images for the submitted PDF; the local import error does not auto-upload |
 | Social resonance (planned) | Hashes only | SHA-256 paragraph hashes, never text |
 
 ## Local OCR asset locality
@@ -41,13 +42,17 @@ Detail: [[Local Tesseract.js]].
 
 ## Backend OCR disclosure
 
-When the accelerated path runs, the UI states it plainly through the progress callback:
+When the user explicitly starts the accelerated path, the UI states the boundary plainly:
 
 ```text
-"Local reading failed, trying the accelerated backend scan..."
-"Your file is uploaded only because local parsing could not read it. Cancel anytime."
-"Repair-tolerant backend scan in progress. Cancel anytime."
+"Scanned PDF pages are sent only after you start this optional scan"
+"Ingesting PDF in memory..."
+"Scanning Page N of M"
+"Use private on-device OCR"
 ```
+
+A local parse error is reported with a choice to open the optional OCR action. It never starts
+that action or uploads the file by itself.
 
 The user gets a cancel action, and cancelling calls `POST /api/ocr/cancel/{job_id}` so the
 in-memory buffers are released.
@@ -56,7 +61,9 @@ Detail: [[SSE Progress Streaming]], [[OCR-Frontend Sync Contract]].
 
 ## Backend handling rules
 
-- Zero content persistence. Page text and images live in memory for the job only.
+- Zero server-side content persistence. Page text and images live in memory for the job only.
+- The browser library is metadata-only; its OPFS/IndexedDB adapter is public but is not wired into
+  the current document lifecycle.
 - Buffers are cleared on completion, failure, and cancellation.
 - Image bytes, page text, and authorization headers are never logged.
 - `HF_TOKEN` and provider keys stay in backend secrets, never in the browser bundle.
@@ -87,7 +94,7 @@ Approved wording:
 - "Processes imported documents on your device by default."
 - "Uses native PDF text when available and OCR only when needed."
 - "Optional local OCR acceleration is available."
-- "The remote scan runs only when you start it, and you can cancel it."
+- "The remote scan runs only after you explicitly start it, and you can cancel it."
 
 Not allowed:
 

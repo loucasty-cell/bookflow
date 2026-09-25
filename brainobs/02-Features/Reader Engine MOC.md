@@ -2,7 +2,7 @@
 title: Reader Engine MOC
 type: MOC
 status: living
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, reader, moc]
 ---
 
@@ -12,19 +12,22 @@ The reader is Bookflow's product. Everything else supports it.
 
 ## Notes
 
-- [[Focus Rail]] - the 42 percent rail, selection algorithm, pinning, static regions
+- [[Focus Rail]] - the 38 percent rail, selection algorithm, pinning, static regions
 - [[Bionic Reading]] - fixation weighting and the pure-React tokenizer
 - [[Typography System]] - typefaces, letter tracking, slider ranges
 - [[Themes and Atmospheres]] - theme tokens per atmosphere
 - [[Navigation and Controls]] - keyboard, scroll intent, progress, touch
 - [[Notes and Bookmarks]] - selection tooltip, margin notes, persistence
+- Long-book windowing - `useChapterWindow` keeps a bounded chapter window with spacers
+- Local definition lookup - opt-in starter lexicon in `dictionary.js`; no network lookup
 
 ## The reading loop
 
 ```text
-scroll -> rail anchor at 42% -> nearest eligible paragraph becomes active
+scroll -> rail anchor at 38% -> nearest eligible paragraph becomes active
        -> user reads, scrolls again -> focus advances
-       -> Space or Escape pins a paragraph to hold it
+       -> Escape holds or releases the active paragraph
+       -> focused paragraph plus Enter or Space toggles its pin
        -> note or bookmark attaches to the pinned id
        -> progress persists against the document identity
 ```
@@ -33,7 +36,7 @@ scroll -> rail anchor at 42% -> nearest eligible paragraph becomes active
 
 | Constant | Value | File |
 | --- | --- | --- |
-| `FOCUS_RAIL_RATIO` | `0.42` | `src/features/reader/lib/readingController.js` |
+| `FOCUS_RAIL_RATIO` | `0.38` | `src/features/reader/lib/readingController.js` |
 | `MAX_SCROLL_INPUT` | `64` | same |
 | `SCROLL_INTENT_THRESHOLD` | `96` | same |
 | `FONT_SIZE_MIN` | `17` | `src/features/reader/config.js` |
@@ -43,13 +46,16 @@ scroll -> rail anchor at 42% -> nearest eligible paragraph becomes active
 ## Defaults that matter
 
 `focus: 'soft'`, `mode: 'focus'`, `theme: 'paper'`, `bionic: false`, `letterSpacing: 'normal'`.
-Bionic reading and the behavioral layer are opt-in. The calm reader is the default reader.
+`showRewardCapsules`, `showInterventionModals`, `showAchievements`, `showDefinitionLookup`, and
+`enableAnnualGoal` are opt-in. Bionic reading and the behavioral layer are not the default.
 
 ## Reader rules
 
 - Keep the active unit readable, never harsh.
 - Never make inactive text unreadable.
 - Support keyboard, pointer, wheel, and touch.
+- Global focus keys are `ArrowDown`/`ArrowUp`, `J`/`K`, `PageDown`/`PageUp`, and `Space`/`Shift+Space`; `Escape` toggles the active hold.
+- A focused paragraph uses `Enter` or `Space` to toggle its pin; global `Space` navigates focus.
 - No horizontal overflow from 320px to 430px.
 - Respect `prefers-reduced-motion`.
 

@@ -56,28 +56,51 @@ export function getSelectedSegmentAlignment({
   visibleTop,
   visibleBottom,
   focusRatio = DEFAULT_FOCUS_RATIO,
+  containerTop = 0,
+  preserveLargePosition = false,
 }) {
-  const usableHeight = Math.max(1, visibleBottom - visibleTop)
-  const selectedHeight = Math.max(0, selectedBottom - selectedTop)
+  const originTop = Number.isFinite(Number(containerTop)) ? Number(containerTop) : 0
+  const relativeSelectedTop = selectedTop - originTop
+  const relativeSelectedBottom = selectedBottom - originTop
+  const relativeVisibleTop = visibleTop - originTop
+  const relativeVisibleBottom = visibleBottom - originTop
+  const usableHeight = Math.max(1, relativeVisibleBottom - relativeVisibleTop)
+  const selectedHeight = Math.max(0, relativeSelectedBottom - relativeSelectedTop)
   const isLarge = selectedHeight > usableHeight
   const fullyVisible =
-    selectedTop >= visibleTop && selectedBottom <= visibleBottom
-  const railY = visibleTop + usableHeight * focusRatio
-  const latestFittingTop = visibleBottom - selectedHeight
+    relativeSelectedTop >= relativeVisibleTop &&
+    relativeSelectedBottom <= relativeVisibleBottom
+  const railY = relativeVisibleTop + usableHeight * focusRatio
+  const latestFittingTop = relativeVisibleBottom - selectedHeight
   const desiredTop = isLarge
-    ? visibleTop
-    : clamp(railY - selectedHeight / 2, visibleTop, Math.max(visibleTop, latestFittingTop))
-  const focusBandTop = visibleTop + usableHeight * 0.16
-  const focusBandBottom = visibleTop + usableHeight * 0.36
+    ? relativeVisibleTop
+    : clamp(
+        railY - selectedHeight / 2,
+        relativeVisibleTop,
+        Math.max(relativeVisibleTop, latestFittingTop),
+      )
+  const focusBandTop = relativeVisibleTop + usableHeight * 0.16
+  const focusBandBottom = relativeVisibleTop + usableHeight * 0.36
+  const intersectsViewport =
+    relativeSelectedTop < relativeVisibleBottom &&
+    relativeSelectedBottom > relativeVisibleTop
   const alreadyInFocusZone =
-    fullyVisible && selectedTop >= focusBandTop && selectedTop <= focusBandBottom
-  const unclampedTarget = containerScrollTop + selectedTop - desiredTop
-  const targetScrollTop = clamp(unclampedTarget, 0, maximumScrollTop)
+    fullyVisible &&
+    relativeSelectedTop >= focusBandTop &&
+    relativeSelectedTop <= focusBandBottom
+  const preserveLarge =
+    preserveLargePosition && isLarge && intersectsViewport
+  const unclampedTarget =
+    containerScrollTop + relativeSelectedTop - desiredTop
+  const targetScrollTop = preserveLarge
+    ? containerScrollTop
+    : clamp(unclampedTarget, 0, maximumScrollTop)
 
   return {
     isLarge,
     fullyVisible,
     shouldScroll:
+      !preserveLarge &&
       !alreadyInFocusZone &&
       Math.abs(targetScrollTop - containerScrollTop) > 1,
     targetScrollTop,
@@ -88,8 +111,10 @@ export function ensureSelectedSegmentVisible(
   selectedElement,
   scrollContainer,
   bottomOverlay,
+  options = {},
 ) {
   const selectedRect = selectedElement.getBoundingClientRect()
+  const containerRect = scrollContainer.getBoundingClientRect()
   const viewport = getReaderSafeViewport(
     scrollContainer,
     selectedElement,
@@ -101,10 +126,11 @@ export function ensureSelectedSegmentVisible(
       0,
       scrollContainer.scrollHeight - scrollContainer.clientHeight,
     ),
-    selectedTop: selectedRect.top,
-    selectedBottom: selectedRect.bottom,
-    visibleTop: viewport.visibleTop,
-    visibleBottom: viewport.visibleBottom,
+    selectedTop: selectedRect.top - containerRect.top,
+    selectedBottom: selectedRect.bottom - containerRect.top,
+    visibleTop: viewport.visibleTop - containerRect.top,
+    visibleBottom: viewport.visibleBottom - containerRect.top,
+    preserveLargePosition: options?.preserveLargePosition === true,
   })
 
   return { ...viewport, ...alignment }

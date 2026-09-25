@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { createReadStream } from 'node:fs'
 import { copyFile, mkdir } from 'node:fs/promises'
 import { dirname, extname, join, resolve } from 'node:path'
@@ -77,7 +78,7 @@ function localOcrAssets() {
 
 export default defineConfig({
   base: './',
-  plugins: [react(), localOcrAssets()],
+  plugins: [react(), tailwindcss(), localOcrAssets()],
   server: {
     port: 3000,
     host: '0.0.0.0',

@@ -2,9 +2,10 @@
 title: Agent Quickstart
 type: briefing
 status: living
-updated: 2026-09-18
+updated: 2026-09-24
 tags: [bookflow, agent, briefing]
-source-files: [AGENTS.md, package.json, src/App.jsx, backend/main.py]
+refactor: partial
+source-files: [AGENTS.md, package.json, src/App.jsx, src/features/reader/hooks/useReaderNavigation.js, src/features/document-import/lib/importCoordinator.js, src/features/library/index.js, backend/main.py]
 ---
 
 # Agent Quickstart
@@ -18,19 +19,23 @@ then [[Invariants]].
 bookflow/
   src/                        React 19 + Vite 8 frontend
     main.jsx                  Root mount with ErrorBoundary
-    App.jsx                   Root feature composer, library and reader state
+    App.jsx                   Root feature composer and import/library lifecycle
     styles.css                Semantic CSS tokens and themes
     components/               Lazy modals: OcrUploader, InterventionModal, VariableRewardCapsule
     features/
       reader/                 Core reading engine, focus rail, typography, notes
+        components/           Reader panels and reader shell
+        hooks/                Session, navigation, persistence, chapter window
+        lib/                  Text formatting, focus, viewport, scroll helpers
       document-import/        Client-side parsers, manifest, scheduler, backend OCR fallback
+      library/                Metadata library, resume/session surfaces, durable adapter
       landing/                Hero intake, drag-and-drop, sample book, opening intro
     shared/lib/               storage.js, text.js, perfMarks.js
     store/                    Zustand stores: readerStore, uiStore
   backend/                    FastAPI + PyMuPDF + PaddleOCR optional accelerator
     main.py                   OCR router, job store, SSE streaming
     app/                      Routers, Pydantic v2 models, services
-    tests/                    Pytest suite
+    tests/                    Pytest suite (45 tests across 8 modules)
 ```
 
 ## 2. Hard rules (violating these fails the task)
@@ -52,22 +57,39 @@ Detail: [[Invariants]].
 
 | Constant | Value | File |
 | --- | --- | --- |
-| `FOCUS_RAIL_RATIO` | `0.42` | `src/features/reader/lib/readingController.js` |
+| `FOCUS_RAIL_RATIO` | `0.38` | `src/features/reader/lib/readingController.js` |
 | `MAX_SCROLL_INPUT` | `64` | `src/features/reader/lib/readingController.js` |
 | `SCROLL_INTENT_THRESHOLD` | `96` | `src/features/reader/lib/readingController.js` |
+| `LINE_COOLDOWN` | `240` ms | `src/features/reader/lib/readingController.js` |
 | `FONT_SIZE_MIN` / `FONT_SIZE_MAX` | `17` / `24` | `src/features/reader/config.js` |
 | Import size ceiling | 50 MB | `src/features/document-import/lib/fileValidation.js` |
+| Progressive app path | PDF only; EPUB, TXT, Markdown use blocking `parseDocument` | `src/App.jsx` |
 | Render DPI (backend) | `96` | `backend/main.py` |
 | Backend batch size | `16` pages | `backend/main.py` |
 | Max OCR retries | `3` | `backend/main.py` |
 | Fast-path word threshold | `>= 15` words | `backend/main.py` |
 | SSE keepalive | `8s` | `backend/main.py` |
 | Drop-off detection window | `240000` ms | `src/App.jsx` |
-| Max upload (backend) | `500` MB | `backend/app/core/config.py` |
+| Max upload (backend) | `50` MB | `backend/main.py`, `backend/app/core/config.py` |
+| Library metadata key | `bookflow:library` | `src/features/library/lib/libraryStore.js` |
+| Library entry cap | `60` | `src/features/library/lib/libraryStore.js` |
+| Durable storage database | `bookflow-durable` | `src/features/library/lib/durableStorage.js` |
 
 Details: [[Focus Rail]], [[Backend OCR Engine]], [[Environment Config]].
 
-## 4. Commands
+## 4. Current refactor status
+
+- Reader session, navigation, persistence, and long-book windowing are extracted into
+  `src/features/reader/hooks/`.
+- Document import has feature-local parser, manifest, scheduler, and coordinator modules.
+- The metadata library has its own public `index.js`; the durable adapter is not yet wired into
+  document persistence.
+- `App.jsx` remains the application composer and import/library lifecycle owner. The refactor is
+  partial, not a reason to move feature internals back into the root.
+- `backend/main.py` remains the runnable OCR entrypoint alongside the modular `backend/app/` routers
+  and services.
+
+## 5. Commands
 
 ```bash
 npm run dev            # Vite dev server on port 3000
@@ -82,7 +104,7 @@ npx pyright            # Backend type check
 Backend also starts through `backend/start_backend.bat`. Frontend proxies `/api` to
 `http://127.0.0.1:8000` in dev.
 
-## 5. Where things belong
+## 6. Where things belong
 
 | Change | Location |
 | --- | --- |
@@ -91,6 +113,7 @@ Backend also starts through `backend/start_backend.bat`. Frontend proxies `/api`
 | Backend route | `backend/app/routers/` |
 | Reader component | `src/features/reader/components/` |
 | Reader util | `src/features/reader/lib/` |
+| Library metadata and durable adapter | `src/features/library/` |
 | Theme or CSS token | `src/styles.css` |
 | Reused by 2 or more features | `src/shared/` |
 | Frontend test | Beside the file as `*.test.js` |
@@ -98,12 +121,13 @@ Backend also starts through `backend/start_backend.bat`. Frontend proxies `/api`
 
 Full table: [[File Placement Map]].
 
-## 6. Verification before you finish
+## 7. Verification before you finish
 
 ```bash
 npm run lint
 npm test
 npm run build
+npm run check:vault
 pytest backend/tests/
 git diff --check
 ```
@@ -114,7 +138,7 @@ confirm no horizontal overflow at 320px and a 390x844 viewport.
 
 Checklist: [[Verification Checklist]].
 
-## 7. Do not claim
+## 8. Do not claim
 
 - Native App Store or Google Play readiness.
 - Universal ebook or language support. Bundled local OCR targets English.
@@ -122,10 +146,10 @@ Checklist: [[Verification Checklist]].
 - Guaranteed comprehension gains or "addictive reading".
 - That free serverless inference reads a 600 page scan in under two minutes.
 
-## 8. Next hops
+## 9. Next hops
 
 - Architecture: [[Full-Stack Overview]], [[Data Flow]]
 - Contracts: [[Normalized Book Contract]], [[Storage and Persistence]]
 - OCR: [[OCR Decision Tree]], [[SSE Progress Streaming]]
-- Design: [[Design Tokens]], [[Responsive Breakpoints]]
+- Design: [[Design Tokens]], [[Responsive Breakpoints]], [[Figma Inspection Evidence]]
 - Strategy: [[Atomic Habits Framework]], [[Ethical Guardrails]], [[Current State Matrix]]

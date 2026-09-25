@@ -2,7 +2,7 @@
 title: Screen Architectures
 type: reference
 status: verified
-updated: 2026-09-18
+updated: 2026-09-24
 tags: [bookflow, ux, layout, screens]
 source-files: [src/features/landing/components/LandingPage.jsx, src/features/landing/components/LivingShelf.jsx, src/features/landing/components/ThreeDBookCard.jsx, src/features/reader/components/ReaderShell.jsx, reactUIUXcover.md]
 ---
@@ -19,7 +19,7 @@ The concrete layouts of every screen and overlay in Bookflow.
 +------------------+---------------------------------------+----------------+
 | Contents         | Reader canvas                         | Settings or    |
 | navigator        |  - document header and stats          | Notes drawer   |
-| (collapsible)    |  - focus rail at 42%                  | (slide-in)     |
+| (collapsible)    |  - focus rail at 38%                  | (slide-in)     |
 |  - miniature     |  - active paragraph highlight         |                |
 |  - book stats    |  - static region label when detected  |  - font/measure|
 |  - chapter list  |  - end mark and next book trigger     |  - themes      |
@@ -102,7 +102,7 @@ Detail: [[Invariants]], [[Ethical Guardrails]].
 
 - [ ] Landing hero, dropzone, and format badges render without layout shift.
 - [ ] Opening transition plays on first visit and skips immediately on click.
-- [ ] Focus rail highlights the active paragraph at 42 percent viewport height.
+- [ ] Focus rail highlights the active paragraph at 38 percent viewport height.
 - [ ] Pin freezes the highlight; resume restores it.
 - [ ] Step controls advance by paragraph and reset pin state.
 - [ ] Sidebar collapses on desktop and becomes a drawer on mobile.
@@ -112,4 +112,4 @@ Detail: [[Invariants]], [[Ethical Guardrails]].
 - [ ] Front and end matter scroll without snapping.
 - [ ] Progress, bookmarks, and notes persist across reloads.
 
-Related: [[Responsive Breakpoints]], [[Motion and Transitions]], [[Accessibility Rules]].
+Related: [[Responsive Breakpoints]], [[Motion and Transitions]], [[Accessibility Rules]], [[Figma Inspection Evidence]].

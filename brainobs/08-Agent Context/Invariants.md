@@ -2,9 +2,9 @@
 title: Invariants
 type: rules
 status: verified
-updated: 2026-09-18
+updated: 2026-09-24
 tags: [bookflow, agent, rules, invariants]
-source-files: [AGENTS.md, goals.md, Bookflowideas.md, src/features/reader/config.js]
+source-files: [AGENTS.md, goals.md, Bookflowideas.md, src/features/reader/config.js, src/features/reader/hooks/useReaderNavigation.js, src/features/library/lib/libraryStore.js]
 ---
 
 # Invariants
@@ -36,10 +36,10 @@ book contents. This is what makes untrusted documents safe to display.
 
 Related: [[Bionic Reading]], [[Validation Rules]].
 
-### 3. Golden-ratio focus
+### 3. Focus rail
 
-Scrolling pulls the active sentence or paragraph into focus at `FOCUS_RAIL_RATIO = 0.42`.
-This is the central interaction, not a decoration.
+Scrolling pulls the active sentence or paragraph to `FOCUS_RAIL_RATIO = 0.38` of the reader
+viewport. This is the central interaction, not a decoration.
 
 - Implemented in `src/features/reader/lib/readingController.js` and `useScrollPosition.js`.
 - Static regions such as intros and end matter scroll natively without snapping.
@@ -50,7 +50,8 @@ Related: [[Focus Rail]], [[Cognitive Ergonomics]].
 
 - Keep the active paragraph readable without harsh contrast.
 - Never make non-active text inaccessible or illegible.
-- Support scrolling, pointer, keyboard (`Down`/`Up`/`J`/`K`/`Space`/`Escape`), and touch.
+- Support scrolling, pointer, keyboard (`ArrowDown`/`ArrowUp`, `J`/`K`, `PageDown`/`PageUp`, `Space`/`Shift+Space`, `Escape`), and touch.
+- A focused paragraph may also be pinned with click, tap, `Enter`, or `Space`; global `Space` navigates focus.
 - Prevent horizontal overflow from 320px to 430px.
 - Give focus, notes, and settings controls accessible names (`aria-label`, `aria-modal`).
 - Respect `prefers-reduced-motion: reduce`.
@@ -71,6 +72,14 @@ Related: [[Accessibility Rules]], [[Reward Capsules]], [[Ethical Guardrails]].
 - Never silently discard large portions of a document. Unreadable pages must be reported.
 - Use native PDF text as the source of truth and OCR only pages without selectable text.
 - Treat document markup, archives, filenames, and metadata as untrusted input.
+
+## Library and storage rules
+
+- The local library stores metadata and reading statistics under `bookflow:library`, never book text.
+- The durable-storage adapter is feature-local and currently does not imply that document content is persisted or re-opened automatically.
+- A resume surface may request file re-selection; it must not claim the original file is available.
+
+Related: [[Library and Reading Stats]], [[Storage and Persistence]].
 
 Related: [[Validation Rules]], [[OCR Decision Tree]], [[Import Scheduler]].
 

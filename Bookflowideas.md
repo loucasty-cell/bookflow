@@ -251,7 +251,7 @@ Do not assume every browser offers the same quota or File System Access support.
 
 ### 8.2 Attention support
 
-- Focus rail at the existing `FOCUS_RAIL_RATIO = 0.42`.
+- Focus rail at the existing `FOCUS_RAIL_RATIO = 0.38`.
 - Gentle sentence or paragraph highlighting, never aggressive flashing.
 - Distraction-free reader shell with optional full-screen mode.
 - `Do not disturb while reading` is a user-controlled option; Bookflow cannot control the operating system without permission.

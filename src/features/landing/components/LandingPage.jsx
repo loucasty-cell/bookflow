@@ -58,7 +58,13 @@ export function LandingPage({
   };
 
   return (
-    <main className="landing-shell relative overflow-hidden" data-theme={theme}>
+    <main
+      id="main-content"
+      data-modal-fallback-focus
+      className="landing-shell relative overflow-hidden"
+      data-theme={theme}
+      tabIndex={-1}
+    >
       <AmbientDustCanvas active={true} theme={theme} />
 
       <nav className="landing-nav relative z-10" aria-label="Primary navigation">

@@ -2,9 +2,9 @@
 title: Normalized Book Contract
 type: contract
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, architecture, contract, data]
-source-files: [src/features/document-import/lib/documentParsers.js, src/features/document-import/lib/backendOcrFallback.js, backend/app/models/document.py, api.md]
+source-files: [src/features/document-import/lib/documentParsers.js, src/features/document-import/lib/backendOcrFallback.js, src/features/reader/lib/chapterEnrichment.js, backend/app/models/document.py, api.md]
 ---
 
 # Normalized Book Contract
@@ -59,7 +59,8 @@ These are additive. Anything consuming the contract can ignore them.
 
 ## Enriched reader paragraph model
 
-Inside `App.jsx`, paragraphs are flattened and enriched for the focus rail:
+`enrichChapters` in the reader feature flattens and enriches the contract for the focus rail;
+`App.jsx` composes that result:
 
 ```json
 {

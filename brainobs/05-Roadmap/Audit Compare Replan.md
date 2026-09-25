@@ -2,15 +2,16 @@
 title: Audit Compare Replan
 type: strategy
 status: living
-updated: 2026-09-23
+updated: 2026-09-25
 tags: [bookflow, audit, compare, replan, strategy]
-source-files: [brainobs/09-Competitor Research/Competitor Research MOC.md, brainobs/03-Psychology/Competitor Mechanics Scorecard.md, src/features/reader/config.js, src/App.jsx]
+source-files: [brainobs/09-Competitor Research/Competitor Research MOC.md, brainobs/03-Psychology/Competitor Mechanics Scorecard.md, src/features/reader/config.js, src/features/reader/lib/dictionary.js, src/features/reader/components/HorizonTeaser.jsx, src/features/document-import/hooks/useDocumentImport.js, src/features/library/index.js, src/features/library/lib/readingGoals.js, src/features/library/lib/readingStats.js, src/App.jsx]
 ---
 
 # Audit Compare Replan
 
 Bookflow audited capability by capability against the researched competitors, then replanned.
-Plan only. No production code changed by this note.
+This note is a strategy snapshot. For current implementation status, [[Current State Matrix]] is
+authoritative.
 
 ## Verdict summary
 
@@ -20,10 +21,10 @@ Plan only. No production code changed by this note.
 | Import of arbitrary files | 4 formats, local-first, progressive | None of them match this | **Ahead** |
 | Scanned and damaged PDFs | 2-tier local OCR plus backend | Kindle handles owned purchases only | **Ahead** |
 | Privacy | Local by default, no account | None | **Ahead** |
-| Library and return loop | Static curated shelf only | Kindle, Apple, Goodreads | **Behind** |
-| Reading legibility over time | No library, no goals, no stats | Apple Books, Goodreads | **Behind** |
+| Library and return loop | Metadata library and resume card; recent shelf and automatic reopen remain open | Kindle, Apple, Goodreads | **Partial** |
+| Reading legibility over time | Metadata stats and opt-in goals exist; recent shelf remains open | Apple Books, Goodreads | **Partial** |
 | Progress fidelity | Percent only | Kindle percent plus page plus time left | **Behind** |
-| Comprehension aids | None in-book | Kindle dictionary, X-Ray, translation | **Behind** |
+| Comprehension aids | Local starter dictionary is wired behind an opt-in Define action; licensed dataset and look-back remain open | Kindle dictionary, X-Ray, translation | **Partial** |
 | Social layer | None | Goodreads, Fable | **Behind, intentionally** |
 | Annotation depth | Notes, bookmarks, quotes, tooltip | Kindle Notebook, Libby | **Parity, close** |
 | Themes and typography | 5 themes, 4 fonts, 3 trackings | Apple Books themes | **Parity** |
@@ -39,16 +40,17 @@ These are not opinions. They follow from the architecture.
 Kindle requires an Amazon account and a purchase or subscription. Apple Books needs an Apple
 account. Everand needs a subscription. Libby needs a library card. Goodreads needs an account.
 
-Bookflow reads a PDF, EPUB, TXT, or Markdown file from the reader's disk with no account, no
-upload, and no network. **No competitor in the research set does this.**
+Bookflow reads a PDF, EPUB, TXT, or Markdown file from the reader's disk with no account and no
+upload on the default path. **No competitor in the research set does this.** The optional backend
+is reached only after an explicit user-started accelerated scan.
 
 That is the single strongest differentiator and it currently gets one line of landing copy.
 
-### 2. Progressive import on hard documents
+### 2. Progressive processing on hard documents
 
-Every researched app prepares a whole book before showing it, and can block on a large scanned
-file. Bookflow opens the first ready unit immediately via `importScheduler`, with bounded
-concurrency and real cancellation.
+Bookflow's PDF path processes bounded units through `importScheduler` with cancellation and honest
+progress, but the app waits for terminal `100%` before opening the reader. This is not a
+pre-terminal reader opening claim. EPUB, TXT, and Markdown currently use the blocking parser.
 
 Detail: [[Import Scheduler]].
 
@@ -64,7 +66,7 @@ Detail: [[OCR Decision Tree]], [[OCR-Frontend Sync Contract]].
 
 | Feature | Status |
 | --- | --- |
-| Golden-ratio focus rail at 0.42 | Built, and unique in the research set |
+| Golden-ratio focus rail at 0.38 | Built, and unique in the research set |
 | Scroll intent accumulation | Built, prevents jitter |
 | Syntactic salience bionic fixation | Built, uses a low-salience particle set |
 | Paragraph classification heuristic | Built in `src/shared/lib/text.js` |
@@ -75,16 +77,15 @@ scrolling. This is the actual product innovation.
 
 ## Where Bookflow is behind, and why it hurts
 
-### 1. The return loop is missing entirely
+### 1. The return loop is partial
 
-The most damaging gap. Bookflow has `bookflow:document:{documentId}` sessions that store progress,
-bookmarks, notes, and scroll position, but there is **no library index and no resume surface**.
+Bookflow now has a metadata-only `bookflow:library`, session statistics, a `ResumeCard`, and a
+close-of-session recap. The reader can see an in-progress title and request the source file again.
+The recent-books shelf, file-handle reuse, and automatic reopen without re-selection are still
+missing, so the return loop is not yet equivalent to a competitor's library.
 
-Consequence: after closing a book, the reader must find the file and import it again. Every
-competitor solves this. Kindle auto-syncs purchases; Apple Books shows Reading Now; Goodreads has
-Currently Reading.
-
-Evidence: no `bookflow:library` key exists in code. Verified by search across `src/`.
+Evidence: `src/features/library/lib/libraryStore.js`, `ResumeCard.jsx`, and the `backlog-3`
+`RecentShelf` TODO in `LandingPage.jsx`.
 
 Detail: [[Library and Reading Stats]].
 
@@ -94,28 +95,27 @@ Detail: [[Library and Reading Stats]].
 | --- | --- |
 | Percent read | Percent read |
 | Real page numbers | Not available |
-| Time left in chapter, from actual reading speed | Reading time from a fixed 220 WPM, whole document |
+| Time left in chapter, from actual reading speed | Local measured speed exists in the library feature, but the reader does not yet surface chapter time-left |
 | Time left in book | Whole document estimate only |
 
-`estimateReadingMs` in `readingController.js` uses a fixed `wordsPerMinute = 220` and a
-900 to 8000 ms clamp. It does not learn the reader's real speed. Kindle's personalized estimate is
-a genuinely better feature and it is a small addition here.
+`createSpeedTracker` and `computeWordsPerMinute` now measure active local reading, with idle gaps
+excluded. The remaining gap is presentation and sample confidence, not the absence of a speed
+calculation.
 
-### 3. No comprehension aids
+### 3. Comprehension aids are partial
 
-Kindle's dictionary lookup, X-Ray, Wikipedia, and instant translation are the strongest
-abandonment reducers in the category, especially for non-fiction and translated works. Bookflow has
-the selection tooltip infrastructure (`SelectionTooltip.jsx`) already positioned correctly. The
-missing piece is a local definition source.
+Bookflow has a local starter dictionary, an opt-in `Define` action in `SelectionTooltip`, and a
+licensed-data seam. Unknown words produce an honest miss instead of a network request. The missing
+pieces are a full licensed dataset, look-back, and richer study tools.
 
-Boundary: any lookup must be local or explicitly opt-in. A dictionary API call would send the
-selected word off-device.
+Boundary: any lookup must remain local. A dictionary API call would send the selected word
+off-device.
 
-### 4. No legibility over time
+### 4. Legibility over time is partial
 
 Goodreads succeeds on shelves, a yearly count, and what friends read. Apple Books ships goals,
-streaks, and a yearly count. Bookflow has deterministic progress and nothing that accumulates.
-Nothing in the app answers "what have I read this year?"
+streaks, and a yearly count. Bookflow now has opt-in local goals, measured stats, and deterministic
+achievement APIs, but no complete statistics dashboard or recent-books shelf.
 
 ### 5. Not installable, not offline-capable
 
@@ -148,7 +148,7 @@ These corrections were made in the vault during this audit and matter for planni
 | --- | --- |
 | Haptic vocabulary is **built and wired**, not partial | Removes an item from the backlog |
 | Paragraph classification is **implemented** in `src/shared/lib/text.js` | Removes an item; status changes to verified |
-| `HorizonTeaser` is **built and wired** in `ReaderPage` | The craving mechanism already exists |
+| `HorizonTeaser` is **built and wired** in `ReaderPage` | The craving mechanism already exists; its fallback estimate is derived from the next chapter's word count, while live speed samples remain open |
 | `FocusCard.jsx` exists as a separate focus surface | Affects UI refactor scoping |
 | `resonance.css` exists in reader components but is **orphaned**, no importer | Dead asset; either wire it to social resonance or delete it |
 | `HAPTIC_PATTERNS.HEAVY`, `WARNING`, `SELECTION` defined but **unused** | Either wire or mark reserved |
@@ -163,13 +163,15 @@ The replan reorders the upgrade path around what the competitor research proved 
 ### Phase 1: close the return loop
 
 ```text
-Priority 1  Library index plus Resume Card        highest reading value in the audit
+Priority 1  Recent books shelf plus file reopen   highest remaining reading value
 Priority 2  Currently Reading surface             what Goodreads and Apple Books lead with
 Priority 3  Want to Read queue                    present in almost every competitor
-Priority 4  Session recap on close                completes the satisfying stage
+Priority 4  Session recap on close                built; keep it opt-in
 ```
 
-Rationale: every researched app that retains readers does these four. Bookflow does none.
+Rationale: every researched app that retains readers does these four. Bookflow now has the
+metadata library, resume card, and opt-in recap, but still lacks the recent shelf and file-handle
+reopen.
 
 ### Phase 2: match Kindle on progress legibility
 
@@ -232,8 +234,8 @@ State the metric before building, per [[Success Metrics]].
 ## The rebuild question
 
 Answering it directly: **no rebuild is needed.** The audit found a strong, differentiated reader
-with a missing library and a missing legibility layer. Both are additive, both are metadata only,
-and neither touches the parsing, OCR, or focus systems.
+with a partial return loop and a missing legibility layer. The remaining work is additive,
+metadata-first, and does not require moving parsing, OCR, or focus systems.
 
 The architecture is not the constraint. The return loop is.
 

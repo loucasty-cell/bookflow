@@ -1,0 +1,183 @@
+/* ==========================================================================
+   4 MASTER CRAFT THEMES (ATELIER PAPER, MIDNIGHT VAULT, KYOTO, MONOCODEX)
+   ========================================================================== */
+
+/* 1. Atelier Paper (Default Warm Reading Canvas) */
+[data-theme="paper"] {
+  --app-bg: #faf7f2;
+  --app-surface: #fffefa;
+  --app-surface-subtle: #f4ede2;
+  --app-text: #1e1b18;
+  --app-text-muted: #6b635b;
+  --app-line: rgba(139, 94, 52, 0.14);
+  --app-accent: #8b5e34;
+  --reader-card-bg: #fffefa;
+  --reader-text: #1e1b18;
+  --focus-glow: rgba(217, 119, 6, 0.12);
+  --reentry-glow: rgba(217, 119, 6, 0.24);
+}
+
+/* 2. Midnight Vault (OLED Deep Dark Canvas) */
+[data-theme="dusk"] {
+  --app-bg: #090d14;
+  --app-surface: #111722;
+  --app-surface-subtle: #192231;
+  --app-text: #f3f4f6;
+  --app-text-muted: #9ca3af;
+  --app-line: rgba(255, 255, 255, 0.1);
+  --app-accent: #d97706;
+  --reader-card-bg: #111722;
+  --reader-text: #f3f4f6;
+  --focus-glow: rgba(245, 158, 11, 0.16);
+  --reentry-glow: rgba(245, 158, 11, 0.32);
+}
+
+/* 3. Kyoto Mist (Zen Bamboo Linen & Slate) */
+[data-theme="kyoto"] {
+  --app-bg: #eaebe6;
+  --app-surface: #f4f5f1;
+  --app-surface-subtle: #dfe2db;
+  --app-text: #202421;
+  --app-text-muted: #5c6660;
+  --app-line: rgba(74, 107, 93, 0.16);
+  --app-accent: #4a6b5d;
+  --reader-card-bg: #f4f5f1;
+  --reader-text: #202421;
+  --focus-glow: rgba(74, 107, 93, 0.14);
+  --reentry-glow: rgba(74, 107, 93, 0.28);
+}
+
+/* 4. Monospace Codex (Nerd Terminal / CRT Phosphor) */
+[data-theme="monocodex"] {
+  --app-bg: #0a0c0e;
+  --app-surface: #13171c;
+  --app-surface-subtle: #1d232a;
+  --app-text: #e2e8f0;
+  --app-text-muted: #8b949e;
+  --app-line: rgba(16, 185, 129, 0.18);
+  --app-accent: #10b981;
+  --reader-card-bg: #13171c;
+  --reader-text: #e2e8f0;
+  --focus-glow: rgba(16, 185, 129, 0.14);
+  --reentry-glow: rgba(16, 185, 129, 0.3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+}
+
+/* 5. Sepia Remix */
+[data-theme="remix"] {
+  --app-bg: #f5ecd7;
+  --app-surface: #fdfbf7;
+  --app-surface-subtle: #ebdcc0;
+  --app-text: #2b231a;
+  --app-text-muted: #736453;
+  --app-line: rgba(156, 65, 70, 0.14);
+  --app-accent: #9c4146;
+  --reader-card-bg: #fdfbf7;
+  --reader-text: #2b231a;
+  --focus-glow: rgba(156, 65, 70, 0.12);
+  --reentry-glow: rgba(156, 65, 70, 0.24);
+}
+
+.app-shell[data-theme="paper"] {
+  --app-surface: #fffefa;
+  --app-surface-subtle: #f4ede2;
+  --app-text: #1e1b18;
+  --app-text-muted: #5f5a55;
+  --app-accent: #8b5e34;
+  --reader-card-bg: #fffefa;
+  --reader-text: #1e1b18;
+}
+
+.app-shell[data-theme="dusk"] {
+  --app-surface: #111113;
+  --app-surface-subtle: #1c1c1f;
+  --app-text: #f2f2f7;
+  --app-text-muted: #c7c7d0;
+  --app-accent: #aa2638;
+  --reader-card-bg: #111113;
+  --reader-text: #f2f2f7;
+}
+
+.app-shell[data-theme="kyoto"] {
+  color-scheme: light;
+  --app-bg: #eaebe6;
+  --app-surface: #f4f5f1;
+  --app-surface-subtle: #dfe2db;
+  --app-text: #202421;
+  --app-text-muted: #56625c;
+  --app-line: rgba(74, 107, 93, 0.18);
+  --app-accent: #4a6b5d;
+  --reader-bg: #f4f5f1;
+  --reader-ink: #202421;
+  --reader-muted: #56625c;
+  --chrome: rgba(244, 245, 241, 0.86);
+  --chrome-solid: #f4f5f1;
+  --chrome-strong: #dfe2db;
+  --focus-bg: rgba(74, 107, 93, 0.2);
+  --focus-surface: rgba(255, 255, 255, 0.58);
+  --focus-edge: #4a6b5d;
+  --reader-accent: #4a6b5d;
+  --reader-accent-strong: #365747;
+  --reader-accent-soft: rgba(74, 107, 93, 0.16);
+  --accent: #4a6b5d;
+  --accent-soft: rgba(74, 107, 93, 0.14);
+  --accent-strong: #365747;
+  --sidebar-bg: #e4e7e1;
+  --sidebar-border: rgba(74, 107, 93, 0.16);
+  --sidebar-hover: rgba(74, 107, 93, 0.08);
+  --sidebar-active-bg: rgba(74, 107, 93, 0.18);
+  --sidebar-active-text: #1f332a;
+  --sidebar-text: #29332e;
+  --sidebar-muted: #56625c;
+  --sidebar-number-bg: rgba(74, 107, 93, 0.16);
+  --sidebar-action-bg: rgba(74, 107, 93, 0.12);
+  --reader-card-bg: #f4f5f1;
+  --reader-text: #202421;
+}
+
+.app-shell[data-theme="monocodex"] {
+  color-scheme: dark;
+  --app-bg: #0a0c0e;
+  --app-surface: #13171c;
+  --app-surface-subtle: #1d232a;
+  --app-text: #e2e8f0;
+  --app-text-muted: #b4bdc7;
+  --app-line: rgba(16, 185, 129, 0.24);
+  --app-accent: #10b981;
+  --reader-bg: #13171c;
+  --reader-ink: #e2e8f0;
+  --reader-muted: #b4bdc7;
+  --chrome: rgba(19, 23, 28, 0.88);
+  --chrome-solid: #13171c;
+  --chrome-strong: #1d232a;
+  --focus-bg: rgba(16, 185, 129, 0.18);
+  --focus-surface: rgba(16, 185, 129, 0.1);
+  --focus-edge: #34d399;
+  --reader-accent: #10b981;
+  --reader-accent-strong: #6ee7b7;
+  --reader-accent-soft: rgba(16, 185, 129, 0.16);
+  --accent: #10b981;
+  --accent-soft: rgba(16, 185, 129, 0.14);
+  --accent-strong: #34d399;
+  --sidebar-bg: #101418;
+  --sidebar-border: rgba(16, 185, 129, 0.18);
+  --sidebar-hover: rgba(16, 185, 129, 0.09);
+  --sidebar-active-bg: rgba(16, 185, 129, 0.16);
+  --sidebar-active-text: #d1fae5;
+  --sidebar-text: #dbe5e1;
+  --sidebar-muted: #a5b5ad;
+  --sidebar-number-bg: rgba(16, 185, 129, 0.16);
+  --sidebar-action-bg: rgba(16, 185, 129, 0.14);
+  --reader-card-bg: #13171c;
+  --reader-text: #e2e8f0;
+}
+
+.app-shell[data-theme="remix"] {
+  --app-surface: #fdfbf7;
+  --app-surface-subtle: #ebdcc0;
+  --app-text: #2b231a;
+  --app-text-muted: #665950;
+  --app-accent: #9c4146;
+  --reader-card-bg: #fdfbf7;
+  --reader-text: #2b231a;
+}

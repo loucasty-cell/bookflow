@@ -27,7 +27,7 @@ Designed with cognitive ergonomics and behavioral product design, Bookflow helps
 ### 3. Behavioral Interventions & Retention
 - **Variable Reward Capsules**: Unannounced philosophical syntheses and cross-domain insights unlock beautifully via spring physics at chapter milestones.
 - **Ambient Intervention Engine**: A non-intrusive toast that detects drop-off intent and gently pulls the reader back into flow.
-- **Social Resonance**: A privacy-preserving in-margin asynchronous layer displaying community reflections anchored to cryptographic paragraph hashes.
+- **Social Resonance**: A privacy-preserving in-margin layer is planned; the current backend exposes only mock resonance and session-pulse scaffolds, with no persisted frontend community experience.
 
 ---
 
@@ -39,11 +39,11 @@ Bookflow is engineered as a decoupled Full-Stack application, utilizing modern f
 - **[React 19 + Vite](https://vitejs.dev/)**: Fast, lightning-quick HMR, optimized ES modules bundler, and clean single-page application architecture.
 - **[Zustand](https://docs.pmnd.rs/zustand)**: Powers global state management (UI toggles, reading progress, hooks) with minimal boilerplate, completely decoupling heavy state from `App.jsx` and enabling pure component testing.
 - **[Framer Motion](https://www.framer.com/motion/)**: Drives the `AnimatePresence` and spring-physics orchestrations for the ambient intervention toasts and variable reward capsules, providing Apple-tier UI fluidity.
-- **[SWR](https://swr.vercel.app/)**: Used for lightweight, reactive data fetching and caching for the social resonance endpoints.
+- **[SWR](https://swr.vercel.app/)**: Available for future remote data integrations; current reader and import flows do not depend on a social endpoint.
 - **Core Processing**: `pdfjs-dist` (PDF extraction), `jszip` (EPUB parsing), `tesseract.js` (local WASM OCR fallback).
 
 ### Backend
-- **[FastAPI](https://fastapi.tiangolo.com/)**: A hyper-fast, async-first Python backend managing the OCR pipeline and social resonance API.
+- **[FastAPI](https://fastapi.tiangolo.com/)**: A hyper-fast, async-first Python backend managing the optional OCR pipeline and mock social scaffolds.
 - **[PyMuPDF (fitz)](https://pymupdf.readthedocs.io/)**: Handles instantaneous PDF parsing, in-memory 96 DPI rasterization, and coordinate geometry.
 - **[HTTPX](https://www.python-httpx.org/)**: Configured with strict connection pooling (`max_keepalive_connections`) for highly concurrent, rate-limit resistant batch OCR requests to Hugging Face `vLLM` endpoints.
 - **[Pydantic v2](https://docs.pydantic.dev/latest/)**: Enforces strict typing and data validation for API payloads.
@@ -81,9 +81,13 @@ npm run dev
 Ensure code quality before contributing:
 
 ```bash
-npm run lint    # ESLint checks
-npm run test    # Vitest suite
-npm run build   # Production Vite build
+npm run lint          # ESLint checks
+npm test              # Vitest suite
+npm run test:e2e      # Browser smoke and 420-page import coverage
+npm run build         # Production Vite build
+npm run check:vault   # Brainobs graph integrity
+pytest backend/tests/ # Backend suite
+npx pyright           # Backend type check
 ```
 
 ---
@@ -94,5 +98,5 @@ Bookflow processes standard text extraction and local English OCR on-device by d
 
 ### Recent Architecture Updates
 
-- Restructured local parser and backend engine layers to be easily readable top-to-bottom.
-- Deployed strict memory bounds across both the JS environment and Python process scaling to explicitly address memory leak risk on large 500+ page books, using asynchronous bounded batch chunks and manual cache cleanup calls.
+- Restructured local parser, reader, OCR, library, and backend engine layers into feature-local modules and compatibility facades.
+- Verified terminal 100% import gating and a generated 420-page native-text browser probe: monotonic progress, reader opened afterward, zero horizontal overflow at 390px, and two mounted chapter sections. Repeated p50/p95 benchmarks and scanned-PDF integration remain open.

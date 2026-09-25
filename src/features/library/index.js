@@ -90,3 +90,4 @@ export {
 export { BadgeGallery } from './components/BadgeGallery.jsx';
 export { ResumeCard } from './components/ResumeCard.jsx';
 export { SessionRecap } from './components/SessionRecap.jsx';
+export { useReadingSession } from './hooks/useReadingSession.js';

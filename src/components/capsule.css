@@ -2,10 +2,11 @@
   margin: 40px auto;
   padding: 24px;
   max-width: 600px;
-  border-radius: 16px;
-  background: var(--reading-surface);
-  border: 1px solid var(--border-color);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+  border-radius: var(--radius-card);
+  color: var(--app-text, var(--reader-ink, #1b2633));
+  background: var(--app-surface, var(--chrome-solid, #fffefa));
+  border: 1px solid var(--app-line, rgba(80, 123, 156, 0.18));
+  box-shadow: var(--shadow-sm);
   animation: fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
   transform: translateY(10px);
@@ -18,7 +19,7 @@
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-muted);
+  color: var(--app-text-muted, var(--reader-muted, #647384));
   margin-bottom: 16px;
 }
 
@@ -26,11 +27,11 @@
   font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   font-size: 18px;
   font-style: italic;
-  color: var(--text-primary);
+  color: var(--app-text, var(--reader-ink, #1b2633));
   line-height: 1.6;
   margin-bottom: 24px;
   padding-left: 16px;
-  border-left: 3px solid var(--bookflow-blue);
+  border-left: 3px solid var(--app-accent, var(--brand-blue, #507b9c));
 }
 
 .flow-sparkline {
@@ -39,36 +40,45 @@
   gap: 16px;
   margin-bottom: 24px;
   padding: 12px;
-  background: rgba(80, 123, 156, 0.05);
-  border-radius: 8px;
+  background: color-mix(in srgb, var(--app-accent, var(--brand-blue, #507b9c)) 8%, transparent);
+  border: 1px solid var(--app-line, rgba(80, 123, 156, 0.18));
+  border-radius: var(--radius-card);
 }
 
 .sparkline-label {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--app-text-muted, var(--reader-muted, #647384));
 }
 
 .sparkline-svg {
   flex: 1;
   height: 20px;
-  color: var(--bookflow-blue);
+  color: var(--app-accent, var(--brand-blue, #507b9c));
 }
 
-.horizon-teaser {
+.variable-reward-capsule .horizon-teaser {
   display: flex;
   gap: 12px;
+  margin: 0;
+  padding: 16px;
+  align-items: flex-start;
   font-size: 14px;
   line-height: 1.5;
-  color: var(--text-muted);
-  background: var(--surface-base);
-  padding: 16px;
-  border-radius: 8px;
+  color: var(--app-text-muted, var(--reader-muted, #647384));
+  background: color-mix(in srgb, var(--app-surface, var(--chrome-solid, #fffefa)) 92%, var(--app-accent, var(--brand-blue, #507b9c)));
+  border: 1px solid var(--app-line, rgba(80, 123, 156, 0.18));
+  border-radius: var(--radius-card);
 }
 
-.teaser-icon {
+.variable-reward-capsule .horizon-teaser p {
+  min-width: 0;
+  margin: 0;
+}
+
+.variable-reward-capsule .teaser-icon {
   flex-shrink: 0;
   margin-top: 2px;
-  color: var(--interactive-accent);
+  color: var(--app-accent, var(--brand-blue, #507b9c));
 }
 
 @keyframes fade-up {

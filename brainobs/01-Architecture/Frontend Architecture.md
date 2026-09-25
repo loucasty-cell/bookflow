@@ -2,9 +2,10 @@
 title: Frontend Architecture
 type: concept
 status: verified
-updated: 2026-09-18
+refactor: complete
+updated: 2026-09-25
 tags: [bookflow, architecture, frontend, react]
-source-files: [src/App.jsx, src/main.jsx, vite.config.js, src/store/readerStore.js, src/store/uiStore.js, src/shared/lib/storage.js, src/features/landing/components/LivingShelf.jsx, src/features/landing/components/ThreeDBookCard.jsx]
+source-files: [src/App.jsx, src/main.jsx, vite.config.js, src/store/readerStore.js, src/store/uiStore.js, src/shared/lib/storage.js, src/features/reader/index.js, src/features/document-import/index.js, src/features/library/index.js, src/features/reader/hooks/useReaderNavigation.js, src/features/document-import/hooks/useDocumentImport.js, src/features/library/hooks/useReadingSession.js, src/features/landing/components/LivingShelf.jsx, src/features/landing/components/ThreeDBookCard.jsx]
 ---
 
 # Frontend Architecture
@@ -17,7 +18,9 @@ source-files: [src/App.jsx, src/main.jsx, vite.config.js, src/store/readerStore.
 | Vite | 8 | Dev server, HMR, production bundling |
 | Zustand | 5 | Global state with persisted settings |
 | Framer Motion | 13 | Spring physics and `AnimatePresence` |
-| SWR | 2 | Reactive fetch and cache for remote endpoints |
+| SWR | 2 | Available for future remote integrations; current reader/import flows do not depend on it |
+| Three.js | 0.186 | Existing isolated ambient dust layer; no text rendering |
+| Tailwind CSS | 4.3 | Utility-only Vite layer without preflight; semantic CSS remains authoritative |
 | Lucide React | 0.468 | Icon set |
 
 `base: './'` in `vite.config.js` keeps asset paths relative so the build runs from any
@@ -30,13 +33,14 @@ src/
   App.jsx                  Root composer: book state, session hooks, reader wiring
   main.jsx                 Root mount wrapped in ErrorBoundary
   styles.css               Semantic CSS tokens and theme definitions
-  components/              Cross-feature lazy modals
+  components/              Cross-feature lazy modals and compatibility wrappers
   features/
-    landing/               LandingPage, BookOpeningIntro
-    reader/                Components, lib, hooks, config, public index.js
-    document-import/       Parsers, manifest, scheduler, coordinator, OCR fallback
+    landing/               LandingPage, BookOpeningIntro, LivingShelf, ThreeDBookCard
+    reader/                Components, hooks, lib, config, public index.js
+    document-import/       Components, hooks, parsers, manifest, scheduler, coordinator, OCR session
+    library/               Components, hooks, metadata, stats/goals/achievements, resume surfaces, durable adapter
   shared/
-    lib/                   storage.js, text.js, perfMarks.js
+    lib/                   storage.js, text.js, haptics.js, focusManagement.js, perfMarks.js
     components/            ErrorBoundary and shared UI
   store/                   readerStore.js, uiStore.js
 ```
@@ -48,7 +52,14 @@ Rules:
 - `src/shared/` is only for code two or more features actually use.
 - `App.jsx` owns application state and feature composition, not feature internals.
 
-Detail: [[File Placement Map]].
+## Refactor status
+
+The reader session, navigation, input, measurement, persistence, annotations, static-region
+handling, and long-book windowing are extracted into `src/features/reader/hooks/`. Document import
+and the metadata library have their own feature boundaries, components, and hooks. `App.jsx` is the
+root composer and lifecycle owner; the current decomposition is complete.
+
+Detail: [[File Placement Map]], [[Agent Quickstart]].
 
 ## Reader feature internals
 
@@ -57,25 +68,37 @@ src/features/reader/
   config.js                         DEFAULT_SETTINGS, FONT_SIZE_MIN, FONT_SIZE_MAX
   index.js                          Public API
   components/
-    ReaderPage.jsx
+    ReaderPage.jsx                  Reader canvas, focus cards, panels, and dictionary selection
     ReaderShell.jsx                 Layout composition, capsules, interventions
+    FocusCard.jsx                   Focus status and bookmark/copy actions
     SettingsPanel.jsx
     NotesPanel.jsx
     ContentsPanel.jsx
     SelectionTooltip.jsx
-    SaccadicGuide.jsx
+    HorizonTeaser.jsx               Next-chapter preview
+    SaccadicGuide.jsx               Experimental guide component; not mounted by ReaderShell
+    resonance.css                   Orphaned social-layer asset; no importer
   lib/
     readingController.js            FOCUS_RAIL_RATIO, scroll intent, readingProgress
-    focusRail.js                    selectClosestParagraph, selectFocusTarget
+    focusRail.js                    selectClosestParagraph, selectFocusTarget, selectNextParagraph
     focusEligibility.js             isFocusEligibleChapter
+    staticRegion.js                 Static-region detection and labels
     readerViewport.js               Viewport and alignment helpers
     useScrollPosition.js            Scroll metrics hook
     textFormatter.js                formatParagraphText, getFixationLength
     salienceFormatter.js            Salience weighting
+    dictionary.js                   Local-only starter lexicon and optional licensed loader
+    readingTime.js                  Reading-time formatting
+    chapterEnrichment.js            Paragraph ids, word counts, and chapter enrichment
   hooks/
-    useReaderSession.js
-    useReaderNavigation.js
-    useReaderPersistence.js
+    useReaderSession.js             Book state, open/close, resume, chapter selection
+    useReaderNavigation.js          Focus, alignment, input, and step navigation
+    useReaderInput.js               Keyboard, wheel, touch, and scroll handlers
+    useReaderMeasurement.js         Paragraph measurement and restore alignment
+    useReaderStaticRegion.js        Static-region state
+    useReaderPersistence.js         Per-document session read and write
+    useReaderAnnotations.js         Notes, bookmarks, and copy actions
+    useChapterWindow.js             Long-book windowing and spacer preservation
 ```
 
 ## State management
@@ -100,6 +123,7 @@ Two behaviours matter for correctness:
 
 - `setSettings` always re-merges over `DEFAULT_SETTINGS`, so newly added defaults appear for
   existing users without a migration.
+- `setBookmarks` and `setNotes` accept either arrays or functional updaters and normalize persisted values to arrays.
 - `partialize` persists only `settings`. Progress, bookmarks, and notes are persisted
   per document through the reader persistence hook instead.
 
@@ -116,7 +140,7 @@ Open-state setters accept either a boolean or an updater function.
 
 Heavy UI is lazy-loaded with `React.lazy` and `Suspense`:
 
-- `OcrUploader` in `App.jsx`
+- `OcrUploader` compatibility facade in `App.jsx`; the session and viewer are feature-owned.
 - `VariableRewardCapsule` in `ReaderShell.jsx`
 
 Heavy parsers are loaded only when their format is used: PDF.js for PDFs, JSZip for EPUB,
@@ -166,7 +190,8 @@ Detail: [[Screen Architectures]], [[Motion and Transitions]].
 
 ## Performance marks
 
-`src/shared/lib/perfMarks.js` emits named measures consumed by the benchmark process:
+`src/shared/lib/perfMarks.js` exposes named marks and measure helpers consumed by performance
+tooling:
 `bookflow:import-selected`, `bookflow:validation-done`, `bookflow:native-text-done`,
 `bookflow:ocr-start`, `bookflow:ocr-done`, `bookflow:chapters-done`,
 `bookflow:reader-mounted`.
@@ -178,7 +203,8 @@ Detail: [[Success Metrics]], [[Testing Pipeline]].
 - `ErrorBoundary` wraps the app root and the reader subtree with a reset action.
 - `getSafeStorage()` probes `localStorage` and falls back to an in-memory `Map`, so private
   browsing and blocked storage do not crash the app.
-- Import has a graceful path: progressive first, blocking parse fallback, then backend OCR
-  fallback for unreadable PDFs.
+- Import has a graceful path: PDF progressive processing, blocking parse for EPUB/TXT/Markdown, and
+  an explicit optional backend OCR action for scans the local path cannot recover. A local error
+  never triggers an automatic upload or backend call.
 
 Related: [[Storage and Persistence]], [[Import Scheduler]], [[Data Flow]].

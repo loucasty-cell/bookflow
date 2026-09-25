@@ -12,6 +12,7 @@ export function SelectionTooltip({
 }) {
   const [position, setPosition] = useState(null);
   const [selectedText, setSelectedText] = useState("");
+  const [selectedParagraphId, setSelectedParagraphId] = useState("");
   const [copied, setCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
   const [definition, setDefinition] = useState(null);
@@ -23,6 +24,7 @@ export function SelectionTooltip({
     if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
       setPosition(null);
       setSelectedText("");
+      setSelectedParagraphId("");
       return;
     }
 
@@ -30,6 +32,7 @@ export function SelectionTooltip({
     if (!text || text.length < 2) {
       setPosition(null);
       setSelectedText("");
+      setSelectedParagraphId("");
       return;
     }
 
@@ -38,20 +41,27 @@ export function SelectionTooltip({
     if (container && !container.contains(range.commonAncestorContainer)) {
       setPosition(null);
       setSelectedText("");
+      setSelectedParagraphId("");
       return;
     }
 
     const rect = range.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) {
       setPosition(null);
+      setSelectedParagraphId("");
       return;
     }
+
+    const anchorNode = selection.anchorNode ?? range.commonAncestorContainer;
+    const anchorElement = anchorNode?.nodeType === 1 ? anchorNode : anchorNode?.parentElement;
+    const paragraphId = anchorElement?.closest?.("[data-paragraph-id]")?.getAttribute("data-paragraph-id") || "";
 
     // Position tooltip right above the center of selected range
     const top = Math.max(10, rect.top - 48);
     const left = Math.max(12, Math.min(window.innerWidth - 180, rect.left + rect.width / 2));
 
     setSelectedText(text);
+    setSelectedParagraphId(paragraphId);
     setDefinition(null);
     setLookupMiss(false);
     setCopied(false);
@@ -75,6 +85,7 @@ export function SelectionTooltip({
       if (e.key === "Escape") {
         setPosition(null);
         setSelectedText("");
+        setSelectedParagraphId("");
       } else {
         later(handleSelectionChange, 20);
       }
@@ -143,11 +154,9 @@ export function SelectionTooltip({
     e.stopPropagation();
     e.preventDefault();
     triggerHaptic(HAPTIC_PATTERNS.MEDIUM);
-    const anchorNode = window.getSelection()?.anchorNode;
-    const anchorElement = anchorNode instanceof Element ? anchorNode : anchorNode?.parentElement;
-    const selectedParagraphId = anchorElement?.closest?.("[data-paragraph-id]")?.getAttribute("data-paragraph-id");
-    if (onBookmarkParagraph && (selectedParagraphId || activeParagraphId)) {
-      onBookmarkParagraph(selectedParagraphId || activeParagraphId);
+    const bookmarkId = selectedParagraphId || activeParagraphId;
+    if (onBookmarkParagraph && bookmarkId) {
+      onBookmarkParagraph(bookmarkId);
     }
     setPosition(null);
   };
@@ -207,7 +216,7 @@ export function SelectionTooltip({
         <span>{copied ? "Copied" : copyFailed ? "Copy failed" : "Copy"}</span>
       </button>
 
-      {activeParagraphId && onBookmarkParagraph && (
+      {(selectedParagraphId || activeParagraphId) && onBookmarkParagraph && (
         <button
           type="button"
           className="sel-tip-btn"

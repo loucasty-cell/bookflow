@@ -1,0 +1,8 @@
+@import "tailwindcss/utilities.css";
+
+@theme {
+  --color-bookflow-blue: #507b9c;
+  --color-bookflow-red: #e3242b;
+  --color-bookflow-navy: #171d3a;
+  --color-bookflow-cream: #f3ead9;
+}

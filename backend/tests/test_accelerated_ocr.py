@@ -1,10 +1,13 @@
 import json
 import time
 import base64
+import asyncio
+from unittest.mock import AsyncMock, patch
 
 import fitz
 import httpx
 import pytest
+from fastapi import Response
 from fastapi.testclient import TestClient
 
 import main as accelerated_ocr
@@ -188,6 +191,84 @@ def test_cors_allows_bookflow_and_rejects_untrusted_origins():
     assert "access-control-allow-origin" not in untrusted.headers
 
 
+@patch.object(accelerated_ocr, "process_ocr_pipeline", new_callable=AsyncMock)
+def test_scan_ignores_api_key_multipart_field(mock_pipeline):
+    document = fitz.open()
+    document.new_page()
+    pdf_bytes = document.tobytes()
+    document.close()
+
+    response = TestClient(accelerated_ocr.app).post(
+        "/api/ocr/scan",
+        files={"file": ("sample.pdf", pdf_bytes, "application/pdf")},
+        data={"api_key": "caller-supplied-secret"},
+    )
+    job_id = response.json()["job_id"]
+    try:
+        assert response.status_code == 200
+        assert mock_pipeline.await_args.kwargs["api_key"] is None
+    finally:
+        accelerated_ocr.jobs.pop(job_id, None)
+
+
+def test_scan_rejects_when_job_store_is_full(monkeypatch):
+    document = fitz.open()
+    document.new_page()
+    pdf_bytes = document.tobytes()
+    document.close()
+    existing = accelerated_ocr.OCRJob(
+        job_id="existing-job",
+        filename="existing.pdf",
+        total_pages=1,
+        status="completed",
+    )
+    accelerated_ocr.jobs[existing.job_id] = existing
+    monkeypatch.setattr(accelerated_ocr, "MAX_JOBS", 1)
+    try:
+        response = TestClient(accelerated_ocr.app).post(
+            "/api/ocr/scan",
+            files={"file": ("sample.pdf", pdf_bytes, "application/pdf")},
+        )
+        assert response.status_code == 429
+    finally:
+        accelerated_ocr.jobs.pop(existing.job_id, None)
+
+
+def test_model_url_rejects_unsafe_model_id():
+    with pytest.raises(ValueError, match="unsupported"):
+        accelerated_ocr.hf_inference_url_for_model("https://evil.example/steal")
+
+
+def test_model_url_rejects_non_allowlisted_endpoint(monkeypatch):
+    monkeypatch.setattr(accelerated_ocr, "HF_INFERENCE_URL", "https://evil.example/ocr")
+    with pytest.raises(ValueError, match="host"):
+        accelerated_ocr.hf_inference_url_for_model("org/serverless-ocr")
+
+
+@pytest.mark.asyncio
+async def test_cancel_uses_pipeline_task_handle():
+    job_id = "cancel-with-task-handle"
+    job = accelerated_ocr.OCRJob(
+        job_id=job_id,
+        filename="sample.pdf",
+        total_pages=1,
+        status="processing",
+    )
+    task = asyncio.create_task(asyncio.sleep(60))
+    job.pipeline_task = task
+    accelerated_ocr.jobs[job_id] = job
+    try:
+        result = await accelerated_ocr.cancel_ocr_job(job_id, Response())
+        assert result["success"] is True
+        assert task.done()
+        assert job.status == "canceled"
+    finally:
+        if not task.done():
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+        accelerated_ocr.jobs.pop(job_id, None)
+
+
 def test_native_pdf_scan_completes_without_external_inference():
     document = fitz.open()
     page = document.new_page()
@@ -244,6 +325,7 @@ def test_completed_job_replays_completion_event():
         accelerated_ocr.jobs.pop(job_id, None)
 
     assert response.status_code == 200
+    assert "no-store" in response.headers["cache-control"]
     assert "event: completed" in response.text
     completed_data = response.text.split("event: completed\ndata: ", 1)[1].split("\n\n", 1)[0]
     assert json.loads(completed_data)["markdown"] == "Recovered page text"

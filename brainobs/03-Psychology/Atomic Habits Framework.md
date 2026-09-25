@@ -2,7 +2,7 @@
 title: Atomic Habits Framework
 type: strategy
 status: living
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, psychology, habits, strategy, atomic-habits]
 source-files: [goals.md, features.md, Bookflowideas.md, reactUIUXcover.md, src/features/reader/config.js, src/App.jsx]
 ---
@@ -34,23 +34,22 @@ hunting for an entry point decays. The cue should be unmissable and unambiguous.
 
 **What is missing**
 
-There is no persistent library and no resume surface on the landing page today. Once a reader
-closes a book, the strongest possible cue is gone. This is the single largest gap in the habit
-design.
+There is a metadata-only library and a `ResumeCard` on the landing page today. The card records
+an in-progress title and can request the source file again, but the recent-books shelf and
+automatic reopen without re-selection are still missing. The return loop is therefore partial.
 
 **Build spec: Resume Card**
 
 ```text
-Component   src/features/landing/components/ResumeCard.jsx
-Shows       Book title, last known chapter label, progress percent, "Continue" action
-Data source bookflow:document:{documentId} sessions plus stored book metadata
+Component   src/features/library/components/ResumeCard.jsx
+Shows       Book title, last known chapter label, progress percent, and re-selection action
+Data source bookflow:library metadata plus bookflow:document:{documentId} sessions
 Placement   Above the drop card on the landing page, primary visual weight
-Fallback    Hidden entirely when no session exists. Never render an empty state shell.
+Fallback    Hidden entirely when no honest in-progress entry exists. Never render an empty state shell.
 ```
 
-Rules: it must be a resume, not a re-import. Clicking `Continue` should land on the exact
-previous reading position without re-parsing when the document is still available, and must
-state plainly when the file needs to be re-selected.
+Rules: it must be honest about the current file state. The current card offers re-selection;
+automatic reopen without re-parsing remains open work.
 
 **Build spec: Recent shelf**
 
@@ -133,7 +132,7 @@ This is Bookflow's strongest law, and the most defensible technical advantage.
 | Mechanism | Implementation | Effect |
 | --- | --- | --- |
 | One-tap import | Drag-drop or click, no account, no upload | No signup wall |
-| Progressive import | `importScheduler` opens the first ready unit immediately | Reader starts in seconds, not after a full scan |
+| Progressive PDF import | `importScheduler` opens the first ready unit immediately | Reader starts in seconds, not after a full scan; other formats remain blocking |
 | Native text fast path | Selectable pages bypass OCR entirely | Digital PDFs are effectively instant |
 | Exact resume | Session restores progress, scroll, pin | No re-finding your place |
 | Bounded OCR | Capped workers and batches | The tab does not freeze or crash |
@@ -242,9 +241,9 @@ If only some of this gets built, build it in this order. The order reflects leve
 appeal.
 
 ```text
-1  Resume Card            Restores the strongest cue, closes the biggest gap
-2  Session Recap          Makes progress tangible at the exact moment of leaving
-3  Recent Shelf           Multiple books become a library, not a chore
+1  Recent Shelf           Multiple books become a library, not a chore
+2  File-handle reopen     Return to an available document without re-finding it
+3  Session Recap          Built; keep it opt-in and quiet
 4  Mood Presets           Personalization, cheap to build from existing settings
 5  Gentle continuity      Honest counts, no punishment
 6  Reading garden         Accumulated evidence, quiet and long-horizon

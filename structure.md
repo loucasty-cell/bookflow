@@ -57,7 +57,7 @@ bookflow/
 |   |-- assets/                    # Static brand assets (quill logo, intro video)
 |   |-- components/
 |   |   |-- InterventionModal.jsx
-|   |   |-- OcrUploader.jsx        # Frontend OCR upload modal with SSE progress streaming
+|   |   |-- OcrUploader.jsx        # Compatibility facade for feature-owned OCR session/viewer
 |   |   `-- VariableRewardCapsule.jsx
 |   |-- features/
 |   |   |-- document-import/       # Client-side document parsers and OCR fallback
@@ -126,9 +126,9 @@ bookflow/
 ### Frontend Layer (`src/`)
 
 - **`App.jsx`**: Coordinates application mode (landing vs reader), document loading, reading position restoration, focus rail synchronization, local storage persistence, and OCR modal integration.
-- **`components/OcrUploader.jsx`**: Standalone OCR upload modal with drag-and-drop file selection, real-time SSE progress dashboard, paginated text viewer with formatted/raw toggle, full-text search, clipboard copy, Markdown download, and reader import with automatic chapter title extraction.
+- **`components/OcrUploader.jsx`**: Compatibility facade for the feature-owned OCR uploader, session controller, and result viewer.
 - **`features/document-import/`**: Validates file types and sizes; extracts text locally from PDF, EPUB, TXT, and Markdown; orchestrates local Tesseract OCR when offline.
-- **`features/reader/`**: Renders comfortable typography; tracks scroll position to calculate sentence focus near the 42% reading rail; manages pinned focus, margin notes, bookmarks, and reader customization.
+- **`features/reader/`**: Renders comfortable typography; tracks scroll position to calculate sentence focus near the 38% reading rail; manages pinned focus, margin notes, bookmarks, reader customization, and long-book chapter windows.
 - **`features/landing/`**: Provides book dropzone, file selection, and offline sample book experience.
 - **`shared/`**: Houses cross-cutting brand elements, overlays, and storage utilities.
 

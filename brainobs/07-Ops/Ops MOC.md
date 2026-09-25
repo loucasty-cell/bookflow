@@ -2,7 +2,7 @@
 title: Ops MOC
 type: MOC
 status: living
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, ops, moc]
 ---
 
@@ -23,6 +23,7 @@ Setup, deployment, testing, and debugging.
 npm run dev             # Vite on port 3000
 npm run lint            # ESLint
 npm test                # Vitest
+npm run test:e2e        # 2 smoke tests plus the long-import test
 npm run build           # Production build
 pytest backend/tests/   # Backend suite
 npx pyright             # Backend type check

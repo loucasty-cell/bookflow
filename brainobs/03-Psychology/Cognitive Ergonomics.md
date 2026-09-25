@@ -2,7 +2,7 @@
 title: Cognitive Ergonomics
 type: research
 status: verified
-updated: 2026-09-18
+updated: 2026-09-24
 tags: [bookflow, psychology, ergonomics, reading-science, research]
 source-files: [src/features/reader/lib/readingController.js, src/features/reader/lib/focusRail.js, src/features/reader/lib/textFormatter.js, src/features/reader/components/SaccadicGuide.jsx, frontendskills.md]
 ---
@@ -28,11 +28,11 @@ Detail and sources: [[Retention Research]].
 ## The focus rail response
 
 ```text
-FOCUS_RAIL_RATIO = 0.42
+FOCUS_RAIL_RATIO = 0.38
 anchorY = reader.scrollTop + reader.clientHeight * FOCUS_RAIL_RATIO
 ```
 
-The rail places the active unit at 42 percent of the reader viewport height. Rationale:
+The rail places the active unit at 38 percent of the reader viewport height. Rationale:
 
 | Reason | Effect |
 | --- | --- |

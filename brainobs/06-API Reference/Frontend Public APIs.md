@@ -2,9 +2,9 @@
 title: Frontend Public APIs
 type: reference
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, api, frontend, exports]
-source-files: [src/features/reader/index.js, src/features/document-import/index.js, src/components/index.js, src/shared/lib/index.js, src/store/readerStore.js, src/store/uiStore.js]
+source-files: [src/features/reader/index.js, src/features/document-import/index.js, src/features/library/index.js, src/components/index.js, src/shared/lib/index.js, src/store/readerStore.js, src/store/uiStore.js, src/features/reader/hooks/useReaderNavigation.js, src/features/document-import/hooks/useDocumentImport.js, src/features/library/hooks/useReadingSession.js]
 ---
 
 # Frontend Public APIs
@@ -18,32 +18,32 @@ What each module may expose to the rest of the app. Import only through these su
 DEFAULT_SETTINGS, FONT_SIZE_MAX, FONT_SIZE_MIN
 
 // Components
-ReaderPage, SelectionTooltip
+ReaderPage, ReaderShell, SelectionTooltip
 
-// Focus
+// Focus and navigation
 selectClosestParagraph, selectFocusTarget, selectNextParagraph
 isFocusEligibleChapter
-
-// Viewport
-ensureSelectedSegmentVisible, getReaderSafeViewport, getSelectedSegmentAlignment
-
-// Reading controller
 FOCUS_RAIL_RATIO, LINE_COOLDOWN, MAX_SCROLL_INPUT, SCROLL_INTENT_THRESHOLD
 accumulateScrollIntent, estimateReadingMs, getIntentDirection, getNavigationStep
 readingProgress
 
-// Scroll
+// Viewport and scroll
+ensureSelectedSegmentVisible, getReaderSafeViewport, getSelectedSegmentAlignment
 computeScrollMetrics, useScrollPosition
 
-// Text
+// Text, chapters, and local lookup
 formatParagraphText, getFixationLength
+countBookWords, enrichChapters, readingMinutes
+useChapterWindow, useReaderAnnotations, useReaderNavigation
+useReaderPersistence, useReaderSession, useReaderStaticRegion
 ```
 
 ## `src/features/document-import/index.js`
 
 ```js
-// Parsing
+// Parsing and validation
 ACCEPTED_FILES, parseDocument
+validateBookFile, validateFileDescriptor, MAX_FILE_SIZE, SUPPORTED_EXTENSIONS
 
 // Manifest
 createManifest, addUnit
@@ -51,15 +51,37 @@ markQueued, markProcessing, markReady, markFailed, markCancelled
 getUnitById, getUnitsByStatus, getFirstReadyUnit, manifestProgress
 UnitStatus, JobPriority
 
-// Scheduler
+// Scheduler and progressive coordinators
 createImportScheduler, getConcurrency
-
-// Progressive coordinators
 progressivePdfImport, progressiveEpubImport, progressiveTextImport
 
-// Backend OCR fallback
+// Import session hook
+useDocumentImport
+
+// Explicit accelerated OCR seam
 scanPdfViaBackend, isBackendFallbackError
 ```
+
+## `src/features/library/index.js`
+
+```js
+LIBRARY_STORAGE_KEY, LIBRARY_VERSION, MAX_LIBRARY_ENTRIES, FINISHED_PROGRESS, SHELVES
+getEntries, getEntry, getResumeEntry, readLibrary, normalizeEntry, upsertEntry
+setShelf, removeEntry, enforceCap, recordSession, addToReadQueue, clearLibrary
+
+getLibraryStats, getShelfCounts, getTotals
+BADGES, MOTIFS, evaluateBadge, evaluateAchievements, findNewlyEarned
+readGoals, getGoalProgress, setGoalsEnabled, setAnnualTarget, clearGoals
+
+DB_NAME, DB_VERSION, STORES, isDurableStorageAvailable
+saveDocument, loadDocument, saveDocumentUnit, loadDocumentUnit
+
+ResumeCard, SessionRecap, BadgeGallery
+useReadingSession
+```
+
+The library boundary stores metadata and measured session totals, not book text. The durable
+adapter is public for future wiring but is not currently called by the app document lifecycle.
 
 ## `src/components/index.js`
 
@@ -78,7 +100,9 @@ Storage, text, haptics, and performance helpers.
 | --- | --- |
 | Haptics | `triggerHaptic`, `HAPTIC_PATTERNS` |
 | Storage | `documentStorageKey`, `getSafeStorage`, `getStorageItem`, `memoryStorage`, `removeStorageItem`, `safeParse`, `setStorageItem` |
-| Text | `classifyParagraph`, `documentId`, `formatClassification`, `splitSentences`, `wordCount` |
+| Text | `classifyParagraph`, `documentId`, `formatClassification`, `normalizeText`, `splitParagraphs`, `splitSentences`, `stripMarkdown`, `wordCount` |
+| Focus management | `useModalFocus` |
+| Performance | `mark`, `measure`, `getMarks`, `getMeasures`, `clearMarks`, `clearMeasures` |
 
 `splitParagraphs` and `normalizeText` live in `src/shared/lib/text.js` and are imported directly
 by the parsers. Performance marks come from `src/shared/lib/perfMarks.js` as `mark`.
@@ -118,9 +142,16 @@ updater function. Not persisted.
 
 | Hook | Responsibility |
 | --- | --- |
-| `useReaderSession` | Book session assembly and enrichment |
-| `useReaderNavigation` | Focus, scroll, keyboard, and step navigation |
+| `useReaderSession` | Book state, open/close, resume, and chapter selection |
+| `useReaderNavigation` | Focus, alignment, input, and step navigation |
+| `useReaderInput` | Keyboard, wheel, touch, and scroll handlers |
+| `useReaderMeasurement` | Paragraph measurement and restore alignment |
+| `useReaderStaticRegion` | Static-region state and labels |
 | `useReaderPersistence` | Per-document session read and write |
+| `useReaderAnnotations` | Notes, bookmarks, and copy actions |
+| `useChapterWindow` | Long-book chapter windowing and spacer preservation |
+| `useDocumentImport` | File validation, progressive/blocking import, terminal progress, and explicit OCR handoff |
+| `useReadingSession` | Measured session totals, recap, and achievement state |
 
 ## Key signatures
 
@@ -132,6 +163,9 @@ Blocking parse. Returns a promise resolving to a normalized book.
 Detail: [[Normalized Book Contract]].
 
 ### `scanPdfViaBackend(file, onProgress, options)`
+
+This is an explicit user-started accelerated OCR call. The default local import path does not invoke
+it automatically after a parse error.
 
 ```js
 scanPdfViaBackend(file, onProgress, { signal, batchSize = 16, ocrProfile = "small" })

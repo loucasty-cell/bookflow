@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
 import { BookOpen, Sparkles } from "lucide-react";
 
 /**
@@ -17,6 +17,7 @@ export function ThreeDBookCard({
   const cardRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
+  const reduceMotion = useReducedMotion();
   const openTimerRef = useRef(null);
 
   useEffect(() => () => {
@@ -106,29 +107,22 @@ export function ThreeDBookCard({
       className={`book-3d-scene ${className}`}
       style={{ perspective: "1200px" }}
     >
-      <motion.div
+      <motion.button
         ref={cardRef}
+        type="button"
         className={`book-3d-prism ${isOpening ? "is-opening-book" : ""}`}
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         onClick={handleClick}
         style={{
-          rotateX: isOpening ? 0 : rotateX,
-          rotateY: isOpening ? -25 : rotateY,
+          rotateX: reduceMotion ? 0 : isOpening ? 0 : rotateX,
+          rotateY: reduceMotion ? 0 : isOpening ? -25 : rotateY,
           transformStyle: "preserve-3d",
         }}
-        whileHover={{ scale: 1.03, z: 32 }}
-        whileTap={{ scale: 0.98, z: -8 }}
-        tabIndex={0}
-        role="button"
+        whileHover={reduceMotion ? undefined : { scale: 1.03, z: 32 }}
+        whileTap={reduceMotion ? undefined : { scale: 0.98, z: -8 }}
         aria-label={`Open book: ${book?.title ?? "untitled"}`}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleClick();
-          }
-        }}
       >
         {/* Front Cover Face */}
         <div
@@ -195,7 +189,8 @@ export function ThreeDBookCard({
 
         {/* Realistic Ambient Contact Shadow */}
         <div className="book-3d-shadow" aria-hidden="true" />
-      </motion.div>
+      </motion.button>
     </div>
+
   );
 }

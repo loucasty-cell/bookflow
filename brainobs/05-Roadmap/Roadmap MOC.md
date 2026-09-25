@@ -2,7 +2,7 @@
 title: Roadmap MOC
 type: MOC
 status: living
-updated: 2026-09-18
+updated: 2026-09-24
 tags: [bookflow, roadmap, moc, planning]
 ---
 
@@ -18,7 +18,7 @@ What exists, what is next, and how progress will be measured.
 - [[Massive Upgrade Backlog]] - the 24 item prioritized UI and experience upgrade list
 - [[Future Features MOC]] - spec-ready designs for larger capabilities
 - [[Success Metrics]] - measurable outcomes and current baselines
-- [[Library and Reading Stats]] - persistent library, continuity, garden
+- [[Library and Reading Stats]] - partial metadata library, continuity, garden
 - [[TTS Synchronization]] - speech locked to the focus rail
 - [[PWA Offline]] - manifest, service worker, durable local storage
 - [[Concept Graph]] - cross-chapter definition linking
@@ -26,10 +26,10 @@ What exists, what is next, and how progress will be measured.
 ## Priority order
 
 ```text
-Now       Resume card, session recap, benchmark numbers for import speed
-Next      Library plus durable storage, annotation export and import
+Now       Recent books shelf, file-handle reopen, repeated import benchmarks
+Next      Durable document wiring, annotation export, scanned-PDF integration
 Later     PWA install, TTS synchronization, concept graph
-Deferred  Social layer, ambient WebGL, native wrappers
+Deferred  Persistent social layer, native wrappers
 ```
 
 The competitor research replanned this order. See [[Audit Compare Replan]] for the reasoning and

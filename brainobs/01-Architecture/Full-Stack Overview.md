@@ -2,9 +2,9 @@
 title: Full-Stack Overview
 type: concept
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, architecture, fullstack]
-source-files: [src/App.jsx, backend/main.py, vite.config.js, package.json]
+source-files: [src/App.jsx, src/features/document-import/hooks/useDocumentImport.js, src/features/document-import/components/OcrUploader.jsx, src/features/reader/hooks/useReaderSession.js, src/features/library/hooks/useReadingSession.js, backend/main.py, vite.config.js, package.json]
 ---
 
 # Full-Stack Overview
@@ -22,7 +22,8 @@ hundreds of pages.
 | Accelerator | FastAPI service | Scanned-page visual OCR with high concurrency and streaming progress |
 
 A user who never touches the backend still gets the complete reading experience for digital
-PDFs, EPUB, TXT, and Markdown.
+PDFs, EPUB, TXT, and Markdown. The accelerated path is optional and user-started; if the user
+explicitly starts it, its PDF upload ceiling is 50 MB.
 
 ## Boundary diagram
 
@@ -40,7 +41,7 @@ PDFs, EPUB, TXT, and Markdown.
 |      |                     |-- backendOcrFallback.js          |
 |      |                     +-- pdfOcr.js (Tesseract WASM)       |
 |      |                                                        |
-|      +--> localStorage (settings, per-document session)       |
+|      +--> localStorage (settings, sessions, library metadata)    |
 +-------------------------------|-------------------------------+
                                 | /api proxy in dev
                                 v
@@ -63,6 +64,10 @@ PDFs, EPUB, TXT, and Markdown.
 3. Cost. Zero inference spend on documents the browser can already read.
 4. Determinism. Local parsers produce stable, inspectable output.
 
+The current frontend wires manifest-first progressive import to PDFs, but the reader opens only
+after the PDF coordinator reports a terminal `100%`. EPUB, TXT, and Markdown remain on the blocking
+parser until their progressive coordinators are routed from `handleFile`.
+
 ## Why the backend exists
 
 1. Scanned books. Image-only pages need real visual recognition.
@@ -83,7 +88,7 @@ Detail: [[OCR-Frontend Sync Contract]], [[Normalized Book Contract]].
 | Situation | Behaviour |
 | --- | --- |
 | Backend not running | Local parsing continues; backend path surfaces a clear error |
-| Local PDF parse fails | `isBackendFallbackError` routes to the backend scan |
+| Local PDF parse fails | Show an actionable local error; the user may explicitly start optional accelerated OCR |
 | Backend scan fails | User sees the failure; nothing is silently dropped |
 | `localStorage` blocked | `getSafeStorage()` falls back to an in-memory store |
 | Component throws | `ErrorBoundary` isolates the subtree with a reset action |

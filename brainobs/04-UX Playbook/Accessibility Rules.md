@@ -2,9 +2,9 @@
 title: Accessibility Rules
 type: rules
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, ux, accessibility, a11y, rules]
-source-files: [AGENTS.md, frontendskills.md, src/features/reader/components/SettingsPanel.jsx, src/features/reader/components/ReaderPage.jsx]
+source-files: [AGENTS.md, frontendskills.md, src/features/reader/components/SettingsPanel.jsx, src/features/reader/components/ReaderPage.jsx, src/features/reader/hooks/useReaderInput.js, src/features/reader/hooks/useReaderStaticRegion.js]
 ---
 
 # Accessibility Rules
@@ -22,10 +22,12 @@ specifically because the typography options exist.
 
 | Key | Action |
 | --- | --- |
-| `Down` / `J` | Advance focus |
-| `Up` / `K` | Move focus back |
-| `Space` / `Enter` | Pin the active paragraph |
-| `Escape` | Pin, or dismiss the open panel |
+| `ArrowDown` / `J` | Advance focus |
+| `ArrowUp` / `K` | Move focus back |
+| `PageDown` / `PageUp` | Move three paragraphs rapidly |
+| `Space` / `Shift+Space` | Advance / move focus back |
+| `Enter` / `Space` on a focused paragraph | Toggle that paragraph's pin |
+| `Escape` | Hold or release focus, or dismiss a panel |
 
 Requirements:
 
@@ -35,7 +37,7 @@ Requirements:
 - Opening a panel moves focus into it and closing returns focus to its trigger.
 - Focus is always visible.
 
-Detail: [[Navigation and Controls]].
+Detail: [[Navigation and Controls]], [[Figma Inspection Evidence]].
 
 ## Screen readers and semantics
 

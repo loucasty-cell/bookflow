@@ -10,7 +10,7 @@ Specialized subagent for cognitive ergonomics, sentence/paragraph focus rail mec
 ## Core Responsibilities
 
 1. **Focus Rail & Reading Physics (`src/features/reader/lib/`)**:
-   - Verify golden-ratio focus rail calculation (`FOCUS_RAIL_RATIO = 0.42` reading line).
+   - Verify golden-ratio focus rail calculation (`FOCUS_RAIL_RATIO = 0.38` reading line).
    - Ensure the scroll intent accumulator (`accumulateScrollIntent`, `SCROLL_INTENT_THRESHOLD`) dampens trackpad velocity and eliminates jitter.
    - Maintain pinned focus state toggles via `Space`, `Enter`, `Escape`, or card click.
    - Verify rapid stepping (`PageDown`/`PageUp` by 3 paragraphs) and single stepping (`ArrowDown`/`J`, `ArrowUp`/`K`).

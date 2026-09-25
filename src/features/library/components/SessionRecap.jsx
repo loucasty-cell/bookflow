@@ -5,10 +5,10 @@
  * derived from real activity, never inflated, and a single dismiss closes it.
  * No share nag, no rating request, no notification opt-in.
  */
-import { useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useRef } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { X, BookOpen, Clock, FileText, Bookmark } from 'lucide-react';
-import { triggerHaptic, HAPTIC_PATTERNS } from '../../../shared/lib/index.js';
+import { triggerHaptic, HAPTIC_PATTERNS, useModalFocus } from '../../../shared/lib/index.js';
 import { formatMinutes } from '../lib/readingStats.js';
 import '../library.css';
 
@@ -46,23 +46,21 @@ function Stat({ icon: Icon, label, value }) {
 
 export function SessionRecap({ session, onClose }) {
   const dismissRef = useRef(null);
+  const recapRef = useRef(null);
+  const reduceMotion = useReducedMotion();
+  const sessionWordsRead = Number(session?.wordsRead) || 0;
+  const recapVisible = Boolean(session && sessionWordsRead >= MIN_WORDS_FOR_RECAP);
   const handleClose = () => {
     triggerHaptic(HAPTIC_PATTERNS.LIGHT);
     onClose?.();
   };
 
-  useEffect(() => {
-    if (!session) return undefined;
-    dismissRef.current?.focus();
-    const onKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        triggerHaptic(HAPTIC_PATTERNS.LIGHT);
-        onClose?.();
-      }
-    };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [session, onClose]);
+  useModalFocus({
+    open: recapVisible,
+    containerRef: recapRef,
+    onClose: handleClose,
+    initialFocusRef: dismissRef,
+  });
 
   if (!session) return null;
 
@@ -82,20 +80,22 @@ export function SessionRecap({ session, onClose }) {
       <motion.div
         className="session-recap-backdrop"
         role="presentation"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        initial={reduceMotion ? false : { opacity: 0 }}
+        animate={reduceMotion ? { opacity: 1 } : { opacity: 1 }}
+        exit={reduceMotion ? { opacity: 1 } : { opacity: 0 }}
         onClick={handleClose}
       >
         <motion.section
+          ref={recapRef}
           className="session-recap"
           role="dialog"
           aria-modal="true"
-          aria-label="Reading session summary"
-          initial={{ opacity: 0, y: 24, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 12, scale: 0.98 }}
-          transition={{ duration: 0.32, ease: [0.25, 0.46, 0.45, 0.94] }}
+          aria-labelledby="session-recap-title"
+          tabIndex={-1}
+          initial={reduceMotion ? false : { opacity: 0, y: 24, scale: 0.96 }}
+          animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+          exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 12, scale: 0.98 }}
+          transition={reduceMotion ? { duration: 0 } : { duration: 0.32, ease: [0.25, 0.46, 0.45, 0.94] }}
           onClick={(event) => event.stopPropagation()}
         >
           <button type="button" className="session-recap-close" aria-label="Close summary" onClick={handleClose}>
@@ -103,7 +103,7 @@ export function SessionRecap({ session, onClose }) {
           </button>
 
           <span className="session-recap-eyebrow">Session complete</span>
-          <h2 className="session-recap-title">{bookTitle}</h2>
+          <h2 id="session-recap-title" className="session-recap-title">{bookTitle}</h2>
 
           {paceSamples.length > 1 && <Sparkline points={paceSamples} />}
 

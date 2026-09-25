@@ -2,7 +2,7 @@
 title: Context Sync Protocol
 type: process
 status: living
-updated: 2026-09-18
+updated: 2026-09-24
 tags: [bookflow, process, maintenance, updateability, agent]
 source-files: [AGENTS.md, package.json]
 ---
@@ -46,20 +46,24 @@ Any note listing a file you changed is a candidate for an update.
 | New environment variable | Update [[Environment Config]] |
 | New theme or token | Update [[Design Tokens]] and [[Themes and Atmospheres]] |
 | Status change | Update [[Current State Matrix]] with evidence |
+| Refactor or boundary change | Update `refactor`, `source-files`, and [[File Placement Map]] |
 | New planned feature | Add a spec note and link it from the right MOC |
 | Removed feature | Delete or rewrite the note. Never leave a note describing code that is gone |
 
 ## Step 3: Update the frontmatter
 
-Every note has four housekeeping fields. All four must stay accurate.
+Every note has four required housekeeping fields. All four must stay accurate; optional graph
+fields follow the conventions below.
 
 ```yaml
 ---
 title: Note Title
-type: concept | feature | reference | contract | rules | spec | guide | process | MOC
+type: concept | feature | reference | contract | rules | spec | guide | process | evidence | MOC
 status: verified | partial | planned | exploratory | living
-updated: 2026-09-18
+refactor: not-started | partial | complete
+updated: 2026-09-24
 tags: [bookflow, area, topic]
+aliases: [Stable Alternative Name]
 source-files: [src/path/file.js, backend/path/file.py]
 ---
 ```
@@ -76,6 +80,26 @@ Rules for `source-files`:
 - Only real paths. A path that does not exist is a broken claim.
 - Prefer the most specific files over directories.
 - Remove paths when those files are deleted or refactored away.
+
+## Graph metadata conventions
+
+Graph metadata is descriptive, not a substitute for links. Keep frontmatter stable so the
+Obsidian graph and automated checks remain useful.
+
+| Field | Convention |
+| --- | --- |
+| `title` | Human-readable title matching the note name when practical |
+| `type` | One controlled value: `MOC`, `concept`, `feature`, `contract`, `rules`, `spec`, `guide`, `process`, `reference`, or `evidence` |
+| `status` | `verified`, `partial`, `planned`, `exploratory`, or `living` |
+| `refactor` | Optional `not-started`, `partial`, or `complete`; use it when a note tracks an architecture refactor |
+| `updated` | ISO date of the last source reconciliation |
+| `tags` | Lowercase kebab-case, with `bookflow` first; reuse existing tags before adding new ones |
+| `aliases` | Stable names for renamed or commonly used concepts; do not duplicate a note |
+| `source-files` | Real, existing repository paths that back the claims; use `[]` for external-only evidence and omit only for process or graph notes |
+
+Use body wikilinks for graph edges. Put the structural parent and close relations in the body so
+Obsidian backlinks and `check-vault` can see them; do not hide required links only in frontmatter.
+A new note is linked from exactly one relevant MOC, and a MOC lists its direct children.
 
 ## Step 4: Keep the graph intact
 
@@ -118,6 +142,7 @@ One fact, one note. Everywhere else links to it.
 | Metrics and baselines | [[Success Metrics]] |
 | Import unit lifecycle | [[Import Scheduler]] |
 | Backend OCR constants | [[Backend OCR Engine]] |
+| Refactor boundary status | [[Agent Quickstart]] and [[File Placement Map]] |
 
 If a second note needs the same fact, link instead of copying. If a table genuinely must exist
 in two places, mark one as canonical in a line above it.

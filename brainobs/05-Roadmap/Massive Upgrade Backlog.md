@@ -1,16 +1,18 @@
 ---
 title: Massive Upgrade Backlog
 type: spec
-status: planned
-updated: 2026-09-23
+status: living
+updated: 2026-09-25
 tags: [bookflow, roadmap, upgrade, backlog, ui, experience]
-source-files: [brainobs/05-Roadmap/Audit Compare Replan.md, brainobs/03-Psychology/Competitor Mechanics Scorecard.md, src/features/reader/config.js, src/App.jsx]
+source-files: [brainobs/05-Roadmap/Audit Compare Replan.md, brainobs/03-Psychology/Competitor Mechanics Scorecard.md, src/features/reader/config.js, src/features/reader/components/HorizonTeaser.jsx, src/features/reader/lib/dictionary.js, src/features/library/index.js, src/features/library/lib/libraryStore.js, src/features/library/lib/readingGoals.js, src/features/library/lib/readingStats.js, src/features/library/lib/durableStorage.js, src/App.jsx]
 ---
 
 # Massive Upgrade Backlog
 
 The prioritized UI and experience upgrade list produced by the competitor research and audit.
-Plan only. Nothing here is implemented.
+This is a historical build specification. Current implementation status is maintained in
+[[Backlog P0-P1-P2]] and [[Current State Matrix]]; an item's original `New file` label does not
+mean that file is absent today.
 
 Ordering follows the audit phases. Each item names the exact location, the acceptance check, and
 the invariant it must respect. No item requires a new dependency unless stated.
@@ -32,6 +34,8 @@ the invariant it must respect. No item requires a new dependency unless stated.
 
 ### 1. Library store
 
+Status: built in `src/features/library/lib/libraryStore.js`; metadata only and bounded.
+
 ```text
 New file    src/features/library/lib/libraryStore.js
 Storage key bookflow:library
@@ -50,17 +54,19 @@ Acceptance: entry written on open, updated on close, no document text in storage
 
 ### 2. Resume Card
 
+Status: built in `src/features/library/components/ResumeCard.jsx`; the current app action is
+file re-selection, not automatic handle reuse.
+
 ```text
-New file    src/features/landing/components/ResumeCard.jsx
+Component   src/features/library/components/ResumeCard.jsx
 Shows       Title, chapter label, progress percent, last opened
-Action      Continue, restoring the exact position
-Fallback    Hidden when the library is empty. Never an empty shell
-Edge case   If the file is unavailable, say so and offer re-selection
-Placement   Above the drop card, primary visual weight
+Action      Re-select the source file; the session position is restored after import
+Fallback    Hidden when there is no honest in-progress entry. Never an empty shell
+Edge case   Do not claim automatic reopen until file-handle reuse is wired
+Placement   Above the landing intake when a resume entry exists
 ```
 
-Acceptance: appears only with history; Continue lands on the restored paragraph; the missing-file
-case is explained, not silent.
+Acceptance: appears only with an honest in-progress entry and explains the re-selection action.
 
 ### 3. Currently Reading surface
 
@@ -75,14 +81,15 @@ Acceptance: the reader's own books appear alongside curated ones with clear visu
 
 ### 4. Session recap
 
-```text
-New file    src/features/reader/components/SessionRecap.jsx
-Trigger     On close, when the session passed a meaningful threshold
-Shows       Units read, words read, time in flow, pace sparkline, one saved note
-Action      Single dismiss. No share nag, no rating request, no notification opt-in
-```
+Status: built in `src/features/library/components/SessionRecap.jsx`; opt-in through
+`showSessionRecap`.
 
-Reuse the sparkline approach already designed for the reward capsule rather than a chart library.
+```text
+Component   src/features/library/components/SessionRecap.jsx
+Trigger     On close, when the session passed a meaningful threshold
+Shows       Words read, time in flow, notes, bookmarks, and optional pace samples
+Action      Single dismiss. No share nag. No rating request. No notification opt-in
+```
 
 Acceptance: derived from real activity only; no inflated numbers; single dismiss.
 
@@ -92,13 +99,15 @@ Acceptance: derived from real activity only; no inflated numbers; single dismiss
 
 ### 5. Local reading speed
 
+Status: built in `src/features/library/lib/readingSpeed.js`; consumed by measured session totals.
+
 ```text
-New file    src/features/reader/lib/readingSpeed.js
+Component   src/features/library/lib/readingSpeed.js
 Method      Accumulate words and elapsed active time during a session
 Ignore      Idle gaps beyond a threshold, so a paused tab does not skew results
-Store       Running estimate in the document session; never sent anywhere
+Store       Derived from local activity; never sent anywhere
 Clamp       To a sane range so an outlier session cannot distort the estimate
-Tests       readingSpeed.test.js
+Tests       readingStats.test.js
 ```
 
 ### 6. Time left in chapter
@@ -121,10 +130,13 @@ Never       Invent a page number the document does not have
 
 ### 8. HorizonTeaser real estimate
 
+Status: partial. The teaser is wired and derives a fallback estimate from the next chapter's word
+count; live `readingSpeed` integration remains open.
+
 ```text
-Modify      src/features/reader/components/HorizonTeaser.jsx
-Issue       estimatedMinutes currently defaults to a fixed 3
-Fix         Compute from the next chapter's real word count and readingSpeed
+Component   src/features/reader/components/HorizonTeaser.jsx
+Current     Derived word-count estimate at 230 WPM until live samples are available
+Next        Prefer the measured readingSpeed when enough samples exist
 ```
 
 Acceptance for Phase 2: no fabricated numbers anywhere; estimates stated only when derived.
@@ -135,13 +147,16 @@ Acceptance for Phase 2: no fabricated numbers anywhere; estimates stated only wh
 
 ### 9. Local definition lookup
 
+Status: partial. The local starter lexicon and opt-in `Define` action are wired; a licensed full
+dataset is not yet bundled.
+
 ```text
-New file    src/features/reader/lib/dictionary.js
-Source      A bundled local dictionary, loaded lazily like OCR assets
-UI          Extend src/features/reader/components/SelectionTooltip.jsx with Look up
+Component   src/features/reader/lib/dictionary.js
+Source      Bundled starter lexicon; optional licensed JSON loader
+UI          src/features/reader/components/SelectionTooltip.jsx with opt-in Define
 Boundary    LOCAL ONLY. A definition API call would send words off-device
 Fallback    If no entry exists, say so; never silently do nothing
-Dependency  Requires approval before adding any dictionary data source
+Dependency  No new dependency; licensed data requires explicit approval
 ```
 
 ### 10. Look-back or skim surface
@@ -179,22 +194,28 @@ versioned and documented.
 
 ### 13. Annual reading goal
 
+Status: built in `src/features/library/lib/readingGoals.js`; opt-in and without a complete landing
+dashboard.
+
 ```text
-New file    src/features/library/lib/readingGoals.js
-Shape       { year, targetBooks, history: string[] }
+Component   src/features/library/lib/readingGoals.js
+Shape       Versioned annual target, enabled flag, and history
 Rules       Self-set only. Recoverable. No loss state, no streak talk,
             no penalty copy, no reset-for-missing-a-day
-Display     A quiet line, never a progress bar of shame
-Setting     New key in src/features/reader/config.js, default off
+Display     Quiet derived progress when the surface is wired
+Setting     `enableAnnualGoal`, default off
 ```
 
 This is the Goodreads Challenge model, which survives a missed week because the horizon is a year.
 
 ### 14. Derived stats, zero manual logging
 
+Status: built in `src/features/library/lib/readingStats.js`; session and gallery surfaces are
+opt-in, and a full stats dashboard remains planned.
+
 ```text
-New file    src/features/library/lib/readingStats.js
-Derives     Words read, time reading, sessions, days read, books finished
+Component   src/features/library/lib/readingStats.js
+Derives     Words read, time reading, sessions, notes, bookmarks, books finished
 Sources     Real navigation and scroll activity only
 Never       Count idle or background time. Never inflate from percent alone
 Never       Ask the reader to log what they read
@@ -238,11 +259,13 @@ Detail      Full spec in [[PWA Offline]]
 
 ### 18. Durable storage for large documents
 
+Status: adapter built; document lifecycle wiring remains open.
+
 ```text
-New file    src/features/library/lib/durableStorage.js
-Options     OPFS first, IndexedDB fallback
+Component   src/features/library/lib/durableStorage.js
+Options     OPFS first, IndexedDB fallback, memory fallback for tests/unsupported browsers
 Detect      Feature-detect both, degrade with a clear message
-Never       Store content somewhere the user cannot clear
+Never       Claim that document persistence is active before the lifecycle is wired
 ```
 
 ### 19. Auto night theme
@@ -294,10 +317,13 @@ Action      Wire SELECTION to text selection, or mark the set as reserved in a d
 
 ### 24. Publish import benchmark numbers
 
+Status: partial. The seven `bookflow:` marks are firing, and one 420-page browser probe measured
+`3.7 s`; repeated p50/p95 numbers by format and device are still open.
+
 ```text
-Uses        The seven bookflow: performance marks already firing
-Produces    p50 and p95 for time to first readable unit per format
-Reason      The strongest competitive claim is currently unmeasured
+Uses        src/shared/lib/perfMarks.js
+Produces    p50 and p95 for terminal import-to-reader time per format
+Reason      One probe is not a performance baseline
 ```
 
 Acceptance for Phase 6: columns ordered correctly; no orphaned assets; no dead exports; published
@@ -325,8 +351,8 @@ numbers with a date.
 | --- | --- |
 | 13 Annual goal | Confirm the horizon and whether it is opt-in |
 | 15 Continuity counts | Confirm reject, or opt-in only |
-| 9 Local dictionary | Approve a dictionary data source |
-| 18 Durable storage | Approve OPFS or IndexedDB as the mechanism |
+| 9 Local dictionary | Approve a licensed data source; starter lexicon is already wired |
+| 18 Durable storage | Adapter exists; approve and wire the document lifecycle |
 
 Everything in Phases 1, 2, 3, 5, and 6 needs no invariant change and no new dependency except the
 dictionary data file.

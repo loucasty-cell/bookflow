@@ -264,19 +264,12 @@ export function LivingShelf({ onOpenBook, onUploadClick }) {
           className="book-3d-scene book-3d-add-scene"
           style={{ perspective: "1200px", margin: "0 auto" }}
         >
-          <div
+          <button
+            type="button"
             className="book-3d-prism book-3d-add-card"
             style={{ margin: "0 auto" }}
             onClick={onUploadClick}
-            role="button"
-            tabIndex={0}
             aria-label="Upload custom book"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onUploadClick();
-              }
-            }}
           >
             <div className="add-card-inner">
               <div className="add-icon-bubble">
@@ -286,7 +279,7 @@ export function LivingShelf({ onOpenBook, onUploadClick }) {
               <p>PDF, EPUB, TXT, MD</p>
               <span className="add-privacy-tag">Zero Cloud Transfer</span>
             </div>
-          </div>
+          </button>
         </div>
       </div>
 

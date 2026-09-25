@@ -2,7 +2,7 @@
 title: OCR Pipeline MOC
 type: MOC
 status: living
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, ocr, moc]
 ---
 
@@ -21,11 +21,13 @@ How Bookflow reads pages that have no text, without uploading anything by defaul
 ## The rule
 
 ```text
-Native PDF text  ->  local Tesseract.js  ->  self-hosted backend  ->  honest error
+Native PDF text  ->  local Tesseract.js  ->  honest local error
+                                      \-> explicit user choice: accelerated backend
 ```
 
-Nothing advances to the next tier until the current tier fails or reports no readable text.
-A page that already has selectable text is never sent to OCR.
+A page that already has selectable text is never sent to OCR. The backend branch is reachable only
+after the user starts the optional accelerated OCR flow; it is not an automatic fallback from the
+local import hook.
 
 ## Why this order
 
@@ -33,7 +35,7 @@ A page that already has selectable text is never sent to OCR.
 | --- | --- | --- |
 | Native text | Accuracy, speed, privacy | Requires a real text layer |
 | Local OCR | Privacy, offline, no cost | Slow on hundreds of pages, English only |
-| Backend OCR | Speed, difficult layouts, batching | Content leaves the device, needs a server |
+| Backend OCR | Speed, difficult layouts, batching | Content leaves the device after explicit user action; needs a server |
 | Error | Honesty | User does work manually |
 
 ## Frontend entry point

@@ -7,7 +7,7 @@ Bookflow is a private, high-focus document reading environment with a React/Vite
 ## 1. Core Reading & Cognitive Flow Experience
 
 ### 1.1 Sentence & Paragraph Focus Rail
-- **Scroll-Driven Focus**: As the reader scrolls, a gentle highlight settles on the active sentence or paragraph near the golden reading horizon (`FOCUS_RAIL_RATIO = 0.42`).
+- **Scroll-Driven Focus**: As the reader scrolls, a gentle highlight settles on the active sentence or paragraph near the golden reading horizon (`FOCUS_RAIL_RATIO = 0.38`).
 - **Pinned Focus**: Readers can pin an active paragraph with a click, tap, or `Space`/`Enter`/`Escape` keypress, freezing focus while freely scrolling nearby context.
 - **Atmosphere Modes**:
   - **Paper Mode**: Clean, warm off-white palette (`#FFFEFA`) inspired by physical book printing.
@@ -46,11 +46,11 @@ Bookflow is a private, high-focus document reading environment with a React/Vite
 - **Insight Callout Boxes (`.insight-box`)**: Warm amber insight containers with structured uppercase badges.
 
 ### 1.6 Behavioral Engagement & Habit Formation
-- **Variable Reward Marginalia Capsules**: Unannounced, high-signal intellectual syntheses and cross-domain connections unlocked upon completing a chapter.
-- **Cognitive Flow Sparkline**: Organic visualization of reading pace stability and deep-focus streaks.
-- **Next-Chapter Horizon Teasers**: Contextual 2-line curiosity bridges that preview upcoming narrative tensions.
-- **4-Minute Drop-Off Intervention Engine**: Telemetry-driven ambient micro-prompts utilizing the curiosity gap and loss aversion to re-anchor drifting attention.
-- **Asynchronous In-Margin Social Layer**: Privacy-preserving SHA-256 paragraph hash matching for shared community thought whispers and time-shifted reaction capsules.
+- **Optional Variable Reward Capsules**: Opt-in, non-blocking chapter-completion surfaces; disabled by default and still under product review.
+- **Cognitive Flow Sparkline**: Optional pace visualization in session recap surfaces.
+- **Next-Chapter Horizon Teasers**: Contextual reading bridge that previews the next chapter without blocking navigation.
+- **4-Minute Drop-Off Intervention Engine**: Opt-in ambient micro-prompt; disabled by default.
+- **Asynchronous In-Margin Social Layer**: Planned; current backend contains only mock resonance and session-pulse routes, not a persistent social experience.
 
 ---
 
@@ -77,6 +77,7 @@ Bookflow is a private, high-focus document reading environment with a React/Vite
 ## 3. High-Throughput Visual OCR Engine
 
 ### 3.1 Multi-Tiered OCR Pipeline
+- Standard import never falls through to the backend automatically. A local failure leaves an actionable error; the user must explicitly start optional accelerated OCR.
 - **`POST /api/ocr/scan`**: In-memory 96 DPI rendering via PyMuPDF with concurrent page batching routed to PaddleOCR when configured, then Hugging Face Vision (Qwen2-VL / DeepSeek-OCR-2) with cold-start recovery.
 - **Real-Time SSE Streaming**: `GET /api/ocr/progress/{job_id}` streams page completions, velocity (pages/sec), word counts, and 8s heartbeat keepalives.
 - **Native Text Fast Path**: Selectable PDF pages with >= 15 words bypass rasterization in < 1ms.

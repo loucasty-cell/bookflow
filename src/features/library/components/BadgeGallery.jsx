@@ -6,7 +6,7 @@
  * announced once. No randomness, no expiry, no loss state.
  */
 import { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { X, Award } from 'lucide-react';
 import { BadgeGlyph } from './BadgeGlyph.jsx';
 import '../library.css';
@@ -69,6 +69,7 @@ function BadgeCard({ badge, isNew }) {
 
 export function BadgeGallery({ enabled = false, stats: statsOverride, awarded = [], onAward }) {
   const [dismissed, setDismissed] = useState(false);
+  const reduceMotion = useReducedMotion();
 
   const stats = useMemo(() => {
     if (statsOverride && typeof statsOverride === 'object') {
@@ -103,10 +104,10 @@ export function BadgeGallery({ enabled = false, stats: statsOverride, awarded = 
       <motion.section
         className="badge-gallery"
         aria-label="Reading milestones"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
+        initial={reduceMotion ? false : { opacity: 0, y: 16 }}
+        animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0 }}
+        exit={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -8 }}
+        transition={reduceMotion ? { duration: 0 } : { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
       >
         <header className="badge-gallery-header">
           <div className="badge-gallery-heading">

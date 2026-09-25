@@ -2,9 +2,9 @@
 title: Data Flow
 type: concept
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, architecture, dataflow]
-source-files: [src/App.jsx, src/features/document-import/lib/importCoordinator.js, src/features/document-import/lib/backendOcrFallback.js, backend/main.py, src/features/reader/hooks/useReaderPersistence.js]
+source-files: [src/App.jsx, src/features/document-import/hooks/useDocumentImport.js, src/features/document-import/lib/importCoordinator.js, src/features/document-import/lib/backendOcrFallback.js, src/features/document-import/components/OcrUploader.jsx, src/features/document-import/hooks/useOcrSession.js, backend/main.py, src/features/reader/hooks/useReaderPersistence.js, tests/e2e/long-import.spec.js]
 ---
 
 # Data Flow
@@ -17,11 +17,11 @@ The complete journey of a book through Bookflow, from file selection to restored
 1  Select        User picks or drops a file on the landing page
 2  Validate      Extension and 50 MB ceiling checked before any parsing
 3  Route         Format decides the parser: PDF, EPUB, TXT, Markdown
-4  Parse/OCR     Progressive units, or backend scan when the browser cannot read pages
+4  Parse/OCR     Progressive local units, or an explicitly started backend scan for difficult scans
 5  Normalize     Every path emits NormalizedBook { title, author, kind, chapters[] }
 6  Enrich        App builds a flat paragraph list with paragraph-{chapter}-{index} ids
 7  Render        ReaderPage renders React text nodes in reading sections
-8  Focus         Scroll rail selects the active paragraph at 42 percent viewport height
+8  Focus         Scroll rail selects the active paragraph at 38 percent viewport height
 9  Persist       Settings globally, session state per document identity
 10 Restore       Reopening the same file restores progress, bookmarks, notes, scroll
 ```
@@ -37,14 +37,16 @@ Routing rule:
 | Format | Path |
 | --- | --- |
 | PDF | `progressivePdfImport` when `settings.useProgressiveImport !== false` |
-| EPUB | `progressiveEpubImport` |
-| TXT | `progressiveTextImport` |
-| Markdown | `progressiveTextImport` |
+| EPUB | `parseDocument` in the current `handleFile`; `progressiveEpubImport` is exposed but not wired |
+| TXT | `parseDocument` in the current `handleFile`; `progressiveTextImport` is exposed but not wired |
+| Markdown | `parseDocument` in the current `handleFile`; `progressiveTextImport` is exposed but not wired |
 
 ## Stage 4: progressive import
 
-`documentManifest.js` creates a manifest right after validation. Each unit is a PDF page, an
-EPUB spine item, or a text section, and moves through:
+`documentManifest.js` creates a manifest right after validation. The progressive PDF coordinator
+schedules one unit per page. The EPUB and text coordinators can create spine-item or section
+units, but the current app routes those formats through blocking `parseDocument`. Units move
+through:
 
 ```text
 UNSEEN -> QUEUED -> PROCESSING -> READY | FAILED
@@ -54,25 +56,37 @@ UNSEEN -> QUEUED -> PROCESSING -> READY | FAILED
 `importScheduler.js` drains the queue with bounded concurrency and per-unit
 `AbortController`. Priority is `CURRENT(0) > NEXT(1) > PREVIOUS(2) > BACKGROUND(3)`.
 
-The important user-visible property: the first ready unit opens the reader immediately. The
-rest stream in behind it in source order. The user never waits for a whole book.
+The first ready PDF unit is an internal readiness signal, not a reader-open signal. The app starts
+at `5%`, clamps in-progress updates to `1-99%`, waits for the coordinator's terminal completion,
+requires a `100` terminal state, and only then calls `setBook` and `openBook`. The reader is never
+mounted pre-terminal. EPUB, TXT, and Markdown remain blocking until their progressive coordinators
+are wired into `handleFile`.
+
+The measured browser probe on 2026-09-25 used a selectable-text 420-page PDF at `390 x 844`:
+progress was observed from `5 → 100`, `.app-shell` appeared afterward, horizontal overflow was
+`0`, exactly `2` reading sections were mounted, and the elapsed probe time was `3,847 ms` (about
+`3.7 s`). This is one representative run, not a universal performance guarantee.
 
 Detail: [[Import Scheduler]].
 
-## Stage 4b: fallback ladder
+## Stage 4b: explicit OCR choice
 
-If local parsing cannot read the document, control moves outward:
+The default path never contacts the backend:
 
 ```text
 native PDF text
   -> local Tesseract.js on image-only pages
-    -> backend scan via scanPdfViaBackend
-      -> clear error surfaced to the user
+    -> clear local error if no readable text is recovered
 ```
 
-`isBackendFallbackError(error)` inspects the message for the accelerated-scan hint and routes
-accordingly. Progress callbacks keep the user informed at every rung, including the explicit
-notice that the file is being uploaded and can be cancelled.
+The user can then choose `Optional accelerated OCR` and explicitly start `scanPdfViaBackend`.
+Only that action uploads the PDF to the configured backend. The backend may use its configured
+PaddleOCR and Hugging Face provider chain after the upload; provider failover inside that
+started job is not an automatic frontend fallback.
+
+`isBackendFallbackError(error)` identifies the local error hint, but the current import hook does
+not call the backend automatically. Progress callbacks disclose the explicit upload and provide a
+cancel action.
 
 Detail: [[OCR Decision Tree]], [[OCR-Frontend Sync Contract]].
 
@@ -124,12 +138,15 @@ Detail: [[Focus Rail]], [[Navigation and Controls]].
 
 ## Stage 9: persistence
 
-Two layers, deliberately separate:
+Three durable metadata layers, deliberately separate:
 
 | Layer | Key | Contents |
 | --- | --- | --- |
 | Global settings | `bookflow-reader-storage` | Reader preferences only |
-| Per-document session | `bookflow:document:{id}` | progress, chapter, pinned id, bookmarks, notes, scrollTop |
+| Per-document session | `bookflow:document:{id}` | progress, active paragraph, bookmarks, notes, scrollTop |
+| Library metadata | `bookflow:library` | title, author, progress, shelf, measured session totals |
+
+The library layer never contains document text.
 
 Document identity is `filename:size:lastModified`, so a renamed or edited file is treated as a
 new document rather than silently loading the wrong state.
@@ -139,7 +156,8 @@ Detail: [[Storage and Persistence]].
 ## Stage 10: restore
 
 `useReaderPersistence` reads the session for the current identity on open, restores progress,
-chapter, pin, bookmarks, notes, and scroll position, and writes changes back with debouncing.
+active paragraph, bookmarks, notes, and scroll position, and writes changes back with debouncing.
+The current pin and chapter selection are transient reader state, not persisted session fields.
 
 Known limitation: re-parsing a changed Markdown or EPUB file can shift paragraph indices and
 orphan existing annotations for that document. The imported text is never deleted.
@@ -153,7 +171,7 @@ bookflow:native-text-done    PDF native extraction complete
 bookflow:ocr-start           local Tesseract begins
 bookflow:ocr-done            local Tesseract ends
 bookflow:chapters-done       chapters assembled
-bookflow:reader-mounted      first render after openBook()
+bookflow:reader-mounted      first render after terminal import and openBook()
 ```
 
 Read them with `performance.getEntriesByType('measure')` filtered by the `bookflow:` prefix.

@@ -2,40 +2,41 @@
 title: OCR Decision Tree
 type: feature
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, ocr, decision, pipeline]
-source-files: [src/features/document-import/lib/pdfParser.js, src/features/document-import/lib/pdfOcr.js, src/features/document-import/lib/backendOcrFallback.js, backend/main.py, updateOCRdata.md]
+source-files: [src/features/document-import/lib/pdfParser.js, src/features/document-import/lib/pdfOcr.js, src/features/document-import/lib/backendOcrFallback.js, src/features/document-import/hooks/useDocumentImport.js, src/features/document-import/hooks/useOcrSession.js, src/features/document-import/components/OcrUploader.jsx, backend/main.py, updateOCRdata.md]
 ---
 
 # OCR Decision Tree
 
-The ladder that decides where a page gets read. This is the single most important OCR concept
-in the project: OCR is a repair mechanism that runs only where text is missing.
+The decision tree that decides where a page gets read. This is the single most important OCR concept
+in the project: OCR is a repair mechanism that runs only where text is missing, and remote OCR is
+an explicit user choice rather than an automatic fallback.
 
 ## The ladder
 
 ```text
 1  Is the PDF readable at all?
-   no  -> report a clear error
+   no  -> report a clear local error and offer the explicit optional OCR action
 
 2  Does the page have selectable text?
-   yes -> native text extraction, done (sub-millisecond when >= 15 words)
+   yes -> native text extraction, done
    no  -> continue
 
 3  Can the browser OCR it locally?
    yes -> Tesseract.js WASM, page stays on device, done
-   no  -> continue
+   no  -> report the local failure; do not upload automatically
 
-4  Is the optional backend reachable?
-   yes -> POST /api/ocr/scan, SSE progress, page images leave the device with consent
-   no  -> report an actionable error naming the backend address
+4  Did the user explicitly start Optional accelerated OCR?
+   yes -> POST /api/ocr/scan, SSE progress, page images leave the device
+   no  -> remain local and keep the actionable error visible
 ```
 
 ## Tier 1: native text fast path
 
-A page with a usable text layer is never rasterized. The backend applies an explicit threshold:
-a page with 15 or more words of selectable text takes the instant path and bypasses visual OCR
-entirely.
+A page with a usable text layer is never rasterized. The browser checks a native-text minimum
+before local OCR; the separately started backend path uses its own `>= 15` word fast-path
+threshold.
 
 Why this matters:
 
@@ -58,14 +59,15 @@ Costs to state honestly:
 
 Detail: [[Local Tesseract.js]].
 
-## Tier 3: backend OCR
+## Tier 3: explicit backend OCR
 
-When local reading fails, the accelerated path activates with explicit user-facing disclosure.
-The frontend messages this plainly:
+The accelerated path does not activate merely because local reading failed. After a local failure,
+the user must open `Optional accelerated OCR` and press Start. The UI then discloses:
 
 ```text
-"Local reading failed, trying the accelerated backend scan..."
-"Your file is uploaded only because local parsing could not read it. Cancel anytime."
+"Scanned PDF pages are sent only after you start this optional scan"
+"Ingesting PDF in memory..."
+"Use private on-device OCR"
 ```
 
 The scan is cancellable at any time and cancellation frees the server-side buffers.
@@ -107,5 +109,6 @@ Detail: [[Backend Architecture]].
 - Rendering an entire book into memory at once.
 - Discarding a page that failed to parse without reporting it.
 - Uploading a document as a whole by default.
+- Treating a local parse error as permission to call the backend automatically.
 
 Related: [[Invariants]], [[Privacy Model]], [[Backlog P0-P1-P2]].

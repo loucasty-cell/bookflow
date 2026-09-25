@@ -2,7 +2,7 @@
 title: Competitor Analysis
 type: strategy
 status: living
-updated: 2026-09-18
+updated: 2026-09-24
 tags: [bookflow, psychology, strategy, competition, positioning]
 source-files: [Bookflowideas.md, improvements.md, goals.md]
 ---
@@ -103,10 +103,11 @@ background work. Bookflow's status:
 | --- | --- | --- |
 | Fast first content | Built | Needs measured targets, see [[Success Metrics]] |
 | Stable position | Built | Neutral observation: scrolling remains the model, by design |
-| Resilient state | Partial | No durable large-document storage, no library |
+| Resilient state | Partial | Metadata library and resume card exist; durable document storage and recent shelf remain open |
 | Invisible background work | Built | Progressive scheduler plus bounded OCR |
 
-The clearest remaining gap is state: no library, and no durable storage for large documents.
+The clearest remaining gap is state: the metadata return loop is partial, and durable document
+storage is not wired into the app lifecycle.
 
 Detail: [[Library and Reading Stats]], [[PWA Offline]].
 
@@ -116,7 +117,7 @@ Detail: [[Library and Reading Stats]], [[PWA Offline]].
 | --- | --- |
 | The import advantage is real but unmeasured | Publish benchmark numbers |
 | Privacy is under-marketed | Make it visible in the product, not only in docs |
-| The library gap blocks the return loop | Build the Resume Card first |
+| The library gap blocks the return loop | Finish the recent shelf and file-handle reopen |
 | Sync is not worth chasing yet | Revisit after durable local storage |
 | Honest progress is differentiating | Keep it, and say so |
 

@@ -2,15 +2,17 @@
 title: Backend OCR Engine
 type: feature
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, ocr, backend, fastapi, performance]
-source-files: [backend/main.py, backend/app/services/ocr_service.py, backend/app/services/paddle_ocr.py, backend/app/services/huggingface_ocr.py, updateOCRdata.md]
+source-files: [backend/main.py, backend/app/routers/ocr.py, backend/app/core/config.py, backend/app/services/ocr_service.py, backend/app/services/paddle_ocr.py, backend/app/services/huggingface_ocr.py, backend/tests/test_accelerated_ocr.py, updateOCRdata.md]
 ---
 
 # Backend OCR Engine
 
-The optional accelerated path. `POST /api/ocr/scan` accepts a PDF, returns a `job_id`
-immediately, and runs the pipeline in the background while progress streams over SSE.
+The optional accelerated path. The user must explicitly start it from the OCR modal. After that
+start action, `POST /api/ocr/scan` accepts a PDF, returns a `job_id` immediately, and runs the
+pipeline in the background while progress streams over SSE. No local import error invokes this
+endpoint automatically.
 
 ## Constants
 
@@ -22,6 +24,7 @@ immediately, and runs the pipeline in the background while progress streams over
 | `MAX_RETRIES` | `3` | Survives cold starts and transient provider failures |
 | `THREAD_POOL_WORKERS` | `min(32, cpu_count * 4)` | Caps rasterization parallelism |
 | Fast-path threshold | `>= 15` words | Below this, a page is treated as needing OCR |
+| Upload ceiling | `50` MB | Matches `backend/main.py` and `backend/app/core/config.py` |
 
 ## Request
 
@@ -61,6 +64,9 @@ mark completed, notify subscribers
 ```
 
 ## Provider chain
+
+This provider failover is internal to an explicitly started backend job. It is distinct from the
+browser's default local path and does not make a local parse error an automatic upload.
 
 ```text
 PaddleOCR (when PADDLEOCR_URL is configured)
@@ -164,6 +170,9 @@ Detail: [[SSE Progress Streaming]].
 pytest backend/tests/ -v
 npx pyright
 ```
+
+The current suite contains 45 tests across 8 modules; re-count from the command output rather than
+copying an older baseline.
 
 Then behaviourally: start the backend, scan a scanned PDF, confirm page order in the reader
 matches the source image, and confirm cancellation actually stops work.

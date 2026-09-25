@@ -2,9 +2,9 @@
 title: SSE Progress Streaming
 type: feature
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, ocr, sse, streaming, ux]
-source-files: [backend/main.py, src/components/OcrUploader.jsx, src/features/document-import/lib/backendOcrFallback.js]
+source-files: [backend/main.py, src/components/OcrUploader.jsx, src/features/document-import/components/OcrUploader.jsx, src/features/document-import/hooks/useOcrSession.js, src/features/document-import/lib/backendOcrFallback.js]
 ---
 
 # SSE Progress Streaming
@@ -76,7 +76,7 @@ Detail: [[Invariants]], [[Backend OCR Engine]].
 | Event | Client behaviour |
 | --- | --- |
 | `initial` | If already completed, assemble immediately. Else show page progress |
-| `progress` | Update percent, clamped to 4 through 99 so the bar never misleads |
+| `progress` | Update percent, clamped to 2 through 99 so the bar never misleads |
 | `completed` | Assemble chapters and resolve |
 | `error` | Reject with the server's message |
 
@@ -85,13 +85,14 @@ not destroy a ten-minute scan.
 
 ## Progress messaging
 
-The user sees specific, honest text:
+The accelerated flow is entered only after the user chooses it. The user sees specific, honest
+text:
 
 | Stage | Message |
 | --- | --- |
-| Start | "Local reading failed, trying the accelerated backend scan..." |
-| Detail | "Your file is uploaded only because local parsing could not read it. Cancel anytime." |
-| In progress | "Backend scanning page 42 of 240" |
+| Choice | "Scanned PDF pages are sent only after you start this optional scan" |
+| Start | "Ingesting PDF in memory..." |
+| In progress | "Scanning Page 42 of 240" |
 | Detail | "12,400 words so far. Cancel anytime." |
 | Complete | "Backend scan complete. Assembling pages." |
 
@@ -112,9 +113,9 @@ resolves nor rejects twice.
 
 ## Uploader UI
 
-`OcrUploader.jsx` is lazy-loaded and provides the opt-in OCR interface: file selection, live
-progress, word counts, and cancel. It also offers a "use local OCR instead" action so a reader
-can choose privacy over speed at the point of decision.
+`OcrUploader.jsx` is lazy-loaded through the root compatibility wrapper and provides the opt-in OCR
+interface: file selection, live progress, word counts, and cancel. It offers `Use private on-device
+OCR` when the backend scan fails, so the reader can return to the local path.
 
 Detail: [[Frontend Architecture]], [[Privacy Model]].
 

@@ -1,4 +1,6 @@
+import { useEffect, useRef, useState } from "react";
 import { Library, PanelLeftClose, Plus, X } from "lucide-react";
+import { useModalFocus } from "../../../shared/lib/index.js";
 // TODO(backlog-10): build LookBackPanel (chapter + heading map with current
 // position marked) reusing this chapter data, no new parsing. Never a 3D
 // page-flip, never animate the reading column. Looking back is a core failure
@@ -23,13 +25,54 @@ export function ContentsPanel({
   setSidebarCollapsed,
   jumpToChapter,
   closeBook,
+  returnFocusRef,
 }) {
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia?.("(max-width: 900px)").matches,
+  );
+  const panelRef = useRef(null);
+  const closeButtonRef = useRef(null);
+  const mobileDialogOpen = isMobile && sidebarOpen;
+  const navigatorHidden = isMobile ? !sidebarOpen : sidebarCollapsed;
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia?.("(max-width: 900px)");
+    if (!mediaQuery) return undefined;
+    const handleChange = (event) => setIsMobile(event.matches);
+    setIsMobile(mediaQuery.matches);
+    mediaQuery.addEventListener?.("change", handleChange);
+    return () => mediaQuery.removeEventListener?.("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (!navigatorHidden || !panelRef.current?.contains(document.activeElement)) return;
+    const fallback = document.querySelector(
+      isMobile ? ".reader-topbar .mobile-only" : ".navigator-toggle",
+    );
+    if (fallback && typeof fallback.focus === "function") fallback.focus();
+  }, [isMobile, navigatorHidden]);
+
+  useModalFocus({
+    open: mobileDialogOpen,
+    containerRef: panelRef,
+    onClose: () => setSidebarOpen(false),
+    initialFocusRef: closeButtonRef,
+    returnFocusRef,
+  });
+
   return (
     <>
       <aside
+        ref={panelRef}
         id="book-navigator"
         className={`contents-panel ${sidebarOpen ? "is-open" : ""} ${sidebarCollapsed ? "is-collapsed" : ""}`}
-        aria-label="Book navigator"
+        role={mobileDialogOpen ? "dialog" : undefined}
+        aria-modal={mobileDialogOpen ? "true" : undefined}
+        aria-labelledby={mobileDialogOpen ? "book-navigator-title" : undefined}
+        aria-hidden={navigatorHidden ? true : undefined}
+        inert={navigatorHidden ? true : undefined}
+        tabIndex={mobileDialogOpen ? -1 : undefined}
+        aria-label={mobileDialogOpen ? undefined : "Book navigator"}
       >
         <div className="contents-shell">
           <div className="panel-heading macos-panel-heading">
@@ -38,7 +81,7 @@ export function ContentsPanel({
               <span className="traffic-dot traffic-minimize" />
               <span className="traffic-dot traffic-maximize" />
             </div>
-            <span className="navigator-title">
+            <span id="book-navigator-title" className="navigator-title">
               <Library size={15} /> Navigator
             </span>
             <div className="navigator-heading-actions">
@@ -51,6 +94,7 @@ export function ContentsPanel({
                 <PanelLeftClose size={18} />
               </button>
               <button
+                ref={closeButtonRef}
                 type="button"
                 className="icon-button mobile-only"
                 onClick={() => setSidebarOpen(false)}
@@ -101,6 +145,7 @@ export function ContentsPanel({
           <nav className="contents-list" aria-label="Chapter navigation">
             {chapters.map((chapter, index) => (
               <button
+                type="button"
                 key={`${chapter.title}-${index}`}
                 className={`contents-item ${activeChapter === index ? "is-active" : ""}`}
                 onClick={() => {
@@ -129,11 +174,10 @@ export function ContentsPanel({
         </div>
       </aside>
       {sidebarOpen && (
-        <button
-          type="button"
+        <div
           className="mobile-scrim"
           onClick={() => setSidebarOpen(false)}
-          aria-label="Close navigator"
+          aria-hidden="true"
         />
       )}
     </>

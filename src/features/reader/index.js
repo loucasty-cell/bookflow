@@ -1,6 +1,8 @@
 export { DEFAULT_SETTINGS, FONT_SIZE_MAX, FONT_SIZE_MIN } from './config.js'
 export { ReaderPage } from './components/ReaderPage.jsx'
+export { ReaderShell } from './components/ReaderShell.jsx'
 export { SelectionTooltip } from './components/SelectionTooltip.jsx'
+export { countBookWords, enrichChapters, readingMinutes } from './lib/chapterEnrichment.js'
 export { selectClosestParagraph, selectFocusTarget, selectNextParagraph } from './lib/focusRail.js'
 export { isFocusEligibleChapter } from './lib/focusEligibility.js'
 export {
@@ -21,3 +23,9 @@ export {
 } from './lib/readingController.js'
 export { computeScrollMetrics, useScrollPosition } from './lib/useScrollPosition.js'
 export { formatParagraphText, getFixationLength } from './lib/textFormatter.js'
+export { useChapterWindow } from './hooks/useChapterWindow.js'
+export { useReaderAnnotations } from './hooks/useReaderAnnotations.js'
+export { useReaderNavigation } from './hooks/useReaderNavigation.js'
+export { useReaderPersistence } from './hooks/useReaderPersistence.js'
+export { useReaderSession } from './hooks/useReaderSession.js'
+export { useReaderStaticRegion } from './hooks/useReaderStaticRegion.js'

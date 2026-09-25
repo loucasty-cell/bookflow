@@ -11,7 +11,7 @@ Bookflow was designed as a private, distraction-free, browser-based reading envi
 ### Core Product Tenets
 1. **Calm by Default**: Reading chrome stays subdued until summoned. The typography and content lead the experience.
 2. **Local-First & Zero Cloud Storage**: All document parsing (PDF, EPUB, TXT, MD) and OCR happen on-device in browser memory; only reading state (bookmarks, notes, progress, settings) persists in `localStorage`.
-3. **Scroll-Driven Focus Rail**: Instead of requiring manual text selection, scrolling gracefully pulls the active paragraph or sentence into focus near the golden-ratio focal line (`0.42` / `0.382`).
+3. **Scroll-Driven Focus Rail**: Instead of requiring manual text selection, scrolling gracefully pulls the active paragraph or sentence into focus near the golden-ratio focal line (`0.38` / `0.382`).
 4. **Adaptive Ergonomics**: Precise control over text size, line height, column measure, focus depth, atmosphere themes, and scroll pacing.
 
 ---
@@ -26,7 +26,7 @@ Bookflow comprises distinct visual screens and overlay panels:
 +---------------------+---------------------------------------+---------------------+
 | Contents Navigator  | Reader Canvas                         | Settings / Notes    |
 | (Collapsible)       | - Document Header & Metadata Stats    | Drawers (Slide-in)  |
-| - Miniature Card    | - Golden Ratio Focus Rail (42%)       |                     |
+| - Miniature Card    | - Golden Ratio Focus Rail (38%)       |                     |
 | - Book Stats        | - Active Paragraph Highlight (Blue)   | - Font / Measure    |
 | - Chapter List      | - Static Region Floater (Preface/TOC) | - Theme Selector    |
 | - Quick Jump TOC    | - End Mark & Next Book Trigger        | - Margin Notes List |
@@ -258,7 +258,7 @@ Specialized cognitive retention components:
 To prevent jerky or erratic focus jumps during mouse wheel or trackpad movement:
 
 ```javascript
-export const FOCUS_RAIL_RATIO = 0.42; // Golden ratio focus rail line
+export const FOCUS_RAIL_RATIO = 0.38; // Golden ratio focus rail line
 export const MAX_SCROLL_INPUT = 64;   // Input cap per wheel event
 export const SCROLL_INTENT_THRESHOLD = 96; // Accumulated delta required to step
 export const LINE_COOLDOWN = 240;     // Calming delay (ms) between paragraph shifts
@@ -415,7 +415,7 @@ All persistent reader session data is stored locally under namespaced keys:
 When restoring or adding code for these features, verify against:
 - [ ] Landing hero, drag-and-drop dropzone, and format badges render without layout shift.
 - [ ] Video opening transition plays on first visit and skips immediately on click.
-- [ ] Golden-ratio focus rail accurately highlights the active paragraph at 42% viewport height.
+- [ ] Golden-ratio focus rail accurately highlights the active paragraph at 38% viewport height.
 - [ ] Pinned focus freezes the highlighted paragraph upon Space/Enter/Click.
 - [ ] Focus step buttons (`<` / `>`) advance paragraph by paragraph and reset pin state.
 - [ ] Collapsible sidebar shifts canvas margins smoothly on desktop and acts as a slide-over drawer on mobile.

@@ -23,3 +23,4 @@ export {
   progressiveTextImport,
 } from './lib/importCoordinator.js'
 export { scanPdfViaBackend, isBackendFallbackError } from './lib/backendOcrFallback.js'
+export { useDocumentImport } from './hooks/useDocumentImport.js'

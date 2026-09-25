@@ -2,7 +2,8 @@
 title: File Placement Map
 type: reference
 status: verified
-updated: 2026-09-18
+refactor: complete
+updated: 2026-09-24
 tags: [bookflow, agent, structure, placement]
 source-files: [structure.md, AGENTS.md, src/features/document-import/index.js, src/features/reader/index.js]
 ---
@@ -19,6 +20,7 @@ grows.
 | Client-side parser | `src/features/document-import/lib/` |
 | Import validation rule | `src/features/document-import/lib/` |
 | Import scheduler or manifest change | `src/features/document-import/lib/` |
+| Library metadata or durable adapter | `src/features/library/` |
 | Server-side parser | `backend/app/services/document_service.py` |
 | OCR provider integration | `backend/app/services/` |
 | Backend API route | `backend/app/routers/` |
@@ -47,6 +49,10 @@ grows.
 4  App.jsx stays focused on state and feature composition
 5  Keep parsing inside document-import, reader logic inside reader
 ```
+
+## Refactor status
+
+The reader session, navigation, input, measurement, persistence, annotations, static-region, and chapter-window logic now live in `src/features/reader/hooks/`; import coordination, OCR UI, and the metadata library have their own feature boundaries. `App.jsx` is the root composer and lifecycle owner. Keep extracted internals out of the root.
 
 Detail: [[Frontend Public APIs]], [[Frontend Architecture]].
 

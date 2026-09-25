@@ -2,9 +2,9 @@
 title: Focus Rail
 type: feature
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, reader, focus, core-interaction]
-source-files: [src/features/reader/lib/readingController.js, src/features/reader/lib/focusRail.js, src/features/reader/lib/useScrollPosition.js, src/features/reader/hooks/useReaderNavigation.js, src/App.jsx, src/features/reader/components/SaccadicGuide.jsx]
+source-files: [src/features/reader/lib/readingController.js, src/features/reader/lib/focusRail.js, src/features/reader/lib/staticRegion.js, src/features/reader/lib/useScrollPosition.js, src/features/reader/hooks/useReaderInput.js, src/features/reader/hooks/useReaderNavigation.js, src/features/reader/hooks/useReaderStaticRegion.js, src/features/reader/components/SaccadicGuide.jsx]
 ---
 
 # Focus Rail
@@ -16,19 +16,20 @@ ratio reading line becomes active, so attention does not have to be managed manu
 
 ```text
 anchorY = reader.scrollTop + reader.clientHeight * FOCUS_RAIL_RATIO
-FOCUS_RAIL_RATIO = 0.42
+FOCUS_RAIL_RATIO = 0.38
 ```
 
-The anchor sits at 42 percent of the reader viewport height, which is where the eye naturally
+The anchor sits at 38 percent of the reader viewport height, which is where the eye naturally
 rests and slightly above the true golden ratio line, leaving comfortable context above and
 below the active unit.
 
-Implemented in `readingController.js` and consumed by `useScrollPosition.js`,
-`useReaderNavigation.js`, and `SaccadicGuide.jsx`.
+Implemented in `readingController.js` and consumed by `useReaderInput.js`,
+`useReaderNavigation.js`, and `useScrollPosition.js`. Static-region rail resolution lives in
+`useReaderStaticRegion.js`; `SaccadicGuide.jsx` exists but is not mounted by the current reader.
 
 ## Selection algorithm
 
-Two related helpers in `focusRail.js`:
+Three related helpers in `focusRail.js`:
 
 | Function | Purpose |
 | --- | --- |
@@ -36,8 +37,8 @@ Two related helpers in `focusRail.js`:
 | `selectFocusTarget` | Resolves the focus target within a section |
 | `selectNextParagraph` | Sequential advance for keyboard and step controls |
 
-`App.jsx` also runs `sectionAtFocusRail(reader)`, which resolves the section under the anchor
-in this order:
+`useReaderStaticRegion.js` calls `sectionAtFocusRail(reader)` from `staticRegion.js`, which
+resolves the section under the anchor in this order:
 
 1. `document.elementFromPoint` at the anchor, then `closest('.reading-section')`.
 2. Fall back to the section whose bounds contain the anchor.
@@ -65,9 +66,10 @@ Detail: [[Cognitive Ergonomics]], [[Navigation and Controls]].
 
 | Action | Input |
 | --- | --- |
-| Pin the active paragraph | Click or tap the card, `Space`, `Enter`, `Escape` |
+| Pin or unpin a focused paragraph | Click or tap it, or focus it and use `Enter` or `Space` |
+| Hold or release automatic focus | `Escape` in the reader |
+| Step back or forward | `ArrowDown`/`ArrowUp`, `J`/`K`, `PageDown`/`PageUp`, or `Space`/`Shift+Space` |
 | Resume automatic focus | Resume control in the reader |
-| Step back or forward | Previous or next controls, arrow and `J`/`K` keys |
 
 Pinning freezes focus so the reader can scroll through nearby context without the highlight
 moving. Pinned state is persisted as `pinnedId` in the document session.
@@ -79,7 +81,7 @@ non-eligible region, scrolling becomes native and a small label appears
 (`Reading the intro`, `Reading the end matter`). Focus resumes automatically when the rail
 crosses back into eligible content.
 
-Detection in `App.jsx` uses a title test:
+Detection in `staticRegion.js` and `useReaderStaticRegion.js` uses a title test:
 
 ```text
 appendix|bibliograph|references|glossary|index|credits|afterword|epilogue|about the author

@@ -2,9 +2,9 @@
 title: Notes and Bookmarks
 type: feature
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, reader, notes, bookmarks, annotations]
-source-files: [src/features/reader/components/NotesPanel.jsx, src/features/reader/components/SelectionTooltip.jsx, src/store/readerStore.js, src/features/reader/hooks/useReaderPersistence.js]
+source-files: [src/features/reader/components/NotesPanel.jsx, src/features/reader/components/SelectionTooltip.jsx, src/features/reader/hooks/useReaderAnnotations.js, src/store/readerStore.js, src/features/reader/hooks/useReaderPersistence.js]
 ---
 
 # Notes and Bookmarks
@@ -32,20 +32,21 @@ A note pairs a quoted excerpt with the reader's own text:
 { "id": 1691823000000, "quote": "Paragraph excerpt...", "text": "User note" }
 ```
 
-- `id` is a timestamp, so notes sort naturally newest first.
+- `id` is a UUID when `crypto.randomUUID()` is available, otherwise a timestamp-based fallback.
 - `quote` preserves the original excerpt, so a note remains meaningful even if the paragraph
   is later re-parsed.
 - `addNote` prepends to the list. `deleteNote` filters by id.
 
 ## Selection tooltip
 
-`SelectionTooltip.jsx` renders a floating toolbar above selected text with three actions:
+`SelectionTooltip.jsx` renders a floating toolbar above selected text with three core actions:
 
 | Action | Result |
 | --- | --- |
 | Note | Opens the note composer with the selection as the quote |
 | Copy | Copies the selection to the clipboard |
 | Bookmark | Bookmarks the containing paragraph |
+| Define | Optional when `showDefinitionLookup` is enabled; uses the local starter lexicon and never a network lookup |
 
 The tooltip positions itself relative to the selection and stays inside the reader viewport.
 
@@ -53,7 +54,8 @@ The tooltip positions itself relative to the selection and stays inside the read
 
 Notes and bookmarks are part of the per-document session, stored under
 `bookflow:document:{documentId}`, restored by `useReaderPersistence` on open, and written back
-with debouncing so they survive reloads and crashes.
+with debouncing so they survive reloads and crashes. Pin state is transient and is not part of
+that persisted session.
 
 Detail: [[Storage and Persistence]].
 

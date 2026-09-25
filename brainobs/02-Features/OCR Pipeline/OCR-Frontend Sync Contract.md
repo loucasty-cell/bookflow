@@ -2,15 +2,15 @@
 title: OCR-Frontend Sync Contract
 type: contract
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, ocr, contract, integration, critical]
-source-files: [src/features/document-import/lib/backendOcrFallback.js, src/features/document-import/lib/importCoordinator.js, src/shared/lib/text.js, src/App.jsx, backend/main.py]
+source-files: [src/features/document-import/lib/backendOcrFallback.js, src/features/document-import/hooks/useOcrSession.js, src/features/document-import/components/OcrUploader.jsx, src/features/document-import/hooks/useDocumentImport.js, src/features/document-import/lib/importCoordinator.js, src/shared/lib/text.js, src/App.jsx, backend/main.py]
 ---
 
 # OCR-Frontend Sync Contract
 
-How backend OCR output becomes a readable book without the reader knowing it came from a
-server. This is the single most important integration seam in the project.
+How an explicitly started backend OCR job becomes a readable book without the reader knowing it
+came from a server. This is the single most important integration seam in the project.
 
 ## The seam
 
@@ -70,20 +70,18 @@ Both this path and the backend use paragraph splitting that normalizes to the sa
 `splitParagraphs` in `src/shared/lib/text.js`. Page text recognized on the server splits the
 same way local text does, so paragraphs behave identically in the reader.
 
-## Fallback trigger
+## Explicit user action
 
-```js
-isBackendFallbackError(error)
-```
-
-Tests the error message for the accelerated-scan hint. `App.jsx` uses it to decide whether a
-local parsing failure should become a backend scan attempt rather than a dead end.
+`isBackendFallbackError(error)` tests the local error message for the accelerated-scan hint. It
+is a classifier, not an automatic trigger. The current `useDocumentImport` path surfaces the local
+error and leaves the backend action to the user; `OcrUploader` calls `scanPdfViaBackend` only after
+the user selects a PDF and presses Start.
 
 ```text
 local parse fails
-  -> isBackendFallbackError(error)?
-       yes -> scanPdfViaBackend(...)
-       no  -> surface the original error
+  -> surface a clear local error
+  -> user explicitly opens Optional accelerated OCR and presses Start
+  -> scanPdfViaBackend(...)
 ```
 
 ## Lifecycle and cleanup
@@ -101,8 +99,8 @@ A `settled` flag ensures the promise settles exactly once no matter how many eve
 
 ## Progress clamp
 
-Client-side percent is clamped to 4 through 99 during the scan and set to 99 on completion, so
-the UI never claims done before assembly finishes and never appears stuck at zero.
+Client-side percent is clamped to 2 through 99 during the scan and the uploader commits `100` only
+after the completed event and readable-page assembly, so the UI never claims done early.
 
 ## Error contract
 

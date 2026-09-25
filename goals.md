@@ -27,7 +27,7 @@ Bookflow transforms long-form reading into a calm, sustainable, and habit-formin
 | ------------------------------- | -------- | -------------------------------------------------------------------------- |
 | **Multi-Format Import**         | Verified | PDF, EPUB, TXT, Markdown up to 50 MB with drag-and-drop                    |
 | **Local-First Privacy**         | Verified | In-memory parsing via PDF.js, JSZip, Tesseract.js WASM                     |
-| **Sentence Focus Rail**         | Verified | Golden-ratio focal placement (`FOCUS_RAIL_RATIO = 0.42`)                   |
+| **Sentence Focus Rail**         | Verified | Golden-ratio focal placement (`FOCUS_RAIL_RATIO = 0.38`)                   |
 | **Bionic Fixation Reading**     | Verified | Dynamic grapheme weighting (`getFixationLength`) via pure React elements   |
 | **Accessible Typography**       | Verified | Serif, Sans, Atkinson Hyperlegible, OpenDyslexic with letter tracking      |
 | **Scroll Intent Accumulator**   | Verified | `useScrollPosition` and trackpad dampening to eliminate jitter             |
@@ -38,7 +38,7 @@ Bookflow transforms long-form reading into a calm, sustainable, and habit-formin
 | **Resilient Error Boundaries**  | Verified | Subtree and root-level crash isolation with one-tap reset                  |
 | **Paragraph Classification**    | Verified | 7-category heuristic classifier (Dialogue, Action, Descriptive, etc.)      |
 | **Fast Visual OCR Engine**      | Verified | Multi-tiered OCR (Fast native -> PaddleOCR -> Qwen2-VL) with SSE streaming |
-| **Automated Testing Suite**     | Verified | 13 Vitest suites (48 tests), 38 Pytest tests, Pyright type safety          |
+| **Automated Testing Suite**     | Verified | 31 Vitest files / 163 tests, 45 Pytest tests, Pyright type safety          |
 
 ---
 

@@ -110,7 +110,7 @@ curl -s http://127.0.0.1:8000/api/health
 - **Root Cause**: Reader scroll listener detached or paragraph elements missing `data-paragraph-id`.
 - **Resolution**:
   1. Verify the reader container has `overflow-y: auto`.
-  2. Check that the element at the 42% viewport rail has `data-focus-eligible="true"`.
+  2. Check that the element at the 38% viewport rail has `data-focus-eligible="true"`.
   3. If pinned, unpin with Space/Enter or click to resume scroll-driven focus.
 
 ### Symptom: Front Matter / Copyright Page Gets Focused

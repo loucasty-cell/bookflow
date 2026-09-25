@@ -2,9 +2,9 @@
 title: Debugging Playbook
 type: guide
 status: verified
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, ops, debugging, troubleshooting]
-source-files: [src/shared/components/ErrorBoundary.jsx, src/features/document-import/lib/backendOcrFallback.js, src/features/reader/lib/focusEligibility.js, debugging.md, vite.config.js]
+source-files: [src/shared/components/ErrorBoundary.jsx, src/features/document-import/lib/backendOcrFallback.js, src/features/document-import/hooks/useDocumentImport.js, src/features/document-import/hooks/useOcrSession.js, src/features/reader/lib/focusEligibility.js, debugging.md, vite.config.js]
 ---
 
 # Debugging Playbook
@@ -23,7 +23,7 @@ summarizes it and adds layout, rendering, and performance cases.
 | Empty reader after import | Parser returned no paragraphs | Test with the sample book, then inspect the file |
 | Reader opens but text is garbled | Scanner produced poor OCR | Try the backend scan with a higher profile |
 | Import hangs | Large scanned PDF on a slow device | Confirm the scheduler is running and cancel is available |
-| PDF fails, no fallback | Fallback error not matched | Check `isBackendFallbackError` message matching |
+| PDF fails, no automatic backend scan | This is intentional | Keep the local error visible; the user must explicitly choose optional accelerated OCR |
 
 ### "PDF contains no readable text"
 
@@ -62,8 +62,9 @@ Detail: [[Validation Rules]], [[OCR Decision Tree]].
 | Progress stalls then dies | SSE connection dropped | Confirm the 8s heartbeat is emitting |
 | Some pages missing | Pages failed and were reported | Check `skippedPages` and retry those pages |
 
-The provider fallback chain means a PaddleOCR failure is not fatal: the backend attempts the
-configured Hugging Face or vLLM route next.
+Inside an explicitly started backend job, the provider fallback chain means a PaddleOCR failure is
+not fatal: the backend attempts the configured Hugging Face or vLLM route next. This does not make
+the browser upload automatically.
 
 Detail: [[SSE Progress Streaming]], [[Backend OCR Engine]].
 
@@ -75,7 +76,7 @@ Detail: [[SSE Progress Streaming]], [[Backend OCR Engine]].
 | Front matter or copyright page gets focus | Section not classified as front matter | Check the front and end matter rules; short headings and standard front matter words are non-eligible |
 | Focus flickers between two units | Equal-distance paragraphs | Confirm the previous-id bias is applied |
 | Jitter on trackpad | Raw delta used instead of accumulator | Confirm `accumulateScrollIntent` and the threshold |
-| Focus stuck | Paragraph is pinned | Unpin with `Space`, `Enter`, `Escape`, or a click |
+| Focus stuck | Paragraph is pinned | Unpin with `Escape`, or focus the paragraph and use `Enter` or `Space` |
 | Notes not persisting | Storage blocked or wrong identity | Confirm the safe storage fallback and the document key |
 
 Front matter detection excludes headings containing words such as Contents, Copyright, or Title,
@@ -123,7 +124,7 @@ Detail: [[Frontend Architecture]], [[Design Tokens]].
 | --- | --- | --- |
 | Tab freezes on a large scan | Unbounded rendering or workers | Confirm batch caps and worker termination |
 | Memory climbs on a long book | Buffers retained | Confirm cleanup after extraction and OCR |
-| Slow first content | Blocking parse on the main path | Confirm progressive import is enabled |
+| Slow first content | Blocking parse on the main path or terminal PDF preparation | Confirm PDF progressive import is enabled and that the reader waits for its terminal 100%; EPUB, TXT, and Markdown currently use the blocking path |
 | Janky focus transition | Animating layout properties | Animate opacity and transform only |
 
 Measure with the `bookflow:` performance marks rather than guessing.

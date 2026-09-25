@@ -12,6 +12,25 @@ import {
   safeParse,
 } from "../../../shared/lib/index.js";
 
+function hasParagraph(book, paragraphId) {
+  if (!book || !paragraphId) return false;
+  const match = String(paragraphId).match(/^paragraph-(\d+)-(\d+)$/);
+  if (!match) return false;
+  const chapter = book.chapters?.[Number(match[1])];
+  const paragraphIndex = Number(match[2]);
+  return (
+    Number.isInteger(paragraphIndex) &&
+    paragraphIndex >= 0 &&
+    Array.isArray(chapter?.paragraphs) &&
+    paragraphIndex < chapter.paragraphs.length
+  );
+}
+
+function savedScrollTop(value) {
+  const number = Number(value);
+  return Number.isFinite(number) && number > 0 ? number : 0;
+}
+
 export function useReaderSession({ clearTimers }) {
   const [book, setBook] = useState(null);
   const [bookId, setBookId] = useState("");
@@ -26,6 +45,7 @@ export function useReaderSession({ clearTimers }) {
   const activeParagraphIdRef = useRef("");
   const pinnedIdRef = useRef("");
   const pendingRestoreParagraphRef = useRef("");
+  const pendingRestoreScrollTopRef = useRef(0);
   const hasRestorePositionRef = useRef(false);
   const hasMeasuredBookRef = useRef(false);
   const overStaticRegionRef = useRef(false);
@@ -45,17 +65,28 @@ export function useReaderSession({ clearTimers }) {
 
   const openBook = useCallback(
     (nextBook, id) => {
-      const saved = safeParse(getStorageItem(documentStorageKey(id)), {});
+      const parsed = safeParse(getStorageItem(documentStorageKey(id)), {});
+      const saved =
+        parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          ? parsed
+          : {};
       clearTimers();
       const legacyMatch = String(saved.activeId ?? "").match(/^(\d+)-(\d+)-\d+$/);
       const fallbackParagraph = legacyMatch
         ? `paragraph-${legacyMatch[1]}-${legacyMatch[2]}`
         : "";
-      pendingRestoreParagraphRef.current = saved.activeParagraphId ?? fallbackParagraph;
-      hasRestorePositionRef.current = Boolean(
-        saved.activeParagraphId || fallbackParagraph || Number(saved.scrollTop) > 0
-      );
-      const restoredActive = saved.activeParagraphId ?? fallbackParagraph;
+      const storedParagraph = saved.activeParagraphId
+        ? String(saved.activeParagraphId)
+        : fallbackParagraph;
+      const restoredActive = hasParagraph(nextBook, storedParagraph)
+        ? storedParagraph
+        : hasParagraph(nextBook, fallbackParagraph)
+          ? fallbackParagraph
+          : "";
+      const restoreScrollTop = savedScrollTop(saved.scrollTop);
+      pendingRestoreParagraphRef.current = restoredActive;
+      pendingRestoreScrollTopRef.current = restoreScrollTop;
+      hasRestorePositionRef.current = Boolean(restoredActive || restoreScrollTop);
       setBook(nextBook);
       setBookId(id);
       setNotes(saved.notes ?? []);
@@ -102,6 +133,7 @@ export function useReaderSession({ clearTimers }) {
     setSidebarCollapsed(false);
     setPinnedId("");
     pendingRestoreParagraphRef.current = "";
+    pendingRestoreScrollTopRef.current = 0;
     setActiveParagraphIsLarge(false);
     setOverStaticRegion(false);
     setStaticRegionLabel("Reading the intro");
@@ -189,6 +221,7 @@ export function useReaderSession({ clearTimers }) {
     activeParagraphIdRef,
     pinnedIdRef,
     pendingRestoreParagraphRef,
+    pendingRestoreScrollTopRef,
     hasRestorePositionRef,
     hasMeasuredBookRef,
     overStaticRegionRef,

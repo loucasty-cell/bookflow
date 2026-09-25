@@ -1,42 +1,73 @@
-"""
-Bookflow optional OCR backend.
-
-Orchestrates PDF page extraction at 96 DPI in memory using PyMuPDF,
-PaddleOCR-first/provider-aware OCR requests, bounded retries, and real-time SSE streaming.
-"""
-
-import os
-import io
-import time
-import uuid
-import json
-import base64
 import asyncio
 import logging
-from typing import Dict, List, Optional, Any, AsyncGenerator
-from dataclasses import dataclass, field
+import os
+import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Dict, Optional
 
-import fitz  # PyMuPDF
-import httpx
-from fastapi import FastAPI, UploadFile, File, Form, Header, HTTPException, BackgroundTasks, status
+from dotenv import load_dotenv
+from fastapi import BackgroundTasks, FastAPI, File, Form, Header, HTTPException, Response, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
-# Setup logging
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
+load_dotenv(os.path.join(os.path.dirname(__file__), "../.env"))
+
+from app.services.ocr_jobs import (
+    MAX_ACTIVE_JOBS,
+    MAX_JOBS,
+    MAX_PENDING_JOBS,
+    MAX_SUBSCRIBERS_PER_JOB,
+    OCRJob,
+    PageData,
+    SUBSCRIBER_QUEUE_SIZE,
+    _pipeline_semaphores,
+    get_pipeline_semaphore,
+    jobs,
+    jobs_lock,
+    prune_stale_jobs as prune_stale_jobs_service,
+)
+from app.services.ocr_pipeline import (
+    process_ocr_pipeline as process_ocr_pipeline_service,
+    run_ocr_pipeline_job as run_ocr_pipeline_job_service,
+)
+from app.services.ocr_providers import (
+    ALLOWED_HF_HOSTS,
+    HF_ENDPOINT_SUFFIX,
+    MODEL_ID_PATTERN,
+    OCRProviderConfig,
+    bearer_token,
+    build_hf_chat_payload as build_hf_chat_payload_service,
+    call_ocr_with_retry as call_ocr_with_retry_service,
+    call_paddleocr as call_paddleocr_service,
+    ensure_hf_inference_support as ensure_hf_inference_support_service,
+    hf_inference_url_for_model as hf_inference_url_for_model_service,
+    parse_hf_chat_response,
+    validate_hf_inference_url,
+    validate_model_id,
+)
+from app.services.ocr_rendering import (
+    RENDER_DPI,
+    RENDER_SCALE,
+    count_pdf_pages_sync,
+    render_pdf_pages_async as render_pdf_pages_async_service,
+    render_pdf_pages_sync as render_pdf_pages_sync_service,
+)
+from app.services.ocr_sse import (
+    NO_STORE_HEADERS,
+    build_progress_response,
+    offer_subscriber_message,
+    progress_events,
+    notify_subscribers as notify_subscribers_service,
+)
+
+logger = logging.getLogger("bookflow.ocr")
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-logger = logging.getLogger("bookflow.ocr")
 
-from dotenv import load_dotenv
-
-# Try loading from backend/.env or root ../.env
-load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
-load_dotenv(os.path.join(os.path.dirname(__file__), "../.env"))
-
-# Environment configuration
 OCR_MODEL = os.getenv("OCR_MODEL", "Qwen/Qwen2-VL-7B-Instruct").strip()
 HF_TOKEN = os.getenv("HF_TOKEN", os.getenv("HF_API_KEY", ""))
 HF_INFERENCE_URL = os.getenv(
@@ -54,48 +85,47 @@ CORS_ORIGINS = os.getenv(
     "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000",
 ).split(",")
 
-# Batch & execution constants
 DEFAULT_BATCH_SIZE = 16
-RENDER_DPI = 96
-RENDER_SCALE = RENDER_DPI / 72.0  # 1.3333x zoom
 MAX_RETRIES = 3
 MAX_UPLOAD_MB = 50
 MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024
 THREAD_POOL_WORKERS = min(32, (os.cpu_count() or 4) * 4)
-
 executor = ThreadPoolExecutor(max_workers=THREAD_POOL_WORKERS)
 
 
-@dataclass
-class PageData:
-    page_number: int
-    text: str = ""
-    word_count: int = 0
-    latency_ms: float = 0.0
-    success: bool = False
-    error: Optional[str] = None
+def _provider_config() -> OCRProviderConfig:
+    return OCRProviderConfig(
+        inference_url=HF_INFERENCE_URL,
+        hf_token=HF_TOKEN,
+        paddleocr_url=PADDLEOCR_URL,
+        ocr_prompt=OCR_PROMPT,
+        hf_max_tokens=HF_MAX_TOKENS,
+        max_retries=MAX_RETRIES,
+    )
 
 
-@dataclass
-class OCRJob:
-    job_id: str
-    filename: str
-    total_pages: int
-    status: str = "processing"  # "processing", "completed", "failed"
-    current_page: int = 0
-    pages: List[Dict[str, Any]] = field(default_factory=list)
-    markdown: str = ""
-    total_words: int = 0
-    error: Optional[str] = None
-    created_at: float = field(default_factory=time.time)
-    updated_at: float = field(default_factory=time.time)
-    completed_at: Optional[float] = None
-    subscribers: List[asyncio.Queue] = field(default_factory=list)
+def _validate_model_id(model_id: Optional[str]) -> str:
+    return validate_model_id(model_id)
 
 
-# In-memory thread-safe jobs store
-jobs_lock = asyncio.Lock()
-jobs: Dict[str, OCRJob] = {}
+def _validate_hf_inference_url(value: Optional[str]) -> str:
+    return validate_hf_inference_url(value)
+
+
+def _bearer_token(authorization: Optional[str]) -> Optional[str]:
+    return bearer_token(authorization)
+
+
+def _set_no_store(response: Response) -> None:
+    response.headers.update(NO_STORE_HEADERS)
+
+
+def _get_pipeline_semaphore() -> asyncio.Semaphore:
+    return get_pipeline_semaphore(MAX_ACTIVE_JOBS)
+
+
+def _count_pdf_pages_sync(pdf_bytes: bytes) -> int:
+    return count_pdf_pages_sync(pdf_bytes)
 
 
 app = FastAPI(
@@ -112,43 +142,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Phase 2: Social Resonance Router (DB-less mockup)
 try:
     from routers.social import router as social_router
+
     app.include_router(social_router)
-except ImportError as e:
-    logger.warning(f"Could not load social router: {e}")
-
-
-def _count_pdf_pages_sync(pdf_bytes: bytes) -> int:
-    temp_doc = None
-    try:
-        temp_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        page_count = len(temp_doc)
-        if page_count < 1:
-            raise ValueError("Invalid or corrupted PDF file: no loadable pages found.")
-        return page_count
-    except ValueError:
-        raise
-    except Exception as e:
-        raise ValueError(f"Invalid or corrupted PDF file: {e}")
-    finally:
-        if temp_doc is not None:
-            try:
-                temp_doc.close()
-            except Exception:
-                pass
+except ImportError as exc:
+    logger.warning("Could not load social router: %s", exc)
 
 
 @app.post("/api/ocr/scan")
 async def scan_pdf_endpoint(
     background_tasks: BackgroundTasks,
+    response: Response,
     file: UploadFile = File(..., description="PDF file to scan"),
     model_id: Optional[str] = Form(None),
     batch_size: Optional[int] = Form(DEFAULT_BATCH_SIZE),
     force_ocr: Optional[bool] = Form(False),
     ocr_profile: str = Form("small"),
-    api_key: Optional[str] = Form(None),
     authorization: Optional[str] = Header(None),
     x_hf_token: Optional[str] = Header(None),
 ):
@@ -156,6 +166,7 @@ async def scan_pdf_endpoint(
     Initiates asynchronous visual OCR scan of an uploaded PDF using PaddleOCR first and Hugging Face fallback.
     Returns a job_id to stream progress via SSE at /api/ocr/progress/{job_id}.
     """
+    _set_no_store(response)
     await prune_stale_jobs()
     filename = file.filename or "uploaded_document.pdf"
     if not filename.lower().endswith(".pdf"):
@@ -183,18 +194,24 @@ async def scan_pdf_endpoint(
             detail=f"Uploaded PDF exceeds maximum size of {MAX_UPLOAD_MB} MB.",
         )
 
-    # Quickly read page count with PyMuPDF off the event loop, tolerating
-    # broken page trees from tools like calibre that leave dangling /Count references.
     try:
         page_count = await asyncio.to_thread(_count_pdf_pages_sync, pdf_bytes)
-    except ValueError as e:
+    except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
+            detail=str(exc),
+        )
+
+    try:
+        active_model = _validate_model_id(model_id or OCR_MODEL)
+        _validate_hf_inference_url(HF_INFERENCE_URL)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
         )
 
     job_id = str(uuid.uuid4())
-    active_model = (model_id or OCR_MODEL).strip()
     effective_batch_size = max(1, min(batch_size or DEFAULT_BATCH_SIZE, 32))
     effective_ocr_profile = ocr_profile.strip().lower()
     if effective_ocr_profile not in {"small", "medium"}:
@@ -202,7 +219,7 @@ async def scan_pdf_endpoint(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="OCR profile must be 'small' or 'medium'.",
         )
-    token = api_key or x_hf_token or (authorization.replace("Bearer ", "") if authorization else None)
+    token = x_hf_token or _bearer_token(authorization)
 
     new_job = OCRJob(
         job_id=job_id,
@@ -212,10 +229,16 @@ async def scan_pdf_endpoint(
     )
 
     async with jobs_lock:
+        in_flight = sum(job.status in {"queued", "processing"} for job in jobs.values())
+        if len(jobs) >= MAX_JOBS or in_flight >= MAX_PENDING_JOBS:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="OCR job capacity is currently full. Try again later.",
+            )
         jobs[job_id] = new_job
 
     background_tasks.add_task(
-        process_ocr_pipeline,
+        _run_ocr_pipeline_job,
         job_id=job_id,
         pdf_bytes=pdf_bytes,
         model_id=active_model,
@@ -239,11 +262,12 @@ async def scan_pdf_endpoint(
 
 
 @app.get("/api/ocr/progress/{job_id}")
-async def get_ocr_progress_sse(job_id: str):
+async def get_ocr_progress_sse(job_id: str, response: Response):
     """
     Real-Time Server-Sent Events (SSE) progress endpoint.
     Streams page processing state with heartbeat keepalives for desktop and mobile clients.
     """
+    _set_no_store(response)
     async with jobs_lock:
         job = jobs.get(job_id)
 
@@ -253,79 +277,30 @@ async def get_ocr_progress_sse(job_id: str):
             detail=f"Job '{job_id}' not found.",
         )
 
-    subscriber_queue: asyncio.Queue = asyncio.Queue()
-    job.subscribers.append(subscriber_queue)
+    if len(job.subscribers) >= MAX_SUBSCRIBERS_PER_JOB:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many progress subscribers for this OCR job.",
+        )
+    subscriber_queue: asyncio.Queue[str] = asyncio.Queue(maxsize=SUBSCRIBER_QUEUE_SIZE)
+    async with jobs_lock:
+        if len(job.subscribers) >= MAX_SUBSCRIBERS_PER_JOB:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="Too many progress subscribers for this OCR job.",
+            )
+        job.subscribers.append(subscriber_queue)
 
-    async def event_generator() -> AsyncGenerator[str, None]:
-        try:
-            # Send initial state immediately
-            initial_payload = {
-                "job_id": job.job_id,
-                "filename": job.filename,
-                "status": job.status,
-                "current_page": job.current_page,
-                "total_pages": job.total_pages,
-                "percent": round((job.current_page / max(1, job.total_pages)) * 100, 1),
-                "total_words": job.total_words,
-                "pages": job.pages,
-                "markdown": job.markdown if job.status == "completed" else "",
-            }
-            yield f"event: initial\ndata: {json.dumps(initial_payload)}\n\n"
-
-            if job.status == "completed":
-                completion_payload = {
-                    **initial_payload,
-                    "percent": 100.0,
-                    "pages_per_second": round(
-                        job.total_pages / max(0.1, (job.completed_at or time.time()) - job.created_at),
-                        2,
-                    ),
-                    "elapsed_seconds": round((job.completed_at or time.time()) - job.created_at, 2),
-                    "markdown": job.markdown,
-                }
-                yield f"event: completed\ndata: {json.dumps(completion_payload)}\n\n"
-                return
-
-            if job.status in ("failed", "canceled"):
-                error_payload = {
-                    "job_id": job.job_id,
-                    "status": job.status,
-                    "error": job.error or "OCR processing failed.",
-                }
-                yield f"event: error\ndata: {json.dumps(error_payload)}\n\n"
-                return
-
-            while True:
-                try:
-                    msg = await asyncio.wait_for(subscriber_queue.get(), timeout=8.0)
-                    yield msg
-                    if "event: completed" in msg or "event: error" in msg:
-                        break
-                except asyncio.TimeoutError:
-                    # Keepalive heartbeat comment for mobile browsers
-                    yield ": keepalive\n\n"
-                    if job.status in ("completed", "failed", "canceled"):
-                        break
-        except asyncio.CancelledError:
-            pass
-        finally:
-            if subscriber_queue in job.subscribers:
-                job.subscribers.remove(subscriber_queue)
-
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
+    return build_progress_response(
+        progress_events(job, subscriber_queue, jobs_lock),
+        headers=NO_STORE_HEADERS,
     )
 
 
 @app.get("/api/ocr/job/{job_id}")
-async def get_ocr_job_status(job_id: str):
+async def get_ocr_job_status(job_id: str, response: Response):
     """Retrieve current OCR job snapshot and all processed pages."""
+    _set_no_store(response)
     async with jobs_lock:
         job = jobs.get(job_id)
 
@@ -336,7 +311,7 @@ async def get_ocr_job_status(job_id: str):
         )
 
     elapsed = round((job.completed_at or time.time()) - job.created_at, 2)
-    pps = round(job.current_page / max(0.1, elapsed), 2)
+    pages_per_second = round(job.current_page / max(0.1, elapsed), 2)
     percent = round((job.current_page / max(1, job.total_pages)) * 100, 1)
 
     return {
@@ -347,7 +322,7 @@ async def get_ocr_job_status(job_id: str):
         "total_pages": job.total_pages,
         "percent": percent,
         "total_words": job.total_words,
-        "pages_per_second": pps,
+        "pages_per_second": pages_per_second,
         "elapsed_seconds": elapsed,
         "pages": job.pages,
         "markdown": job.markdown,
@@ -356,8 +331,9 @@ async def get_ocr_job_status(job_id: str):
 
 
 @app.get("/api/ocr/result/{job_id}")
-async def get_ocr_result_markdown(job_id: str):
+async def get_ocr_result_markdown(job_id: str, response: Response):
     """Retrieve final structured Markdown document for a completed job."""
+    _set_no_store(response)
     async with jobs_lock:
         job = jobs.get(job_id)
 
@@ -377,6 +353,7 @@ async def get_ocr_result_markdown(job_id: str):
                 "current_page": job.current_page,
                 "total_pages": job.total_pages,
             },
+            headers=NO_STORE_HEADERS,
         )
 
     return {
@@ -390,42 +367,55 @@ async def get_ocr_result_markdown(job_id: str):
 
 
 @app.post("/api/ocr/cancel/{job_id}")
-async def cancel_ocr_job(job_id: str):
+async def cancel_ocr_job(job_id: str, response: Response):
     """Cancel an active in-progress OCR job and notify all connected SSE clients."""
+    _set_no_store(response)
+    pipeline_task: Optional[asyncio.Task[Any]] = None
     async with jobs_lock:
         job = jobs.get(job_id)
-
-    if not job:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job '{job_id}' not found.",
-        )
-
-    if job.status == "processing":
+        if not job:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Job '{job_id}' not found.",
+            )
+        if job.status not in {"queued", "processing"}:
+            return {"success": False, "message": f"Job '{job_id}' is already {job.status}."}
+        pipeline_task = job.pipeline_task
         job.status = "canceled"
         job.error = "Scan was canceled by user."
         job.pages.clear()
         job.markdown = ""
         job.total_words = 0
         job.updated_at = time.time()
-        await notify_subscribers(
-            job,
-            "error",
-            {
-                "job_id": job.job_id,
-                "status": "canceled",
-                "error": "Scan was canceled by user.",
-            },
-        )
-        return {"success": True, "message": f"Job '{job_id}' canceled successfully."}
 
-    return {"success": False, "message": f"Job '{job_id}' is already {job.status}."}
+    await notify_subscribers(
+        job,
+        "error",
+        {
+            "job_id": job.job_id,
+            "status": "canceled",
+            "error": "Scan was canceled by user.",
+        },
+    )
+    if pipeline_task is not None and not pipeline_task.done():
+        pipeline_task.cancel()
+        try:
+            await pipeline_task
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            pass
+    return {"success": True, "message": f"Job '{job_id}' canceled successfully."}
 
 
 @app.get("/health")
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint for Docker compose and load balancers."""
+    try:
+        inference_url = _validate_hf_inference_url(HF_INFERENCE_URL) or None
+    except ValueError:
+        inference_url = None
     return {
         "status": "healthy",
         "service": "bookflow-ocr-fastapi",
@@ -433,260 +423,90 @@ async def health_check():
         "remote_ocr_configured": bool(OCR_MODEL),
         "paddleocr_configured": bool(PADDLEOCR_URL),
         "paddleocr_profiles": ["small", "medium"],
-        "inference_url": HF_INFERENCE_URL,
+        "inference_url": inference_url,
         "token_configured": bool(HF_TOKEN and HF_TOKEN.strip() and HF_TOKEN.strip() != "EMPTY"),
         "thread_workers": THREAD_POOL_WORKERS,
         "default_batch_size": DEFAULT_BATCH_SIZE,
     }
 
 
+def _render_pdf_pages_sync(
+    pdf_bytes: bytes,
+    start_idx: int,
+    end_idx: int,
+    force_ocr: bool = False,
+):
+    return render_pdf_pages_sync_service(
+        pdf_bytes,
+        start_idx,
+        end_idx,
+        force_ocr,
+        render_scale=RENDER_SCALE,
+    )
 
 
-def _render_pdf_pages_sync(pdf_bytes: bytes, start_idx: int, end_idx: int, force_ocr: bool = False) -> List[Dict[str, Any]]:
-    """
-    Synchronous high-speed CPU worker to extract pages.
-    Native text pages are processed in microseconds; scanned image pages are rendered at 96 DPI.
-    Eliminates disk I/O bottlenecks.
-    """
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    try:
-        total_pages = len(doc)
-        rendered_pages = []
-        matrix = fitz.Matrix(RENDER_SCALE, RENDER_SCALE)
-
-        for idx in range(start_idx, min(end_idx, total_pages)):
-            try:
-                page = doc.load_page(idx)
-            except Exception as exc:
-                logger.warning(f"[Page {idx + 1}] Skipping unloadable page: {exc}")
-                rendered_pages.append({
-                    "page_number": idx + 1,
-                    "image_b64": None,
-                    "native_text": "",
-                    "is_native": False,
-                    "unreadable": True,
-                })
-                continue
-            try:
-                # Extract native blocks / text with structure preservation
-                blocks = page.get_text("blocks")
-                native_paragraphs = []
-                for b in blocks:
-                    text = (b[4] or "").strip()
-                    if text and len(text) > 2:
-                        native_paragraphs.append(text)
-
-                native_text = "\n\n".join(native_paragraphs).strip()
-                word_count = len(native_text.split())
-
-                # If page has sufficient native selectable text (> 15 words) and force_ocr is False,
-                # we can skip costly pixmap rasterization to process 600 pages in < 1 second.
-                if word_count >= 15 and not force_ocr:
-                    rendered_pages.append({
-                        "page_number": idx + 1,
-                        "image_b64": None,
-                        "native_text": native_text,
-                        "is_native": True,
-                    })
-                else:
-                    # Render visual page to pixmap at 96 DPI in memory
-                    pix = page.get_pixmap(matrix=matrix, alpha=False)
-                    jpeg_bytes = pix.tobytes("jpeg", jpg_quality=85)
-                    b64_str = base64.b64encode(jpeg_bytes).decode("utf-8")
-                    rendered_pages.append({
-                        "page_number": idx + 1,
-                        "image_b64": b64_str,
-                        "native_text": native_text,
-                        "is_native": False,
-                    })
-            except Exception as exc:
-                logger.warning(f"[Page {idx + 1}] Skipping unreadable page: {exc}")
-                rendered_pages.append({
-                    "page_number": idx + 1,
-                    "image_b64": None,
-                    "native_text": "",
-                    "is_native": False,
-                    "unreadable": True,
-                })
-
-        return rendered_pages
-    finally:
-        try:
-            doc.close()
-        except Exception:
-            pass
-
-
-async def render_pdf_pages_async(pdf_bytes: bytes, start_idx: int, end_idx: int, force_ocr: bool = False) -> List[Dict[str, Any]]:
-    """Asynchronously offload PDF page rendering to thread pool executor."""
-    loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(executor, _render_pdf_pages_sync, pdf_bytes, start_idx, end_idx, force_ocr)
+async def render_pdf_pages_async(
+    pdf_bytes: bytes,
+    start_idx: int,
+    end_idx: int,
+    force_ocr: bool = False,
+):
+    return await render_pdf_pages_async_service(
+        pdf_bytes,
+        start_idx,
+        end_idx,
+        force_ocr,
+        executor=executor,
+        render_scale=RENDER_SCALE,
+    )
 
 
 async def ensure_hf_inference_support(
-    client: httpx.AsyncClient,
+    client,
     model_id: str,
     api_key: Optional[str] = None,
 ) -> None:
-    if not model_id.strip():
-        raise ValueError(
-            "No remote OCR model is configured. Set OCR_MODEL in backend/.env to a "
-            "Hugging Face model deployed by the Inference Provider, or use private on-device OCR."
-        )
-
-    if HF_INFERENCE_URL.startswith("https://router.huggingface.co/v1"):
-        token = (api_key or HF_TOKEN or "").strip()
-        headers = {"Authorization": f"Bearer {token}"} if token and token != "EMPTY" else {}
-        response = await client.get(
-            f"https://router.huggingface.co/v1/models/{model_id}",
-            headers=headers,
-        )
-        if response.status_code == 401:
-            raise ValueError("Hugging Face rejected the configured API token.")
-        if response.status_code == 404:
-            raise ValueError(
-                f"{model_id} is not currently available through the Hugging Face OpenAI-compatible provider route. "
-                "Use a provider-enabled vision model or configure PaddleOCR/dedicated OCR service."
-            )
-        response.raise_for_status()
-        providers = response.json().get("providers") or []
-        if providers and not any(provider.get("status") == "live" for provider in providers):
-            raise ValueError(f"{model_id} has no live Hugging Face provider at this time.")
-        return
-
-    if not HF_INFERENCE_URL.startswith("https://router.huggingface.co/hf-inference/models"):
-        return
-
-    token = (api_key or HF_TOKEN or "").strip()
-    headers = {"Authorization": f"Bearer {token}"} if token and token != "EMPTY" else {}
-    response = await client.get(
-        f"https://huggingface.co/api/models/{model_id}",
-        params={"expand[]": "inferenceProviderMapping"},
-        headers=headers,
+    await ensure_hf_inference_support_service(
+        client,
+        model_id,
+        api_key,
+        inference_url=HF_INFERENCE_URL,
+        hf_token=HF_TOKEN,
     )
-    if response.status_code == 401:
-        raise ValueError("Hugging Face rejected the configured API token.")
-    response.raise_for_status()
-    provider_mapping = response.json().get("inferenceProviderMapping") or {}
-    if "hf-inference" not in provider_mapping:
-        raise ValueError(
-            f"{model_id} is not deployed by the Hugging Face Inference Provider. "
-            "Use Bookflow's private on-device OCR, or configure a dedicated compatible OCR endpoint."
-        )
 
 
 def hf_inference_url_for_model(model_id: str) -> str:
-    if "{model_id}" in HF_INFERENCE_URL:
-        return HF_INFERENCE_URL.format(model_id=model_id)
-    if ".endpoints.huggingface.cloud" in HF_INFERENCE_URL:
-        return HF_INFERENCE_URL
-    if HF_INFERENCE_URL.endswith("/models"):
-        return f"{HF_INFERENCE_URL}/{model_id}"
-    return HF_INFERENCE_URL
+    return hf_inference_url_for_model_service(model_id, inference_url=HF_INFERENCE_URL)
 
 
 def build_hf_chat_payload(model_id: str, image_bytes: bytes) -> Dict[str, Any]:
-    image_data = base64.b64encode(image_bytes).decode("ascii")
-    return {
-        "model": model_id,
-        "messages": [{
-            "role": "user",
-            "content": [
-                {"type": "text", "text": OCR_PROMPT},
-                {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{image_data}"},
-                },
-            ],
-        }],
-        "max_tokens": HF_MAX_TOKENS,
-        "temperature": 0.0,
-    }
-
-
-def parse_hf_chat_response(response_data: Any) -> str:
-    if isinstance(response_data, dict) and isinstance(response_data.get("choices"), list):
-        choices = response_data["choices"]
-        if choices and isinstance(choices[0], dict):
-            message = choices[0].get("message") or {}
-            content = message.get("content") if isinstance(message, dict) else None
-            if isinstance(content, str):
-                return content.strip()
-            if isinstance(content, list):
-                return "\n".join(
-                    part.get("text", "")
-                    for part in content
-                    if isinstance(part, dict) and part.get("type") == "text"
-                ).strip()
-    if isinstance(response_data, dict):
-        return str(response_data.get("generated_text") or response_data.get("text") or "").strip()
-    return ""
+    return build_hf_chat_payload_service(
+        model_id,
+        image_bytes,
+        ocr_prompt=OCR_PROMPT,
+        hf_max_tokens=HF_MAX_TOKENS,
+    )
 
 
 async def call_paddleocr(
-    client: httpx.AsyncClient,
+    client,
     page_number: int,
     image_bytes: bytes,
     ocr_profile: str = "small",
-) -> Optional[PageData]:
-    if not PADDLEOCR_URL:
-        return None
-    started = time.perf_counter()
-    profiles = ["medium"] if ocr_profile == "medium" else ["small", "medium"]
-    encoded_image = base64.b64encode(image_bytes).decode("ascii")
-    for profile in profiles:
-        try:
-            response = await client.post(
-                PADDLEOCR_URL,
-                headers={"Accept": "application/json", "Content-Type": "application/json"},
-                json={"file": encoded_image, "fileType": 1, "profile": profile},
-            )
-            if response.status_code != 200:
-                logger.warning(
-                    "[Page %s] PaddleOCR %s profile returned HTTP %s",
-                    page_number,
-                    profile,
-                    response.status_code,
-                )
-                continue
-            raw_result = response.json()
-            extracted_text = ""
-            if isinstance(raw_result, dict):
-                result = raw_result.get("result") or {}
-                ocr_results = result.get("ocrResults") if isinstance(result, dict) else None
-                if isinstance(ocr_results, list):
-                    extracted_text = "\n".join(
-                        str(item.get("prunedResult") or item.get("markdownText") or "")
-                        for item in ocr_results
-                        if isinstance(item, dict)
-                    ).strip()
-                else:
-                    extracted_text = str(raw_result.get("markdown") or raw_result.get("text") or "").strip()
-            elif isinstance(raw_result, list):
-                extracted_text = "\n".join(
-                    str(item.get("text", "") if isinstance(item, dict) else item)
-                    for item in raw_result
-                ).strip()
-            if extracted_text:
-                return PageData(
-                    page_number=page_number,
-                    text=extracted_text,
-                    word_count=len(extracted_text.split()),
-                    latency_ms=round((time.perf_counter() - started) * 1000, 2),
-                    success=True,
-                )
-        except Exception as exc:
-            logger.warning(
-                "[Page %s] PaddleOCR %s profile request failed: %s",
-                page_number,
-                profile,
-                exc,
-            )
-    return None
+    *,
+    paddleocr_url: Optional[str] = None,
+):
+    return await call_paddleocr_service(
+        client,
+        page_number,
+        image_bytes,
+        ocr_profile,
+        paddleocr_url=PADDLEOCR_URL if paddleocr_url is None else paddleocr_url,
+    )
 
 
 async def call_ocr_with_retry(
-    client: httpx.AsyncClient,
+    client,
     page_number: int,
     image_b64: Optional[str],
     native_text: str,
@@ -694,184 +514,31 @@ async def call_ocr_with_retry(
     model_id: str,
     api_key: Optional[str] = None,
     ocr_profile: str = "small",
-) -> PageData:
-    """
-    High-throughput visual OCR worker using Hugging Face Inference API.
-    Native text pages are processed in < 1ms; image scans are sent to Hugging Face with exponential backoff retries.
-    """
-    start_time = time.perf_counter()
-
-    # Fast path for selectable text pages
-    if is_native and native_text and len(native_text.split()) >= 15:
-        latency = round((time.perf_counter() - start_time) * 1000, 2)
-        return PageData(
-            page_number=page_number,
-            text=native_text,
-            word_count=len(native_text.split()),
-            latency_ms=latency,
-            success=True,
-        )
-
-    if not image_b64:
-        latency = round((time.perf_counter() - start_time) * 1000, 2)
-        return PageData(
-            page_number=page_number,
-            text=native_text or "",
-            word_count=len(native_text.split()) if native_text else 0,
-            latency_ms=latency,
-            success=bool(native_text),
-        )
-
-    token = (api_key or HF_TOKEN or "").strip()
-    last_error: Optional[str] = None
-    try:
-        image_bytes = base64.b64decode(image_b64)
-    except Exception as exc:
-        latency = round((time.perf_counter() - start_time) * 1000, 2)
-        return PageData(
-            page_number=page_number,
-            text=native_text or "",
-            word_count=len(native_text.split()) if native_text else 0,
-            latency_ms=latency,
-            success=False,
-            error=f"Invalid page image encoding: {exc}",
-        )
-
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "User-Agent": "Bookflow-OCR-Client/1.0",
-    }
-    if token and token != "EMPTY":
-        headers["Authorization"] = f"Bearer {token}"
-
-    paddle_result = await call_paddleocr(client, page_number, image_bytes, ocr_profile)
-    if paddle_result:
-        return paddle_result
-
-    if not model_id.strip():
-        return PageData(
-            page_number=page_number,
-            text="",
-            word_count=0,
-            latency_ms=round((time.perf_counter() - start_time) * 1000, 2),
-            success=False,
-            error="PaddleOCR returned no text and no Hugging Face OCR model is configured.",
-        )
-
-    target_url = hf_inference_url_for_model(model_id)
-    payload = build_hf_chat_payload(model_id, image_bytes)
-
-    for attempt in range(1, MAX_RETRIES + 1):
-        try:
-            response = await client.post(
-                target_url,
-                headers=headers,
-                json=payload,
-            )
-
-            if response.status_code == 200:
-                raw_result = response.json()
-                extracted_text = parse_hf_chat_response(raw_result)
-                if not extracted_text:
-                    raise ValueError("Hugging Face returned no OCR text.")
-
-                latency = round((time.perf_counter() - start_time) * 1000, 2)
-                return PageData(
-                    page_number=page_number,
-                    text=extracted_text,
-                    word_count=len(extracted_text.split()),
-                    latency_ms=latency,
-                    success=True,
-                )
-
-            if response.status_code == 503:
-                try:
-                    info = response.json()
-                    estimated_wait = min(float(info.get("estimated_time", 5.0)), 25.0)
-                except Exception:
-                    estimated_wait = 5.0
-                logger.info(
-                    f"[Page {page_number}] Model loading on Hugging Face. Waiting {estimated_wait}s (attempt {attempt}/{MAX_RETRIES})."
-                )
-                await asyncio.sleep(estimated_wait)
-                continue
-
-            if response.status_code == 401:
-                raise ValueError(
-                    "Hugging Face API returned 401 Unauthorized. Please verify HF_TOKEN."
-                )
-
-            if response.status_code == 429:
-                wait_time = 2.0 * attempt
-                logger.warning(f"[Page {page_number}] HF rate limited. Waiting {wait_time}s.")
-                await asyncio.sleep(wait_time)
-                continue
-
-            detail = response.text[:200]
-            raise ValueError(f"Hugging Face API returned status {response.status_code}: {detail}")
-        except Exception as exc:
-            last_error = str(exc)
-            logger.warning(
-                f"[Page {page_number}] Attempt {attempt}/{MAX_RETRIES} ({target_url}) failed: {exc}"
-            )
-            if any(code in last_error for code in ("400", "401", "403", "404")):
-                break
-        if attempt < MAX_RETRIES:
-            await asyncio.sleep(0.5 * (2 ** (attempt - 1)))
-
-    # Fallback to native text if available
-    latency = round((time.perf_counter() - start_time) * 1000, 2)
-    if native_text and len(native_text.split()) >= 3:
-        logger.info(f"[Page {page_number}] Falling back to native selectable text extraction.")
-        return PageData(
-            page_number=page_number,
-            text=native_text,
-            word_count=len(native_text.split()),
-            latency_ms=latency,
-            success=True,
-            error=f"HF fallback: {last_error}",
-        )
-
-    return PageData(
-        page_number=page_number,
-        text="",
-        word_count=0,
-        latency_ms=latency,
-        success=False,
-        error=last_error or "OCR processing failed after retries.",
+):
+    return await call_ocr_with_retry_service(
+        client,
+        page_number,
+        image_b64,
+        native_text,
+        is_native,
+        model_id,
+        api_key,
+        ocr_profile,
+        config=_provider_config(),
+        paddle_call=call_paddleocr,
     )
 
 
-async def notify_subscribers(job: OCRJob, event_type: str = "progress", data_override: Optional[dict] = None):
-    """Broadcast progress update to all active SSE subscribers for a job."""
-    elapsed = round(time.time() - job.created_at, 2)
-    pps = round(job.current_page / max(0.1, elapsed), 2)
-    percent = round((job.current_page / max(1, job.total_pages)) * 100, 1)
+def _offer_subscriber_message(queue: asyncio.Queue[str], message: str) -> None:
+    offer_subscriber_message(queue, message)
 
-    payload = data_override or {
-        "job_id": job.job_id,
-        "filename": job.filename,
-        "status": job.status,
-        "current_page": job.current_page,
-        "total_pages": job.total_pages,
-        "percent": percent,
-        "total_words": job.total_words,
-        "pages_per_second": pps,
-        "elapsed_seconds": elapsed,
-        "latest_page": job.pages[-1] if job.pages else None,
-        "error": job.error,
-    }
 
-    message = f"event: {event_type}\ndata: {json.dumps(payload)}\n\n"
-
-    for queue in list(job.subscribers):
-        try:
-            queue.put_nowait(message)
-        except asyncio.QueueFull:
-            logger.debug("Subscriber queue full; dropping progress update.")
-        except Exception as e:
-            logger.debug(f"Subscriber queue error: {e}")
+async def notify_subscribers(
+    job: OCRJob,
+    event_type: str = "progress",
+    data_override: Optional[Dict[str, Any]] = None,
+) -> None:
+    await notify_subscribers_service(job, event_type, data_override)
 
 
 async def process_ocr_pipeline(
@@ -882,171 +549,56 @@ async def process_ocr_pipeline(
     api_key: Optional[str] = None,
     ocr_profile: str = "small",
     force_ocr: bool = False,
-):
-    """
-    Main background OCR execution pipeline.
-    1. Extracts all pages to in-memory JPEG at 96 DPI.
-    2. Groups into non-blocking batches of 16 pages.
-    3. Runs concurrent async calls to Hugging Face Inference API.
-    4. Streams real-time page updates via SSE.
-    """
-    async with jobs_lock:
-        job = jobs.get(job_id)
-    if not job:
-        return
+) -> None:
+    await process_ocr_pipeline_service(
+        job_id,
+        pdf_bytes,
+        model_id,
+        batch_size,
+        api_key,
+        ocr_profile,
+        force_ocr,
+        job_store=jobs,
+        jobs_lock=jobs_lock,
+        notify_subscribers=notify_subscribers,
+        render_pdf_pages=render_pdf_pages_async,
+        ensure_hf_inference_support=ensure_hf_inference_support,
+        call_ocr_with_retry=call_ocr_with_retry,
+        provider_config=_provider_config(),
+    )
 
-    try:
-        await notify_subscribers(job, "status", {"status": "processing", "total_pages": job.total_pages})
 
-        limits = httpx.Limits(max_keepalive_connections=batch_size, max_connections=batch_size * 2)
-        async with httpx.AsyncClient(timeout=60.0, limits=limits) as http_client:
-            hf_checked = False
-
-            for batch_start in range(0, job.total_pages, batch_size):
-                if job.status == "canceled":
-                    return
-
-                batch_end = min(batch_start + batch_size, job.total_pages)
-                batch = await render_pdf_pages_async(pdf_bytes, batch_start, batch_end, force_ocr=force_ocr)
-
-                if not hf_checked and any(not page.get("is_native", False) for page in batch) and not PADDLEOCR_URL:
-                    try:
-                        await ensure_hf_inference_support(http_client, model_id, api_key)
-                    except Exception as exc:
-                        logger.warning(
-                            f"Remote OCR preflight failed; image pages will use native-text fallback: {exc}"
-                        )
-                    hf_checked = True
-    
-                # Execute the 16 pages in this batch concurrently
-                tasks = [
-                    call_ocr_with_retry(
-                        client=http_client,
-                        page_number=p["page_number"],
-                        image_b64=p["image_b64"],
-                        native_text=p["native_text"],
-                        is_native=p.get("is_native", False),
-                        model_id=model_id,
-                        api_key=api_key,
-                        ocr_profile=ocr_profile,
-                    )
-                    for p in batch
-                ]
-                batch_results: List[PageData] = []
-                for res in await asyncio.gather(*tasks, return_exceptions=True):
-                    if isinstance(res, BaseException):
-                        logger.warning(f"OCR page task raised: {res}")
-                        batch_results.append(
-                            PageData(
-                                page_number=0,
-                                text="",
-                                word_count=0,
-                                latency_ms=0.0,
-                                success=False,
-                                error=str(res) or "OCR page task failed.",
-                            )
-                        )
-                    else:
-                        batch_results.append(res)
-
-                if job.status == "canceled":
-                    return
-
-                page_numbers = [p["page_number"] for p in batch]
-                for idx, res in enumerate(batch_results):
-                    if res.page_number == 0 and page_numbers:
-                        res.page_number = page_numbers[min(idx, len(page_numbers) - 1)]
-    
-                for res in batch_results:
-                    job.current_page += 1
-                    job.total_words += res.word_count
-                    page_dict = {
-                        "page_number": res.page_number,
-                        "text": res.text,
-                        "word_count": res.word_count,
-                        "latency_ms": res.latency_ms,
-                        "success": res.success,
-                        "error": res.error,
-                    }
-                    job.pages.append(page_dict)
-                    await notify_subscribers(job, "progress")
-
-                for page in batch:
-                    page["image_b64"] = None
-
-        failed_pages = [page for page in job.pages if not page["success"]]
-        successful_pages = [page for page in job.pages if page["success"]]
-        if not successful_pages:
-            page_numbers = ", ".join(str(page["page_number"]) for page in failed_pages[:10])
-            raise ValueError(f"OCR could not read page(s): {page_numbers}.")
-        if failed_pages:
-            skipped = ", ".join(str(page["page_number"]) for page in failed_pages)
-            logger.warning(
-                f"Job {job_id}: {len(successful_pages)}/{job.total_pages} pages readable; "
-                f"skipped unreadable page(s): {skipped}."
-            )
-
-        # Sort pages by page_number
-        job.pages.sort(key=lambda x: x["page_number"])
-        job.markdown = "\n\n---\n\n".join(
-            f"<!-- Page {p['page_number']} -->\n\n{p['text']}"
-            for p in job.pages if p["text"]
-        )
-        job.status = "completed"
-        job.completed_at = time.time()
-        job.updated_at = time.time()
-
-        elapsed = round(job.completed_at - job.created_at, 2)
-        pps = round(job.total_pages / max(0.1, elapsed), 2)
-
-        completion_data = {
-            "job_id": job.job_id,
-            "filename": job.filename,
-            "status": "completed",
-            "current_page": job.total_pages,
-            "total_pages": job.total_pages,
-            "percent": 100.0,
-            "total_words": job.total_words,
-            "pages_per_second": pps,
-            "elapsed_seconds": elapsed,
-            "failed_pages": [page["page_number"] for page in failed_pages],
-            "markdown": job.markdown,
-            "pages": job.pages,
-        }
-        await notify_subscribers(job, "completed", completion_data)
-
-    except Exception as exc:
-        logger.error(f"OCR Pipeline failed for job {job_id}: {exc}", exc_info=True)
-        job.status = "failed"
-        job.error = str(exc)
-        job.pages.clear()
-        job.markdown = ""
-        job.total_words = 0
-        job.updated_at = time.time()
-        await notify_subscribers(job, "error", {
-            "job_id": job.job_id,
-            "status": "failed",
-            "error": str(exc),
-        })
-
+async def _run_ocr_pipeline_job(
+    job_id: str,
+    pdf_bytes: bytes,
+    model_id: str,
+    batch_size: int,
+    api_key: Optional[str] = None,
+    ocr_profile: str = "small",
+    force_ocr: bool = False,
+) -> None:
+    await run_ocr_pipeline_job_service(
+        job_id,
+        pdf_bytes,
+        model_id,
+        batch_size,
+        api_key,
+        ocr_profile,
+        force_ocr,
+        job_store=jobs,
+        jobs_lock=jobs_lock,
+        pipeline_runner=process_ocr_pipeline,
+        semaphore_getter=_get_pipeline_semaphore,
+    )
 
 
 async def prune_stale_jobs(ttl_seconds: float = 3600.0) -> None:
-    """Removes completed or timed-out jobs to prevent unbounded memory growth."""
-    now = time.time()
-    async with jobs_lock:
-        stale_ids = [
-            jid
-            for jid, j in jobs.items()
-            if (now - j.created_at > ttl_seconds) or (j.completed_at and now - j.completed_at > 1800)
-        ]
-        for jid in stale_ids:
-            jobs.pop(jid, None)
+    await prune_stale_jobs_service(ttl_seconds, job_store=jobs, store_lock=jobs_lock)
 
 
-# Try importing legacy app routers if existing codebase is present
 try:
     from app.routers import health_router, ocr_router, documents_router, reader_router
+
     app.include_router(health_router)
     app.include_router(ocr_router)
     app.include_router(documents_router)
@@ -1057,4 +609,5 @@ except ImportError:
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -12,27 +12,42 @@ When reading or modifying this repository, orient yourself immediately with thes
 bookflow/
 ├── src/                               # React 19 + Vite 8 Frontend
 │   ├── main.jsx                       # Root DOM mount with ErrorBoundary
-│   ├── App.jsx                        # Root feature composer & library state
-│   ├── styles.css                     # Semantic CSS design tokens & themes
-│   ├── components/                    # Lazy-loaded modals (OcrUploader, VariableRewardCapsule)
+│   ├── App.jsx                        # Root composer and import/library lifecycle owner
+│   ├── styles.css                     # Semantic CSS design tokens and themes
+│   ├── components/                    # Cross-feature lazy modals and compatibility wrappers
 │   ├── features/
-│   │   ├── reader/                    # Core Reading Engine
-│   │   │   ├── components/            # ReaderPage, SettingsPanel, NotesPanel, ContentsPanel
-│   │   │   └── lib/                   # textFormatter (Bionic), useScrollPosition, readingController
-│   │   ├── document-import/           # Client-side parsers (PDF.js, JSZip, Tesseract WASM)
+│   │   ├── reader/                    # Core reading engine
+│   │   │   ├── components/            # Reader shell, page, focus card, panels, tooltip
+│   │   │   ├── hooks/                 # Session, navigation, input, measurement, persistence, annotations, chapter window
+│   │   │   └── lib/                   # Focus, viewport, scroll, formatting, dictionary, reading time
+│   │   ├── document-import/           # Client parsers, manifest, scheduler, coordinator, OCR session
+│   │   │   ├── components/            # OCR uploader and result viewer
+│   │   │   ├── hooks/                 # useDocumentImport and useOcrSession
+│   │   │   └── lib/                   # Validation, parsers, manifest, scheduler, local OCR, normalization
+│   │   ├── library/                   # Metadata library, stats/goals/achievements, resume surfaces
+│   │   │   ├── components/            # ResumeCard, SessionRecap, BadgeGallery
+│   │   │   ├── hooks/                 # useReadingSession
+│   │   │   └── lib/                   # Metadata, stats, speed, goals, achievements, durable adapter
 │   │   └── landing/                   # Hero intake, drag-and-drop zone, sample books
-│   ├── shared/lib/                    # storage.js (safe localStorage fallback), text.js
+│   ├── shared/lib/                    # Safe storage, text, haptics, focus management, perf marks
 │   └── store/                         # Zustand global stores (readerStore, uiStore)
 └── backend/                           # FastAPI + Python 3.11/3.12 Backend
-    ├── main.py                        # High-concurrency OCR router & SSE pipeline
+    ├── main.py                        # Runnable OCR router and SSE pipeline
     ├── app/                           # Routers, Pydantic v2 schemas, and services
-    └── tests/                         # Pytest test suite (34 tests)
+    └── tests/                         # Pytest suite (45 tests across 8 test modules)
 ```
 
 ### Core Invariants:
 1. **Local-First Privacy**: Book text stays on user's device. Never send book contents to cloud services without explicit approval.
 2. **React Text Nodes Only**: Render book text safely via React element trees. Never use `dangerouslySetInnerHTML` for book contents.
-3. **Sentence/Paragraph Golden Ratio Focus**: Scrolling pulls the active sentence/paragraph into focus at `FOCUS_RAIL_RATIO = 0.38`, centering the active paragraph a little above viewport center.
+3. **Sentence/Paragraph Focus Rail**: Scrolling pulls the active sentence or paragraph to `FOCUS_RAIL_RATIO = 0.38` of the reader viewport.
+
+### Current Refactor Status
+- Reader session, navigation, input, measurement, persistence, annotations, static regions, and long-book windowing are extracted into `src/features/reader/hooks/`.
+- Document import has feature-local parsers, manifest, scheduler, coordinator, components, and OCR-session hooks.
+- The local library has its own feature boundary and public `index.js`; it stores metadata and measured session totals, not book text.
+- `App.jsx` remains the root composer; import, session, annotation, static-region, and view concerns are extracted into feature hooks/components. This decomposition is complete for the current refactor scope.
+- `backend/main.py` is the runnable OCR entrypoint, while `backend/app/` contains modular routers and services.
 
 ---
 
@@ -80,10 +95,10 @@ refactor: organize the reader by feature
 Bookflow is a private, browser-based reading application that turns PDFs, EPUB ebooks, text files, and Markdown into a calm, sentence-focused reading experience.
 
 ### Active Technology Stack:
-- **Frontend**: React 19, Vite 8, Zustand (persisted state), Framer Motion, SWR, Lucide React.
+- **Frontend**: React 19, Vite 8, Zustand (persisted state), Framer Motion, SWR, Lucide React, Three.js ambient layer, Tailwind CSS utility layer.
 - **Local Parsing**: `pdfjs-dist` (local worker), `jszip` (EPUB parsing), `tesseract.js` WASM (on-device OCR fallback).
 - **Typography & Ergonomics**: Bionic Reading fixations (`textFormatter.js`), accessible typefaces (Atkinson Hyperlegible, OpenDyslexic), and variable letter tracking.
-- **Testing & Quality**: Vitest (44 tests across 12 suites), ESLint.
+- **Testing & Quality**: Vitest (31 test files, 163 tests, measured 2026-09-25), ESLint, Playwright (2 smoke tests plus the long-import test).
 - **Backend (Optional / Accelerated)**: FastAPI, Uvicorn ASGI, PyMuPDF (fitz) thread pool rasterization, PaddleOCR worker (`Dockerfile.ocr`), vLLM / Hugging Face OpenAI-compatible vision payloads (Qwen2-VL / DeepSeek-OCR-2), Server-Sent Events (SSE), Docker Compose.
 
 ---
@@ -96,6 +111,7 @@ Bookflow is a private, browser-based reading application that turns PDFs, EPUB e
 - Keep `App.jsx` focused on application state and feature composition.
 - Keep reusable storage and text utilities in `src/shared/lib/`.
 - Keep document parsing inside `src/features/document-import/`.
+- Keep the metadata library and durable-storage adapter inside `src/features/library/`; adapter presence does not mean document text is currently persisted.
 
 ---
 
@@ -103,7 +119,7 @@ Bookflow is a private, browser-based reading application that turns PDFs, EPUB e
 
 - Keep the active sentence readable without harsh contrast.
 - Do not make non-active text inaccessible.
-- Support scrolling, pointer input, keyboard input (`Down`/`Up`/`J`/`K`/`Space`/`Escape`), and touch layouts.
+- Support scrolling, pointer input, keyboard input (`ArrowDown`/`ArrowUp`, `J`/`K`, `PageDown`/`PageUp`, `Space`/`Shift+Space`, `Escape`), and touch layouts. `Enter` or `Space` on a focused paragraph toggles its pin; global `Space` navigates focus.
 - Prevent horizontal overflow at all mobile widths (`320px` to `430px`).
 - Give focus, notes, and settings controls accessible names (`aria-label`, `aria-modal`).
 - Respect `prefers-reduced-motion: reduce`.
@@ -116,8 +132,11 @@ Bookflow is a private, browser-based reading application that turns PDFs, EPUB e
 
 ## Document-Processing Rules
 
-- Validate supported extensions (`.pdf`, `.epub`, `.txt`, `.md`) and 50 MB size limit before parsing.
+- Validate supported extensions (`.pdf`, `.epub`, `.txt`, `.md`) and the 50 MB size limit before parsing.
 - Keep PDF and EPUB parsing asynchronous and lazy-loaded.
+- PDF progressive import is the default app path; EPUB, TXT, and Markdown currently use the blocking parser in `handleFile`, although progressive coordinators are exposed.
+- The progressive PDF coordinator may resolve its first ready unit internally, but the app waits for a terminal 100% import state before opening the reader. The reader is never mounted pre-terminal.
+- Backend OCR is an explicit user-started action. A local parsing error does not automatically upload the document or call the backend; the user must choose optional accelerated OCR.
 - Preserve document order and useful chapter or page labels.
 - Never silently discard large portions of a document.
 - Use native PDF text as the source of truth and OCR only pages without selectable text.
@@ -130,13 +149,16 @@ Bookflow is a private, browser-based reading application that turns PDFs, EPUB e
 Run the available checks before committing:
 
 ```bash
-# Frontend quality & build checks
+# Frontend quality, browser, and build checks
 npm run lint
 npm test
+npm run test:e2e
 npm run build
+npm run check:vault
 
 # Backend verification checks
 pytest backend/tests/
+npx pyright
 ```
 
 For reader, parser, or visual changes, verify:

@@ -286,9 +286,24 @@ class DocumentService:
                 raise ValueError("EPUB XML entry exceeds size limit.")
             if defused_ET is not None:
                 return defused_ET.fromstring(data)
-            # defusedxml is not installed: stdlib ET.fromstring is used with a
-            # size cap above, but billion-laughs/DTD expansion risk remains.
-            return ET.fromstring(data)
+            for encoding in (
+                "utf-8",
+                "utf-16",
+                "utf-16-le",
+                "utf-16-be",
+                "utf-32",
+                "utf-32-le",
+                "utf-32-be",
+            ):
+                try:
+                    xml_text = data.decode(encoding)
+                except UnicodeDecodeError:
+                    continue
+                if re.search(r"<!doctype|<!entity", xml_text, re.IGNORECASE):
+                    raise ValueError("EPUB XML DTD and entity declarations are not allowed.")
+            parser = ET.XMLParser(target=ET.TreeBuilder())
+            parser.feed(data)
+            return parser.close()
 
         def _safe_name(name: str) -> str:
             if name.startswith("/") or ".." in name.split("/"):

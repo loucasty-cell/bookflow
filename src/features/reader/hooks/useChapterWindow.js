@@ -82,6 +82,10 @@ export function useChapterWindow({ docKey, chapters, activeChapter, focusId }) {
     });
   }, []);
 
+  const invalidateHeights = useCallback(() => {
+    setHeightCache(new Map());
+  }, []);
+
   const heightOf = useCallback(
     (index) => heightCache.get(index) ?? estimateChapterHeight(chapters?.[index]),
     [heightCache, chapters],
@@ -148,6 +152,7 @@ export function useChapterWindow({ docKey, chapters, activeChapter, focusId }) {
       bottomSpacer,
       pendingJumpRef,
       cacheHeights,
+      invalidateHeights,
       expandUp,
       expandDown,
       requestJump,
@@ -161,6 +166,7 @@ export function useChapterWindow({ docKey, chapters, activeChapter, focusId }) {
       topSpacer,
       bottomSpacer,
       cacheHeights,
+      invalidateHeights,
       expandUp,
       expandDown,
       requestJump,

@@ -3,6 +3,11 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { getSafeStorage } from '../shared/lib/storage.js';
 import { DEFAULT_SETTINGS } from '../features/reader/config.js';
 
+const normalizeArray = (value) => Array.isArray(value) ? value : [];
+
+const resolveArray = (updater, current) =>
+  normalizeArray(typeof updater === 'function' ? updater(normalizeArray(current)) : updater);
+
 export const createReaderStore = (storage = undefined) => create(
   persist(
     (set) => ({
@@ -24,35 +29,46 @@ export const createReaderStore = (storage = undefined) => create(
         return { progress: safe };
       }),
       
-      setBookmarks: (bookmarks) => set({ bookmarks }),
+      setBookmarks: (updater) => set((state) => ({
+        bookmarks: resolveArray(updater, state.bookmarks)
+      })),
       toggleBookmark: (id) => set((state) => {
-        const exists = state.bookmarks.includes(id);
+        const bookmarks = normalizeArray(state.bookmarks);
+        if (!id) return { bookmarks };
+        const exists = bookmarks.includes(id);
         return {
-          bookmarks: exists 
-            ? state.bookmarks.filter(b => b !== id)
-            : [...state.bookmarks, id]
+          bookmarks: exists
+            ? bookmarks.filter(bookmarkId => bookmarkId !== id)
+            : [...bookmarks, id]
         };
       }),
       
-      setNotes: (notes) => set({ notes }),
+      setNotes: (updater) => set((state) => ({
+        notes: resolveArray(updater, state.notes)
+      })),
       addNote: (note) => set((state) => ({
-        notes: [note, ...state.notes]
+        notes: [note, ...normalizeArray(state.notes)]
       })),
       deleteNote: (id) => set((state) => ({
-        notes: state.notes.filter(n => n.id !== id)
+        notes: normalizeArray(state.notes).filter(note => note.id !== id)
       }))
     }),
     {
       name: 'bookflow-reader-storage',
       storage: storage ?? createJSONStorage(getSafeStorage),
-      merge: (persistedState, currentState) => ({
-        ...currentState,
-        ...persistedState,
-        settings: {
-          ...DEFAULT_SETTINGS,
-          ...(persistedState?.settings || {})
-        }
-      }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState && typeof persistedState === 'object' ? persistedState : {};
+        return {
+          ...currentState,
+          ...persisted,
+          settings: {
+            ...DEFAULT_SETTINGS,
+            ...(persisted.settings || {})
+          },
+          bookmarks: normalizeArray(persisted.bookmarks ?? currentState.bookmarks),
+          notes: normalizeArray(persisted.notes ?? currentState.notes)
+        };
+      },
       partialize: (state) => ({ 
         settings: state.settings 
       }),

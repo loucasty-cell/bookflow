@@ -2,7 +2,7 @@
 title: Agent Context MOC
 type: MOC
 status: living
-updated: 2026-09-18
+updated: 2026-09-24
 tags: [bookflow, agent, moc]
 ---
 
@@ -23,12 +23,13 @@ Everything an AI agent needs before touching this codebase.
 ```text
 Local-first privacy          book text stays on device by default
 React text nodes only        never dangerouslySetInnerHTML for book contents
-Golden-ratio focus rail      FOCUS_RAIL_RATIO = 0.42
+Focus rail                   FOCUS_RAIL_RATIO = 0.38
 Opt-in behavioral layer      capsules and interventions default false
 Deterministic progress       no variable-ratio reward mechanics
 No unapproved dependencies   ask first
 No emojis, no co-author trailers, no unnecessary comments
 Never claim planned as built
+Refactor status                reader hooks and feature boundaries are extracted; App composition remains
 ```
 
 ## Reading order for a new task

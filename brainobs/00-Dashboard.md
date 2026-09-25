@@ -2,7 +2,7 @@
 title: Bookflow Brain
 type: MOC
 status: living
-updated: 2026-09-18
+updated: 2026-09-25
 tags: [bookflow, index, moc]
 ---
 
@@ -22,7 +22,7 @@ Read this note first. Every other note is one hop away.
 | A new developer | [[Full-Stack Overview]] then [[Dev Setup]] |
 | Working on the reader | [[Focus Rail]], [[Reader Engine MOC]] |
 | Working on import or OCR | [[OCR Pipeline MOC]], [[OCR-Frontend Sync Contract]] |
-| Working on UX or visual design | [[Design Tokens]], [[Premium Micro-interactions]] |
+| Working on UX or visual design | [[Design Tokens]], [[Premium Micro-interactions]], [[Figma Inspection Evidence]] |
 | Working on growth or retention | [[Atomic Habits Framework]], [[Ethical Guardrails]] |
 | Writing a new feature spec | [[Feature Spec Template]] |
 | Updating this vault after a code change | [[Context Sync Protocol]] |
@@ -48,17 +48,19 @@ Read this note first. Every other note is one hop away.
 
 ```text
 Bookflow is a private, local-first browser reader for PDF, EPUB, TXT, and Markdown.
-Its core interaction is scroll-driven sentence and paragraph focus at FOCUS_RAIL_RATIO = 0.42.
-The frontend (React 19 + Vite 8 + Zustand) parses documents in-browser and keeps text on device.
-The backend (FastAPI + PyMuPDF + PaddleOCR) is an optional accelerator for scanned pages only.
+Its core interaction is scroll-driven sentence and paragraph focus at FOCUS_RAIL_RATIO = 0.38.
+The frontend (React 19 + Vite 8 + Zustand) parses documents in-browser and keeps text on device on the default path.
+The backend (FastAPI + PyMuPDF + PaddleOCR) is an optional accelerator for scanned pages only, with a 50 MB upload ceiling; the user must explicitly start that scan.
+Progressive PDF import reports progress from 5 through a terminal 100 before the reader opens; EPUB, TXT, and Markdown currently use the blocking parser.
+A metadata-only library records sessions and can show a resume card; the recent shelf, file-handle reuse, and automatic reopen remain open.
 Behavioral features exist but are opt-in and disabled by default, by design.
 ```
 
 ## Non-negotiables in one glance
 
-1. Local-first privacy. Book text stays on the device unless the user explicitly starts a scan.
+1. Local-first privacy. Book text stays on the device on the default path; only an explicitly started accelerated scan sends page images to the configured backend.
 2. React text nodes only. Never `dangerouslySetInnerHTML` for book contents.
-3. Golden-ratio focus rail. Scrolling pulls the active unit into focus at 42 percent.
+3. Focus rail. Scrolling pulls the active unit to 38 percent of the reader viewport.
 4. Opt-in behavioral layer. Reward capsules and interventions default to `false`.
 5. Deterministic progress. No variable-ratio reward mechanics, no streak punishment.
 

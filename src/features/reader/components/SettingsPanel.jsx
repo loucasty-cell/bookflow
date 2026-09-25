@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import {
   BookOpen,
   BookOpenText,
@@ -7,9 +8,10 @@ import {
   Sun,
   X,
 } from "lucide-react";
+import { useModalFocus } from "../../../shared/lib/index.js";
 import { DEFAULT_SETTINGS, FONT_SIZE_MAX, FONT_SIZE_MIN } from "../config.js";
 
-export function SettingsPanel({ settings, setSettings, open, close }) {
+export function SettingsPanel({ settings, setSettings, open, close, returnFocusRef }) {
   const safeSettings = {
     ...DEFAULT_SETTINGS,
     ...(settings || {}),
@@ -26,19 +28,40 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
     typeof safeSettings.lineHeight === "number" && !isNaN(safeSettings.lineHeight)
       ? safeSettings.lineHeight
       : DEFAULT_SETTINGS.lineHeight;
+  const panelRef = useRef(null);
+  const closeButtonRef = useRef(null);
+
+  useModalFocus({
+    open,
+    containerRef: panelRef,
+    onClose: close,
+    initialFocusRef: closeButtonRef,
+    returnFocusRef,
+  });
 
   return (
     <aside
+      ref={panelRef}
+      id="reader-settings-panel"
       className={`settings-popover ${open ? "is-open" : ""}`}
+      role="dialog"
+      aria-modal={open ? "true" : undefined}
+      aria-labelledby="reader-settings-title"
       aria-hidden={!open}
-      aria-label="Reading settings"
       inert={open ? undefined : true}
+      tabIndex={-1}
     >
       <div className="panel-heading">
-        <span>
+        <span id="reader-settings-title">
           <Settings2 size={16} /> Reading space
         </span>
-        <button className="icon-button" onClick={close} aria-label="Close settings">
+        <button
+          ref={closeButtonRef}
+          type="button"
+          className="icon-button"
+          onClick={close}
+          aria-label="Close settings"
+        >
           <X size={18} />
         </button>
       </div>
@@ -49,6 +72,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
           <div className="segmented" role="group" aria-label="Reading mode">
             <button
               className={safeSettings.mode === "focus" ? "active" : ""}
+              type="button"
               onClick={() => update("mode", "focus")}
               aria-pressed={safeSettings.mode === "focus"}
             >
@@ -56,6 +80,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
             </button>
             <button
               className={safeSettings.mode === "normal" ? "active" : ""}
+              type="button"
               onClick={() => update("mode", "normal")}
               aria-pressed={safeSettings.mode === "normal"}
             >
@@ -80,6 +105,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
                 <button
                   key={thm.id}
                   className={safeSettings.theme === thm.id ? "active" : ""}
+                  type="button"
                   onClick={() => update("theme", thm.id)}
                   aria-pressed={safeSettings.theme === thm.id}
                 >
@@ -157,6 +183,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
               <button
                 key={option}
                 className={safeSettings.focus === option ? "active" : ""}
+                type="button"
                 onClick={() => update("focus", option)}
                 aria-pressed={safeSettings.focus === option}
               >
@@ -172,6 +199,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
           <div className="segmented" role="group" aria-label="Bionic reading mode">
             <button
               className={!safeSettings.bionic ? "active" : ""}
+              type="button"
               onClick={() => update("bionic", false)}
               aria-pressed={!safeSettings.bionic}
             >
@@ -179,6 +207,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
             </button>
             <button
               className={safeSettings.bionic === true ? "active" : ""}
+              type="button"
               onClick={() => update("bionic", true)}
               aria-pressed={safeSettings.bionic === true}
             >
@@ -186,6 +215,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
             </button>
             <button
               className={safeSettings.bionic === "salience" ? "active" : ""}
+              type="button"
               onClick={() => update("bionic", "salience")}
               aria-pressed={safeSettings.bionic === "salience"}
             >
@@ -207,6 +237,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
               <button
                 key={font.id}
                 className={safeSettings.fontFamily === font.id ? "active" : ""}
+                type="button"
                 onClick={() => update("fontFamily", font.id)}
                 aria-pressed={safeSettings.fontFamily === font.id}
               >
@@ -227,6 +258,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
               <button
                 key={spacing.id}
                 className={safeSettings.letterSpacing === spacing.id ? "active" : ""}
+                type="button"
                 onClick={() => update("letterSpacing", spacing.id)}
                 aria-pressed={safeSettings.letterSpacing === spacing.id}
               >
@@ -242,6 +274,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
           <div className="segmented" role="group" aria-label="Chapter complete capsules">
             <button
               className={!safeSettings.showRewardCapsules ? "active" : ""}
+              type="button"
               onClick={() => update("showRewardCapsules", false)}
               aria-pressed={!safeSettings.showRewardCapsules}
             >
@@ -249,6 +282,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
             </button>
             <button
               className={safeSettings.showRewardCapsules ? "active" : ""}
+              type="button"
               onClick={() => update("showRewardCapsules", true)}
               aria-pressed={!!safeSettings.showRewardCapsules}
             >
@@ -258,6 +292,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
           <div className="segmented" role="group" aria-label="Gentle return reminders" style={{ marginTop: 8 }}>
             <button
               className={!safeSettings.showInterventionModals ? "active" : ""}
+              type="button"
               onClick={() => update("showInterventionModals", false)}
               aria-pressed={!safeSettings.showInterventionModals}
             >
@@ -265,6 +300,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
             </button>
             <button
               className={safeSettings.showInterventionModals ? "active" : ""}
+              type="button"
               onClick={() => update("showInterventionModals", true)}
               aria-pressed={!!safeSettings.showInterventionModals}
             >
@@ -279,6 +315,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
           <div className="segmented" role="group" aria-label="Progressive import">
             <button
               className={safeSettings.useProgressiveImport !== false ? "active" : ""}
+              type="button"
               onClick={() => update("useProgressiveImport", true)}
               aria-pressed={safeSettings.useProgressiveImport !== false}
             >
@@ -286,6 +323,7 @@ export function SettingsPanel({ settings, setSettings, open, close }) {
             </button>
             <button
               className={safeSettings.useProgressiveImport === false ? "active" : ""}
+              type="button"
               onClick={() => update("useProgressiveImport", false)}
               aria-pressed={safeSettings.useProgressiveImport === false}
             >

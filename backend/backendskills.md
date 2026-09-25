@@ -74,22 +74,22 @@ The backend supports both bare-metal execution and multi-container Docker Compos
 - Sends periodic `: keepalive\n\n` comments every 8 seconds to prevent mobile browser and reverse-proxy timeouts.
 - Supports active job cancellation (`POST /api/ocr/cancel/{job_id}`) to terminate batch loops and release memory immediately.
 
-### 2.4 High-Volume Job Store & Memory Safety (500+ Users)
-- In-memory job state managed via thread-safe `asyncio.Lock`.
-- Automated `prune_stale_jobs` routine purges completed and failed job buffers after a 1-hour TTL, preventing unbounded memory accumulation under heavy concurrent workloads.
-- Persistent `httpx.AsyncClient` with bounded connection pooling (`max_keepalive_connections=32`, `max_connections=64`).
+### 2.4 Job Store & Memory Safety
+- In-memory job state is managed by the accelerated OCR application and cleaned on terminal transitions.
+- Provider clients use bounded connection pooling; production authentication and admission controls remain deployment responsibilities.
+- The current suite verifies job state transitions and cancellation, not multi-tenant capacity.
 
 ---
 
 ## 3. Behavioral AI & Privacy-Preserving Social Endpoints
 
-### 3.1 4-Minute Drop-Off Intervention Engine (`POST /api/ai/intervention`)
-- Telemetry detects attention decay (>40% velocity drop over 30s) near minute 3.5–4.0.
-- Generates a concise, 1-sentence cognitive anchor using the Curiosity Gap or Loss Aversion to re-engage the reader.
+### 3.1 4-Minute Drop-Off Intervention Engine (planned)
+- The current frontend owns the opt-in timing surface; the backend intervention route is not implemented.
 
-### 3.2 In-Margin Social Layer (`/api/social/resonance`, `/api/social/reactions`)
-- Uses SHA-256 paragraph fingerprinting (`hash_paragraph(text)`).
-- Readers of identical book editions share thought whispers and highlight resonance without storing raw book text in centralized cloud databases.
+### 3.2 Social Scaffolds
+- `GET /api/social/resonance/{paragraph_hash}` is a mock response scaffold.
+- `POST /api/social/events/session-pulse` is a mock event intake scaffold.
+- Persistent reactions, shared reflections, and a frontend social experience are planned, not implemented.
 
 ---
 
@@ -102,9 +102,10 @@ The backend supports both bare-metal execution and multi-container Docker Compos
 | `POST` | `/api/ocr/cancel/{job_id}` | Abort active OCR job and free memory buffers |
 | `GET` | `/api/ocr/job/{job_id}` | Polling snapshot of job status and extracted pages |
 | `GET` | `/api/ocr/result/{job_id}` | Retrieve compiled Markdown output for a completed job |
-| `POST` | `/api/ai/intervention` | Generate curiosity-gap or loss-aversion reading continuation hooks |
-| `GET` | `/api/social/resonance/{hash}`| Retrieve in-margin community thought whispers |
-| `POST` | `/api/social/reactions` | Post time-shifted reader reactions anchored to paragraph hashes |
+| `POST` | `/api/ai/intervention` | Planned; not implemented |
+| `GET` | `/api/social/resonance/{hash}`| Mock paragraph-hash resonance response |
+| `POST` | `/api/social/events/session-pulse` | Mock session-pulse intake |
+| `POST` | `/api/social/reactions` | Planned; not implemented |
 | `GET` | `/health` / `/api/health` | Health check endpoint for container probes and load balancers |
 
 ---
@@ -117,7 +118,7 @@ Run the backend verification suite before deploying:
 # 1. Pyright static type checking
 npx pyright
 
-# 2. Pytest automated test suite (34 tests)
+# 2. Pytest automated test suite (45 tests)
 pytest backend/tests/ -v
 
 # 3. Docker build smoke test

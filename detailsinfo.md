@@ -31,7 +31,7 @@ Bookflow normalizes chapters and paragraphs, keeps a flat paragraph list alongsi
 
 ### 5. Read with paragraph focus
 
-While the reader scrolls, Bookflow selects the eligible paragraph nearest the 42% focus rail. Hovering does not change focus. The selected paragraph uses a pale-blue highlight, red edge, and stronger weight. In Focus Reading Mode, the rail detects static sections such as introductions and end matter; those sections scroll natively without paragraph snapping, show a small reading label, and resume focus when the rail crosses back into eligible content.
+While the reader scrolls, Bookflow selects the eligible paragraph nearest the 38% focus rail. Hovering does not change focus. The selected paragraph uses a pale-blue highlight, red edge, and stronger weight. In Focus Reading Mode, the rail detects static sections such as introductions and end matter; those sections scroll natively without paragraph snapping, show a small reading label, and resume focus when the rail crosses back into eligible content.
 
 ### 6. Control the reading session
 
