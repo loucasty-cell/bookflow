@@ -29,21 +29,36 @@ The global bar is deliberately **not** mounted in the reader. The reader already
 owns a card, and two cards would duplicate the overlay and work against
 [[Invariants]] rule 3.
 
-## The card must not be a `<section>`
+## The card must not be a `<section>`, and must not be bundled with one
 
-The card root renders as a plain `<div>`, not a `<section>`. It is a direct
-child of `.reader-layout`, and `reader.css` styles
-`.reader-layout > section:first-of-type` as the reader's own topbar, including
-a `.is-collapsed` variant that strips background, border, shadow, and padding.
+Two related traps, both of which caused real bugs here.
 
-While the card was a `<section>`, those selectors matched the card itself. The
-visible symptom was a collapsed pill with no surface, rendered as bare text and
-pinned top-centre, plus an open card carrying the topbar's `340px` minimum width.
-Changing the element removed the collision at its source; no override was
-needed.
+**Element type.** The card root renders as a plain `<div>`, not a `<section>`. It is a direct
+child of `.reader-layout`, and `reader.css` styles `.reader-layout > section:first-of-type` as the
+reader's own topbar, including a `.is-collapsed` variant that strips background, border, shadow,
+and padding.
 
-Lesson for this file: a layout selector keyed on `section:first-of-type` is a
-trap for any floating overlay that is a sibling of the reader surface.
+While the card was a `<section>`, those selectors matched the card itself. The visible symptom was
+a collapsed pill with no surface, rendered as bare text and pinned top-centre, plus an open card
+carrying the topbar's `340px` minimum width. Changing the element removed the collision at its
+source; no override was needed.
+
+**Selector bundling.** The reader's liquid-glass top section and the card were once a single
+selector list, so the card silently inherited `position: absolute`, `top: 14px`, `left: 50%`,
+`margin-left: -190px`, `min-width: 340px`, and `flex-direction: column`. That inheritance is why
+the collapsed pill stacked its close button under the toggle, and why the card rendered as a
+`section`.
+
+The card is now fully defined by its own rule in `src/styles/reading-lens.css` and no structural
+`div#root ... > section >` prefix targets it. Layout-state selectors such as
+`.reader-layout.has-reader-panel .focus-card` are legitimate and stay.
+
+**How the split was verified.** Baseline screenshots were hashed before the change and re-hashed
+after, across two themes (`paper`, `midnight`), two viewports (430, 1280), and both card states.
+All 8 were byte-identical, and all 38 captured computed properties on the open card matched
+exactly. Do not repeat this refactor on visual inspection alone.
+
+Lesson for this file: never bundle a floating overlay into a structural layout selector list.
 
 ## Invariants
 

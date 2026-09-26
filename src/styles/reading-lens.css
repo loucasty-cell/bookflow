@@ -10,17 +10,30 @@
   min-width: 0 !important;
   max-width: calc(100vw - 24px) !important;
   max-height: min(720px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
   overflow: auto;
   transform: none !important;
   animation: none !important;
   padding: 0 !important;
   border-radius: 20px !important;
   color: var(--reader-ink);
+  font-family: var(--font-ios);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
   background: color-mix(in srgb, var(--chrome-solid) 94%, transparent);
   border: 1px solid var(--app-line, rgba(0, 0, 0, 0.1));
   box-shadow: 0 20px 50px -18px rgba(15, 23, 42, 0.28), 0 4px 14px -6px rgba(15, 23, 42, 0.16);
   -webkit-backdrop-filter: blur(22px) saturate(150%);
   backdrop-filter: blur(22px) saturate(150%);
+  transition:
+    box-shadow 0.2s ease,
+    opacity 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    width 0.2s ease;
   scrollbar-width: thin;
 }
 
