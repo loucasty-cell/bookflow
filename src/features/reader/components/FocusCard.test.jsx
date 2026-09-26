@@ -31,6 +31,7 @@ function renderCard(props = {}) {
       copyFocusedParagraph={vi.fn()}
       moveFocus={vi.fn()}
       resumeFlow={vi.fn()}
+      initiallyCollapsed={false}
       {...props}
     />,
   );
@@ -121,6 +122,23 @@ describe("lens quick action and state mapping", () => {
 });
 
 describe("FocusCard structure", () => {
+  it("rests as a pill by default so entering a book shows the text", () => {
+    const markup = renderToStaticMarkup(
+      <FocusCard
+        focusedParagraph={paragraph}
+        pinnedId=""
+        isBookmarked={false}
+        toggleBookmark={vi.fn()}
+        copyFocusedParagraph={vi.fn()}
+        moveFocus={vi.fn()}
+        resumeFlow={vi.fn()}
+      />,
+    );
+    expect(markup).toContain("focus-card is-collapsed");
+    expect(markup).toContain("Tap to open");
+    expect(markup).not.toContain("Select text to ask Lens.");
+  });
+
   it("does not duplicate the selected passage back at the reader", () => {
     const selection = "The precise passage the reader highlighted, kept whole for consent.";
     const markup = renderCard({ selectedText: selection });

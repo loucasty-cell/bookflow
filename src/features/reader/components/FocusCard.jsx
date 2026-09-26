@@ -74,6 +74,7 @@ export function FocusCard({
   moveFocus,
   resumeFlow,
   selectedText = "",
+  initiallyCollapsed = true,
   boundsRef = null,
   chapterTitle = "",
   chapterText = "",
@@ -84,7 +85,7 @@ export function FocusCard({
   surface = "reader",
 }) {
   const isGlobal = surface === "global";
-  const [isHidden, setIsHidden] = useState(false);
+  const [isHidden, setIsHidden] = useState(initiallyCollapsed);
   const [position, setPosition] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [inputPrompt, setInputPrompt] = useState("");
@@ -133,11 +134,10 @@ export function FocusCard({
   const mountedRef = useRef(false);
 
   /**
-   * Scrolling to a new paragraph takes the card out of context, so it folds
-   * away to its pill instead of following the reader around. Selecting new text
-   * brings it straight back, so the only two resting states are "reading" and
-   * "pinned to this passage". The first render is left alone so opening a book
-   * still shows the card rather than snapping to the pill.
+   * The card starts folded to its pill so entering a book shows the text, not a
+   * panel. Selecting new text brings it straight back, and scrolling to a new
+   * paragraph folds it away again, so the only two resting states are "reading"
+   * and "pinned to this passage".
    */
   useEffect(() => {
     if (!mountedRef.current) {
