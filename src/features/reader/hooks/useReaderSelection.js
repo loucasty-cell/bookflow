@@ -10,6 +10,7 @@ const EMPTY_SELECTION = {
 const SELECTION_DEBOUNCE_MS = 40;
 const PRESERVE_SELECTION_MS = 750;
 const MIN_SELECTION_CHARS = 2;
+const MIN_VISIBLE_PX = 8;
 
 function toRect(rect) {
   if (!rect) return null;
@@ -17,6 +18,35 @@ function toRect(rect) {
   if (![top, left, width, height].every((value) => Number.isFinite(value))) return null;
   if (width <= 0 || height <= 0) return null;
   return { top, left, width, height };
+}
+
+/**
+ * A toolbar anchored to text that has scrolled out of view is noise, so the
+ * selection only counts as visible while a usable slice of it is still inside
+ * the reader's own client box.
+ */
+export function isRectInBand(rect, band) {
+  if (!rect || !band) return false;
+  const visibleTop = Math.max(rect.top, band.top);
+  const visibleBottom = Math.min(rect.top + rect.height, band.top + band.height);
+  const visibleLeft = Math.max(rect.left, band.left);
+  const visibleRight = Math.min(rect.left + rect.width, band.left + band.width);
+  if (visibleBottom - visibleTop < MIN_VISIBLE_PX) return false;
+  if (visibleRight - visibleLeft <= 0) return false;
+  return true;
+}
+
+export function readVisibleBand(container) {
+  if (!container || typeof container.getBoundingClientRect !== "function") return null;
+  const rect = container.getBoundingClientRect();
+  const top = Number.isFinite(rect.top) ? rect.top : 0;
+  const left = Number.isFinite(rect.left) ? rect.left : 0;
+  return {
+    top,
+    left,
+    height: Number.isFinite(rect.height) ? rect.height : 0,
+    width: Number.isFinite(rect.width) ? rect.width : 0,
+  };
 }
 
 function resolveParagraphId(selection, range) {
@@ -29,8 +59,9 @@ function resolveParagraphId(selection, range) {
 
 export function useReaderSelection({ containerRef, activeParagraphId, bookId }) {
   const [selection, setSelectionState] = useState(EMPTY_SELECTION);
-  const [anchorRect, setAnchorRect] = useState(null);
+  const [anchorVisible, setAnchorVisible] = useState(false);
   const [containerNode, setContainerNode] = useState(null);
+  const anchorRectRef = useRef(null);
   const timersRef = useRef(new Set());
   const preserveUntilRef = useRef(0);
   const fallbackParagraphIdRef = useRef(activeParagraphId || "");
@@ -64,7 +95,8 @@ export function useReaderSelection({ containerRef, activeParagraphId, bookId }) 
       preserveUntilRef.current = 0;
       if (native) clearNativeSelection();
       setSelectionState(EMPTY_SELECTION);
-      setAnchorRect(null);
+      anchorRectRef.current = null;
+      setAnchorVisible(false);
     },
     [clearNativeSelection],
   );
@@ -93,12 +125,20 @@ export function useReaderSelection({ containerRef, activeParagraphId, bookId }) 
     };
   }, [containerRef]);
 
+  const applyAnchor = useCallback(
+    (rect) => {
+      anchorRectRef.current = rect;
+      setAnchorVisible(isRectInBand(rect, readVisibleBand(containerRef?.current)));
+    },
+    [containerRef]
+  );
+
   const refreshSelection = useCallback(() => {
     const snapshot = readSelection();
     if (!snapshot) {
       if (preserveUntilRef.current > Date.now()) return null;
       setSelectionState((current) => (current.text ? EMPTY_SELECTION : current));
-      setAnchorRect((current) => (current ? null : current));
+      applyAnchor(null);
       return null;
     }
     preserveUntilRef.current = 0;
@@ -108,13 +148,13 @@ export function useReaderSelection({ containerRef, activeParagraphId, bookId }) 
       bookId: snapshot.bookId,
       quote: snapshot.quote,
     });
-    setAnchorRect(snapshot.rect);
+    applyAnchor(snapshot.rect);
     return snapshot;
-  }, [readSelection]);
+  }, [applyAnchor, readSelection]);
 
   const remeasureSelection = useCallback(() => {
-    setAnchorRect(readSelection()?.rect ?? null);
-  }, [readSelection]);
+    applyAnchor(readSelection()?.rect ?? null);
+  }, [applyAnchor, readSelection]);
 
   const selectText = useCallback((text, paragraphId) => {
     const value = String(text ?? "").trim();
@@ -165,7 +205,8 @@ export function useReaderSelection({ containerRef, activeParagraphId, bookId }) 
 
   return {
     selection,
-    anchorRect,
+    anchorRectRef,
+    anchorVisible,
     hasSelection: Boolean(selection.text),
     clearSelection,
     selectText,

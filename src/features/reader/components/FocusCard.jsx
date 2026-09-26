@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useId, useRef, useState } from "react";
 import { FocusBarAmbient } from "./FocusBarAmbient.jsx";
 import {
   AlignLeft,
+  BookOpen,
   Bookmark,
   BookmarkCheck,
   Check,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Copy,
@@ -14,9 +14,7 @@ import {
   Landmark,
   Languages,
   Lightbulb,
-  MessageSquare,
   MessageSquareText,
-  RotateCcw,
   Send,
   ShieldCheck,
   Sparkles,
@@ -98,13 +96,11 @@ export function FocusCard({
   const promptInputRef = useRef(null);
   const chatScrollRef = useRef(null);
   const handledOpenRequestRef = useRef(0);
-  const consentId = useId();
   const consentHintId = useId();
   const chapterHintId = useId();
   const statusId = useId();
 
   const focusedId = focusedParagraph?.id;
-  const paragraphText = focusedParagraph?.text || "";
 
   const {
     messages,
@@ -133,12 +129,29 @@ export function FocusCard({
   });
 
   const hasSelection = Boolean(selectedText.trim());
-  const passageSource = hasSelection ? "Selected passage" : "No selection";
   const hasPassage = Boolean(activePassage);
+  const mountedRef = useRef(false);
+
+  /**
+   * Scrolling to a new paragraph takes the card out of context, so it folds
+   * away to its pill instead of following the reader around. Selecting new text
+   * brings it straight back, so the only two resting states are "reading" and
+   * "pinned to this passage". The first render is left alone so opening a book
+   * still shows the card rather than snapping to the pill.
+   */
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true;
+      return;
+    }
+    setIsHidden(true);
+    onClearSelection?.();
+  }, [focusedId, onClearSelection]);
 
   useEffect(() => {
+    if (!hasSelection) return;
     setIsHidden(false);
-  }, [focusedId]);
+  }, [hasSelection, selectedText]);
 
   useEffect(() => {
     if (!isLoading) setActiveAction("");
@@ -262,7 +275,11 @@ export function FocusCard({
       targetRef.current = { left: rect.left, top: rect.top };
       setIsDragging(true);
       event.currentTarget.focus?.();
-      event.currentTarget.setPointerCapture?.(event.pointerId);
+      try {
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+      } catch {
+        /* capture is best effort: a stale or synthetic pointer must not break the drag */
+      }
       event.preventDefault();
     },
     [],
@@ -288,7 +305,11 @@ export function FocusCard({
     (event) => {
       const drag = dragRef.current;
       if (!drag || (event?.pointerId != null && drag.pointerId !== event.pointerId)) return;
-      event?.currentTarget?.releasePointerCapture?.(drag.pointerId);
+      try {
+        event?.currentTarget?.releasePointerCapture?.(drag.pointerId);
+      } catch {
+        /* the pointer may already be gone, which is a normal end to a drag */
+      }
       dragRef.current = null;
       setIsDragging(false);
       persistPosition(targetRef.current);
@@ -430,15 +451,33 @@ export function FocusCard({
         </span>
       ) : null}
       <div className="focus-card-header">
-        <div className="focus-card-label">
+        <button
+          type="button"
+          className="lens-head-toggle"
+          onClick={() => {
+            triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+            setIsExpanded(!isExpanded);
+          }}
+          aria-expanded={isExpanded}
+          aria-label={isExpanded ? "Collapse Reading Lens" : "Expand Reading Lens"}
+          title={isExpanded ? "Collapse" : "Expand"}
+          style={hitAreaStyle({ minWidth: "0", minHeight: "44px" })}
+        >
           <span
             className={`focus-status-indicator ${pinnedId ? "is-paused" : "is-live"}`}
             aria-hidden="true"
           />
-          <Sparkles size={13} aria-hidden="true" />
-          <span>Reading Lens</span>
-          <small>{pinnedId ? "Held" : "Live"}</small>
-        </div>
+          <span className="lens-head-text">
+            <span className="lens-head-title">Reading Lens</span>
+            <span className="lens-head-sub" id={consentHintId}>
+              {isGlobal
+                ? "Open a book to ground Lens."
+                : hasPassage
+                ? `${activePassage.length} chars · on device`
+                : "Select text to ask Lens."}
+            </span>
+          </span>
+        </button>
 
         <button
           type="button"
@@ -459,33 +498,6 @@ export function FocusCard({
         <div className="focus-card-header-actions">
           <button
             type="button"
-            className="focus-card-icon-btn lens-header-btn"
-            onClick={() => {
-              triggerHaptic(HAPTIC_PATTERNS.LIGHT);
-              setIsExpanded(!isExpanded);
-            }}
-            aria-label={isExpanded ? "Collapse Reading Lens answers" : "Expand Reading Lens answers"}
-            aria-expanded={isExpanded}
-            title={isExpanded ? "Collapse answers" : "Expand answers"}
-            style={forcedHitAreaStyle()}
-          >
-            {isExpanded ? <ChevronDown size={14} aria-hidden="true" /> : <MessageSquare size={14} aria-hidden="true" />}
-          </button>
-          <button
-            type="button"
-            className="focus-card-icon-btn lens-header-btn"
-            onClick={() => {
-              triggerHaptic(HAPTIC_PATTERNS.LIGHT);
-              resetPosition();
-            }}
-            aria-label="Reset Reading Lens position"
-            title="Reset position"
-            style={forcedHitAreaStyle()}
-          >
-            <RotateCcw size={14} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
             className="focus-card-dismiss-btn lens-header-btn"
             onClick={handleDismiss}
             aria-label="Hide Reading Lens"
@@ -497,64 +509,30 @@ export function FocusCard({
         </div>
       </div>
 
-      <figure className="lens-passage-figure">
-        <figcaption className="lens-passage-caption">
-          {passageSource}
-          {hasPassage ? ` · ${activePassage.length} characters` : ""}
-        </figcaption>
-        {hasPassage ? (
-          <blockquote
-            className="focus-card-passage-preview lens-passage"
-            data-lens-passage={passageSource}
-            title={activePassage}
-            style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", maxHeight: "7.5em", overflowY: "auto" }}
-          >
-            {activePassage}
-          </blockquote>
-        ) : (
-          <div className="lens-focus-preview" data-lens-passage="none">
-            <span>
-              {isGlobal
-                ? "Open a book, or select text anywhere, to ground Lens."
-                : "Focused paragraph stays local until you select text."}
-            </span>
-            {paragraphText ? <p>{paragraphText}</p> : null}
-          </div>
-        )}
-      </figure>
-
-      <div className="focus-card-consent lens-consent" data-lens-consent={consentGranted ? "granted" : "local-only"}>
-        <input
-          id={consentId}
-          type="checkbox"
-          className="lens-consent-toggle"
-          checked={consentGranted}
-          onChange={(event) => setConsentGranted(event.target.checked)}
-          aria-describedby={consentHintId}
-          style={hitAreaStyle({ minWidth: "20px", minHeight: "20px" })}
-        />
-        <label className="lens-consent-label" htmlFor={consentId}>
-          <ShieldCheck size={14} aria-hidden="true" />
-          <span>Send passage to Lens</span>
-        </label>
-        <p className="lens-consent-hint" id={consentHintId}>
-          {!hasPassage
-            ? "Select text in the reader before sending anything to Reading Lens."
-            : consentGranted
-            ? `Only the ${passageSource.toLowerCase()} above is sent to your Reading Lens service.`
-            : "Local only. Nothing is sent until you allow it."}
-        </p>
-      </div>
-
       <div className="focus-card-middle-bar">
         <form onSubmit={handlePromptSubmit} className="focus-card-input-form">
+          <button
+            type="button"
+            className={`lens-consent-toggle lens-consent-dot ${consentGranted ? "is-granted" : ""}`}
+            onClick={() => {
+              triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+              setConsentGranted(!consentGranted);
+            }}
+            aria-pressed={consentGranted}
+            aria-label={consentGranted ? "Stop sending passages to Lens" : "Allow sending this passage to Lens"}
+            aria-describedby={consentHintId}
+            title={consentGranted ? "Sending on" : "Local only. Tap to allow sending."}
+            style={forcedHitAreaStyle()}
+          >
+            <ShieldCheck size={14} aria-hidden="true" />
+          </button>
           <input
             ref={promptInputRef}
             type="text"
             className="focus-card-prompt-input lens-prompt-input"
             value={inputPrompt}
             onChange={(event) => setInputPrompt(event.target.value)}
-            placeholder={!hasPassage ? "Select text to enable Reading Lens…" : consentGranted ? "Ask about this passage…" : "Local only until you allow sending…"}
+            placeholder={!hasPassage ? "Select text to ask Lens…" : consentGranted ? "Ask about this passage…" : "Local only…"}
             disabled={isLoading || !hasPassage}
             name="reading-lens-prompt"
             autoComplete="off"
@@ -607,18 +585,12 @@ export function FocusCard({
               style={hitAreaStyle({
                 display: "inline-flex",
                 alignItems: "center",
-                gap: "6px",
-                whiteSpace: "normal",
+                justifyContent: "center",
+                gap: "0px",
               })}
             >
               <span className="lens-quick-action-icon" aria-hidden="true">
                 <Icon size={15} />
-              </span>
-              <span className="lens-quick-action-text">
-                <span className="lens-quick-action-title">{action.label}</span>
-                <span className="lens-quick-action-status" aria-hidden="true">
-                  {actionStatus}
-                </span>
               </span>
             </button>
           );
@@ -626,24 +598,27 @@ export function FocusCard({
       </div>
 
       <div className="lens-chapter-scope">
-        <label className="lens-chapter-label" htmlFor={`${consentId}-chapter`}>
-          <input
-            id={`${consentId}-chapter`}
-            type="checkbox"
-            className="lens-chapter-toggle"
-            checked={includeChapterContext}
-            disabled={!canIncludeChapterContext}
-            onChange={(event) => setIncludeChapterContext(event.target.checked)}
-            aria-describedby={chapterHintId}
-            style={hitAreaStyle({ minWidth: "20px", minHeight: "20px" })}
-          />
-          <span>Include chapter context</span>
-        </label>
-        <p className="lens-chapter-hint" id={chapterHintId}>
+        <button
+          type="button"
+          className={`lens-chapter-toggle ${includeChapterContext ? "is-on" : ""}`}
+          onClick={() => {
+            triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+            setIncludeChapterContext(!includeChapterContext);
+          }}
+          disabled={!canIncludeChapterContext}
+          aria-pressed={includeChapterContext}
+          aria-describedby={chapterHintId}
+          aria-label="Include the current chapter as context"
+          title="Include the current chapter as context"
+          style={forcedHitAreaStyle()}
+        >
+          <BookOpen size={14} aria-hidden="true" />
+        </button>
+        <span className="visually-hidden" id={chapterHintId}>
           {canIncludeChapterContext
-            ? "Opt-in only. Adds the current chapter text to the request."
+            ? "Adds the current chapter text to the request."
             : "Chapter text is not available here, so only the passage can be sent."}
-        </p>
+        </span>
       </div>
 
       <p

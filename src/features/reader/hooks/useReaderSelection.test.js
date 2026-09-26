@@ -237,7 +237,7 @@ describe("useReaderSelection", () => {
       quote: "Call me Ishmael.",
     });
     expect(view.result.hasSelection).toBe(true);
-    expect(view.result.anchorRect).toEqual({ top: 120, left: 30, width: 180, height: 18 });
+    expect(view.result.anchorRectRef.current).toEqual({ top: 120, left: 30, width: 180, height: 18 });
   });
 
   it("ignores selections made outside the reader container", () => {
@@ -256,7 +256,7 @@ describe("useReaderSelection", () => {
     vi.advanceTimersByTime(80);
 
     expect(view.result.hasSelection).toBe(false);
-    expect(view.result.anchorRect).toBeNull();
+    expect(view.result.anchorRectRef.current).toBeNull();
   });
 
   it("clears state when the selection collapses", () => {
@@ -279,7 +279,7 @@ describe("useReaderSelection", () => {
     vi.advanceTimersByTime(80);
 
     expect(view.result.hasSelection).toBe(false);
-    expect(view.result.anchorRect).toBeNull();
+    expect(view.result.anchorRectRef.current).toBeNull();
   });
 
   it("preserves a programmatic selection while the toolbar closes", () => {
@@ -326,7 +326,7 @@ describe("useReaderSelection", () => {
     env.fakeDocument.emit("keydown", { key: "Escape", target: { closest: () => null } });
 
     expect(view.result.hasSelection).toBe(false);
-    expect(view.result.anchorRect).toBeNull();
+    expect(view.result.anchorRectRef.current).toBeNull();
     expect(nativeSelection.removeAllRanges).toHaveBeenCalled();
   });
 
@@ -374,7 +374,7 @@ describe("useReaderSelection", () => {
     container.emit("scroll", {});
 
     expect(view.result.selection.text).toBe("Scroll me");
-    expect(view.result.anchorRect.top).toBe(42);
+    expect(view.result.anchorRectRef.current.top).toBe(42);
   });
 
   it("registers one document selection flow and tears it down with pending timers", () => {

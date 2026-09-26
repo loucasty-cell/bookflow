@@ -27,7 +27,8 @@ for (const width of [320, 390]) {
 
     const card = page.locator('.focus-card');
     await expect(card).toBeVisible();
-    await expect(page.locator('.lens-passage-caption')).toContainText('Selected passage');
+    await expect(page.locator('.lens-head-sub')).toContainText('chars');
+    await expect(page.locator('.lens-consent-dot')).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Ask Reading Lens a question about the passage' })).toBeEnabled();
     const box = await card.boundingBox();
     expect(box).not.toBeNull();

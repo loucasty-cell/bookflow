@@ -121,37 +121,59 @@ describe("lens quick action and state mapping", () => {
 });
 
 describe("FocusCard structure", () => {
-  it("renders the exact selected passage, not a truncated preview", () => {
+  it("does not duplicate the selected passage back at the reader", () => {
     const selection = "The precise passage the reader highlighted, kept whole for consent.";
     const markup = renderCard({ selectedText: selection });
-    expect(markup).toContain(selection);
-    expect(markup).toContain("Selected passage");
-    expect(markup).toContain('data-lens-passage="Selected passage"');
+    expect(markup).not.toContain(selection);
+    expect(markup).not.toContain("<blockquote");
+    expect(markup).not.toContain("lens-passage-figure");
+    expect(markup).toMatch(/chars .* on device/);
   });
 
-  it("labels the focused paragraph when nothing is selected", () => {
+  it("leads with a title and one line of supporting text, no paragraph", () => {
     const markup = renderCard();
-    expect(markup).toContain("Focused paragraph");
-    expect(markup).toContain(paragraph.text);
+    expect(markup).toContain("Select text to ask Lens.");
+    expect(markup).toContain("Reading Lens");
+    expect(markup).toContain('class="lens-head-sub"');
+    expect(markup).not.toContain("lens-consent-hint");
+    expect(markup).not.toContain("lens-chapter-hint");
+    expect(markup).not.toContain("lens-passage-figure");
   });
 
-  it("shows the exact passage, a live status, and a consent control before any request", () => {
+  it("toggles the focus panel from the header", () => {
     const markup = renderCard();
-    expect(markup).toContain('class="focus-card-consent lens-consent"');
-    expect(markup).toContain('data-lens-consent="local-only"');
-    expect(markup).toContain('type="checkbox"');
-    expect(markup).toContain("Send passage to Lens");
-    expect(markup).toContain("Select text in the reader before sending anything to Reading Lens.");
+    expect(markup).toContain("lens-head-toggle");
+    expect(markup).toContain('aria-expanded="false"');
+    expect(markup).toContain("Expand Reading Lens");
+  });
+
+  it("carries consent as a single toggle inside the input pill", () => {
+    const markup = renderCard();
+    expect(markup).toContain("lens-consent-dot");
+    expect(markup).toContain('aria-pressed="false"');
+    expect(markup).toContain("Allow sending this passage to Lens");
+    expect(markup).not.toContain('type="checkbox"');
+    expect(markup).not.toContain("Send passage to Lens");
+  });
+
+  it("keeps the chapter opt-in as one icon toggle, off and disabled without chapter text", () => {
+    const markup = renderCard({ chapterTitle: "Loomings" });
+    expect(markup).toContain("lens-chapter-toggle");
+    expect(markup).toContain("Include the current chapter as context");
+    expect(markup).toContain("Chapter text is not available here");
+    expect(markup).toMatch(/class="lens-chapter-toggle[^"]*"[^>]*disabled/);
+  });
+
+  it("keeps a live status region for assistive technology", () => {
+    const markup = renderCard();
     expect(markup).toContain('role="status"');
     expect(markup).toContain('aria-live="polite"');
-    expect(markup).toContain("Local only until you allow the passage to be sent");
   });
 
-  it("keeps the chapter opt-in switch off and disabled without chapter text", () => {
-    const markup = renderCard({ chapterTitle: "Loomings" });
-    expect(markup).toContain("Include chapter context");
-    expect(markup).toContain("Chapter text is not available here");
-    expect(markup).toMatch(/class="lens-chapter-toggle"[^>]*disabled/);
+  it("renders quick actions as icon only, with no repeated state label", () => {
+    const markup = renderCard();
+    expect(markup).not.toContain("lens-quick-action-status");
+    expect(markup).not.toContain(">Local<");
   });
 
   it("wires every quick action to the lens contract", () => {

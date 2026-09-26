@@ -19,7 +19,8 @@ function resolvePosition(anchorRect) {
 }
 
 export function SelectionTooltip({
-  anchorRect,
+  anchorRectRef,
+  anchorVisible = true,
   selectedText = "",
   selectedParagraphId = "",
   onAddNoteFromSelection,
@@ -34,6 +35,7 @@ export function SelectionTooltip({
   const [copyFailed, setCopyFailed] = useState(false);
   const [definition, setDefinition] = useState(null);
   const [lookupMiss, setLookupMiss] = useState(false);
+  const nodeRef = useRef(null);
   const timerRef = useRef(null);
 
   useEffect(() => {
@@ -42,7 +44,7 @@ export function SelectionTooltip({
     setCopyFailed(false);
     setDefinition(null);
     setLookupMiss(false);
-  }, [selectedText, selectedParagraphId, anchorRect?.top, anchorRect?.left]);
+  }, [selectedText, selectedParagraphId]);
 
   useEffect(
     () => () => {
@@ -50,6 +52,41 @@ export function SelectionTooltip({
     },
     [],
   );
+
+  /**
+   * The anchor moves every frame while the reader scrolls, so its position is
+   * written straight to the node. Driving it through React state re-rendered
+   * the whole reader overlay tree once per frame for the sake of one toolbar.
+   */
+  useEffect(() => {
+    if (!anchorVisible) return undefined;
+    const node = nodeRef.current;
+    if (!node) return undefined;
+
+    let frame = 0;
+
+    const apply = () => {
+      const target = nodeRef.current;
+      const position = resolvePosition(anchorRectRef?.current ?? null);
+      if (!target || !position) return;
+      target.style.transform = `translate3d(${position.left}px, ${position.top}px, 0) translateX(-50%)`;
+    };
+
+    const schedule = () => {
+      if (frame) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(apply);
+    };
+
+    apply();
+    window.addEventListener("scroll", schedule, { passive: true, capture: true });
+    window.addEventListener("resize", schedule, { passive: true });
+
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", schedule, { capture: true });
+      window.removeEventListener("resize", schedule);
+    };
+  }, [anchorRectRef, anchorVisible, selectedText, dismissed]);
 
   const hide = useCallback(
     (preserveSelection = false) => {
@@ -139,17 +176,17 @@ export function SelectionTooltip({
     [selectedText],
   );
 
-  const position = dismissed ? null : resolvePosition(anchorRect);
-  if (!position || !selectedText) return null;
+  if (dismissed || !selectedText || !anchorVisible) return null;
 
   return (
     <div
+      ref={nodeRef}
       className="sel-tip"
       style={{
         position: "fixed",
-        top: `${position.top}px`,
-        left: `${position.left}px`,
-        transform: "translateX(-50%)",
+        top: 0,
+        left: 0,
+        transform: "translate3d(0px, 0px, 0) translateX(-50%)",
         zIndex: 1000,
       }}
       role="toolbar"

@@ -38,7 +38,7 @@ export function ReaderOverlays({
   focusId,
   lookupEnabled,
 }) {
-  const { selection, anchorRect, clearSelection, selectText } = useReaderSelection({
+  const { selection, anchorRectRef, anchorVisible, clearSelection, selectText } = useReaderSelection({
     containerRef: readerRef,
     activeParagraphId: focusId,
     bookId,
@@ -114,7 +114,8 @@ export function ReaderOverlays({
         />
       </ErrorBoundary>
       <SelectionTooltip
-        anchorRect={anchorRect}
+        anchorRectRef={anchorRectRef}
+      anchorVisible={anchorVisible}
         selectedText={selection.text}
         selectedParagraphId={selection.paragraphId}
         activeParagraphId={focusId}
