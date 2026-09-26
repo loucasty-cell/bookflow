@@ -23,7 +23,7 @@ Setup, deployment, testing, and debugging.
 npm run dev             # Vite on port 3000
 npm run lint            # ESLint
 npm test                # Vitest
-npm run test:e2e        # 2 smoke tests plus the long-import test
+npm run test:e2e        # 2 smoke tests, 1 long-import, and 2 Reading Lens tests (5 total) plus the long-import test
 npm run build           # Production build
 pytest backend/tests/   # Backend suite
 npx pyright             # Backend type check

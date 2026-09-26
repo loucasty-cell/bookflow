@@ -2,7 +2,7 @@
 title: Backend Architecture
 type: concept
 status: verified
-updated: 2026-09-25
+updated: 2026-09-26
 tags: [bookflow, architecture, backend, fastapi]
 source-files: [backend/main.py, backend/app/main.py, backend/app/core/config.py, backend/app/routers/ocr.py, backend/app/services/ocr_service.py, backend/requirements.txt]
 ---
@@ -30,7 +30,7 @@ backend/
     routers/                        health, ocr, documents, reader
     services/                       ocr_service, huggingface_ocr, paddle_ocr,
                                     document_service, text_service
-  tests/                            Pytest suite (45 tests across 8 test modules)
+  tests/                            Pytest suite (75 tests across 10 test modules)
   Dockerfile.ocr                    PaddleOCR container
 ```
 

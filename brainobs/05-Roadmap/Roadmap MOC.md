@@ -23,6 +23,7 @@ What exists, what is next, and how progress will be measured.
 - [[TTS Synchronization]] - speech locked to the focus rail
 - [[PWA Offline]] - manifest, service worker, durable local storage
 - [[Concept Graph]] - cross-chapter definition linking
+- [[Focus Rail Performance]] - why the focus rail is not a linear scan, and the measured baseline
 
 ## Priority order
 

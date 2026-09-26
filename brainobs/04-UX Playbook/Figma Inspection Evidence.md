@@ -2,7 +2,7 @@
 title: Figma Inspection Evidence
 type: evidence
 status: verified
-updated: 2026-09-25
+updated: 2026-09-26
 tags: [bookflow, ux, figma, evidence]
 source-files: [src/features/reader/components/FocusCard.jsx, src/features/reader/components/NotesPanel.jsx, src/features/reader/hooks/useReadingLens.js, src/features/reader/hooks/useReaderSelection.js, src/styles/reader.css, src/styles/reader-extras.css, src/styles/tokens.css]
 ---
@@ -20,7 +20,7 @@ reference evidence, not Bookflow runtime measurements.
 | Scrollbar Kit MacOS & Windows (Community) | `P3q0Sh8EB8X5RohRRKZi9m` | `2402796419845960854` | `0:1`, `1:49`, `5:57`, `5:125`, `5:910`, `5:835`, `5:928`, `5:849` |
 | iOS 14 UI Kit for Figma (Community) | `pVgvrD6Wpi3VrjnTsyorIm` | `2402793645297850125` | `0:1`, `362:14390`, `362:14628`, `362:15609`, `362:15726`, `362:16094`, `362:16285`, `362:16324`, `362:16339`, `371:13138` |
 | AI Agent UI Kit - Reasoning, Tool Use & Response Components (Community) | `dhrZUoqIQzKnKQiADT3C1N` | current fetch 2026-09-25 | `70:967`, `70:985`, `70:2146`, `70:2482`, `70:2542`, `70:2601`, `70:2678`, `70:3111`, `70:3135`, `65:553`, `64:911`, `67:573`, `78:590` |
-
+| Apple Widgets UI Kit (Community) | `zST5IOFYB6MgjnwAzpMxNt` | fetch 2026-09-26 | `6:59` root canvas, 83 components extracted across `appleSmallMedium`, `appleLarge`, `productivity`, `parts` |
 Node IDs use the Figma API colon form; Figma URLs render the same IDs with hyphens.
 
 ## Measured values
@@ -43,6 +43,21 @@ Node IDs use the Figma API colon form; Figma URLs render the same IDs with hyphe
 | `pVgvrD6Wpi3VrjnTsyorIm` / `362:16285` | Notifications frame is `878 x 2371`; notification component set `362:16324` is `391 x 276`, uses `16` padding and `32` item spacing, and its light instance is `359 x 106` with radius `13`. |
 | `pVgvrD6Wpi3VrjnTsyorIm` / `371:13138` | Share Sheet frame is `878 x 2092`; action row is `375 x 191` and action-row group is `375 x 558`. |
 | `pVgvrD6Wpi3VrjnTsyorIm` / `0:1` | The fetched file version contains no AirDrop node in the reviewed current tree; the older AirDrop measurements are not carried forward. |
+
+Related: [[UX Playbook MOC]], [[Home Widgets]], [[Navigation and Controls]], [[Design Tokens]], [[Current State Matrix]].
+
+Fetched 2026-09-26 with the Figma MCP. These are the values that `src/features/widgets/lib/tokens.js`
+and the four spec files were generated from; see [[Home Widgets]] for how Bookflow binds them.
+
+| Node | Measured evidence |
+| --- | --- |
+| `6:59` root | Components canvas. 83 components extracted: `appleSmallMedium` 27, `appleLarge` 14, `productivity` 26, `parts` 16. |
+| Small bucket | `155 x 155`, corner radius `21.67` |
+| Medium bucket | `329 x 155`, corner radius `21.67` |
+| Large bucket | `329 x 345`, corner radius `21.67` |
+| `parts` set | 16 entries returned root-only, with no child layers, even at `depth: 8`. Recorded as a Figma API limitation rather than inferred children. |
+
+The radius is `21.670000076293945px` in the API response; the tail is float artifact and is stored as `21.67`.
 
 ## AI Agent UI Kit measurements
 

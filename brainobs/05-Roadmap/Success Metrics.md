@@ -2,7 +2,7 @@
 title: Success Metrics
 type: reference
 status: living
-updated: 2026-09-25
+updated: 2026-09-26
 tags: [bookflow, roadmap, metrics, benchmarks]
 source-files: [scripts/bench.md, improvements.md, src/shared/lib/perfMarks.js, tests/e2e/smoke.spec.js, tests/e2e/long-import.spec.js, src/features/document-import/hooks/useDocumentImport.js, src/features/reader/hooks/useChapterWindow.js]
 ---
@@ -15,16 +15,16 @@ Measurable outcomes, with current baselines and targets. A claim without a numbe
 
 | Metric | Value | Verified |
 | --- | --- | --- |
-| Vitest test files | 31 | `npm test -- --reporter=dot`, 2026-09-25 |
-| Vitest tests | 163 passing | Same run, 2026-09-25 |
-| Vitest duration | 5.02s | Same run, machine-dependent |
+| Vitest test files | 39 | `npm test`, 2026-09-26 |
+| Vitest tests | 308 passing | Same run, 2026-09-26 |
+| Vitest duration | 8.65s | Same run, machine-dependent |
 | Playwright smoke tests | 2 | `tests/e2e/smoke.spec.js`, 2026-09-25 |
 | Playwright long-import test | 1 | `tests/e2e/long-import.spec.js`, 2026-09-25 |
 | 420-page browser probe | `3,847 ms` (about `3.7 s`) | One run, 2026-09-25 |
 | Probe progress | `5 → 100` | Reader appeared after the terminal 100 |
 | Probe viewport | `390 x 844`, overflow `0` | One run, 2026-09-25 |
 | Probe mounted sections | `2` | One run, 2026-09-25 |
-| Backend tests | 45 collected across 8 modules | `pytest backend/tests/ --collect-only -q`, 2026-09-25 |
+| Backend tests | 75 collected across 10 modules | `pytest backend/tests/ --collect-only -q`, 2026-09-26 |
 
 The prior bundle figures in `scripts/bench.md` are historical. Re-run `npm run lint` and
 `npm run build` before publishing new bundle numbers; do not copy an earlier baseline forward.
@@ -71,8 +71,9 @@ Read marks with `getMarks()` or `performance.getEntriesByType('mark')`. `measure
 | `sample-reading.txt` | TXT | Plain text book sample |
 | `sample-structure.md` | Markdown | Markdown with headings |
 
-Regenerate with `node tests/fixtures/generate-fixtures.mjs`. `pdf-lib` is a dev-only fixture
-dependency and is never bundled from `src/`.
+   Regenerate with `node tests/fixtures/generate-fixtures.mjs`. `pdf-lib` now lives in
+   `dependencies` (it moved out of `devDependencies` on 2026-09-25); it is still only reached
+   by the fixture generator and is not imported from `src/`.
 
 ## Product metrics to publish
 

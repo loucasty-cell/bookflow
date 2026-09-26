@@ -2,7 +2,7 @@
 title: Bookflow Brain
 type: MOC
 status: living
-updated: 2026-09-25
+updated: 2026-09-26
 tags: [bookflow, index, moc]
 ---
 
@@ -20,9 +20,9 @@ Read this note first. Every other note is one hop away.
 | --- | --- |
 | An AI agent picking up a task | [[Agent Quickstart]] then [[Invariants]] |
 | A new developer | [[Full-Stack Overview]] then [[Dev Setup]] |
-| Working on the reader | [[Focus Rail]], [[Reader Engine MOC]] |
+| Working on the reader | [[Focus Rail]], [[Reader Engine MOC]], [[Reading Lens and Focus Bar]], [[Sentence-Paced Scroll]] |
 | Working on import or OCR | [[OCR Pipeline MOC]], [[OCR-Frontend Sync Contract]] |
-| Working on UX or visual design | [[Design Tokens]], [[Premium Micro-interactions]], [[Figma Inspection Evidence]] |
+| Working on UX or visual design | [[Design Tokens]], [[Premium Micro-interactions]], [[Figma Inspection Evidence]], [[Home Widgets]] |
 | Working on growth or retention | [[Atomic Habits Framework]], [[Ethical Guardrails]] |
 | Writing a new feature spec | [[Feature Spec Template]] |
 | Updating this vault after a code change | [[Context Sync Protocol]] |
@@ -44,8 +44,7 @@ Read this note first. Every other note is one hop away.
 - [[Vault Maintenance]] - how to keep this vault true
 - [[Context Sync Protocol]] - the update process after every code change
 
-## The project in five lines
-
+## The project in seven statements
 ```text
 Bookflow is a private, local-first browser reader for PDF, EPUB, TXT, and Markdown.
 Its core interaction is scroll-driven sentence and paragraph focus at FOCUS_RAIL_RATIO = 0.38.
@@ -54,7 +53,8 @@ The backend (FastAPI + PyMuPDF + PaddleOCR) is an optional accelerator for scann
 Progressive PDF import reports progress from 5 through a terminal 100 before the reader opens; EPUB, TXT, and Markdown currently use the blocking parser.
 A metadata-only library records sessions and can show a resume card; the recent shelf, file-handle reuse, and automatic reopen remain open.
 Behavioral features exist but are opt-in and disabled by default, by design.
-```
+A consent-gated Reading Lens answers questions about a selected passage, and folds to a small pill when reading moves on.
+A Figma-derived home widget grid and a global focus bar sit on the landing surface, both behind opt-in flags.
 
 ## Non-negotiables in one glance
 

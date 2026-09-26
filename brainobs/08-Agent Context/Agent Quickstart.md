@@ -2,7 +2,7 @@
 title: Agent Quickstart
 type: briefing
 status: living
-updated: 2026-09-24
+updated: 2026-09-26
 tags: [bookflow, agent, briefing]
 refactor: partial
 source-files: [AGENTS.md, package.json, src/App.jsx, src/features/reader/hooks/useReaderNavigation.js, src/features/document-import/lib/importCoordinator.js, src/features/library/index.js, backend/main.py]
@@ -35,7 +35,7 @@ bookflow/
   backend/                    FastAPI + PyMuPDF + PaddleOCR optional accelerator
     main.py                   OCR router, job store, SSE streaming
     app/                      Routers, Pydantic v2 models, services
-    tests/                    Pytest suite (45 tests across 8 modules)
+    tests/                    Pytest suite (75 tests across 10 modules)
 ```
 
 ## 2. Hard rules (violating these fails the task)

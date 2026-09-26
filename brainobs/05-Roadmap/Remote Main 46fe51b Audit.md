@@ -2,7 +2,7 @@
 title: Remote Main 46fe51b Audit
 type: evidence
 status: partial
-updated: 2026-09-25
+updated: 2026-09-26
 tags: [bookflow, roadmap, audit, reading-lens, skills]
 source-files: [package.json, package-lock.json, vercel.json, playwright.config.js, AGENTS.md, src/features/reader/hooks/useReadingLens.js, src/features/reader/hooks/useReaderSelection.js, src/features/reader/components/FocusCard.jsx, src/features/reader/components/NotesPanel.jsx, src/features/reader/lib/notesPdfExport.js, src/features/reader/lib/notesExport.js, src/styles/reading-lens.css, tests/e2e/reading-lens.spec.js, backend/app/routers/reader.py, backend/app/services/document_service.py, backend/tests/test_reading_lens.py, backend/tests/test_document_pdf_guards.py, .agents/skills, skills-lock.json]
 ---
@@ -35,13 +35,13 @@ Evidence note for the fast-forward from `80dba85` to `46fe51b` (`feat: add readi
 
 ## Verification after repair
 
-Measured on 2026-09-25 after the repair pass:
+Measured 2026-09-25 after the repair pass; frontend counts refreshed 2026-09-26:
 
 | Check | Result |
 | --- | --- |
 | `npm run lint` | Pass |
-| `npm test -- --run` | 36 files passed, 251 tests passed |
-| `npm run build` | Pass; Tailwind utilities are emitted; non-failing chunk warnings for `vendor-three` (~528 kB) and the main chunk (~656 kB) |
+| `npm test -- --run` | 39 files passed, 308 tests passed |
+| `npm run build` | Pass; Tailwind utilities are emitted; non-failing chunk warnings for `vendor-three` (~516 kB) and the main chunk (~646 kB) |
 | `pytest backend/tests/ -q` | 75 passed |
 | `npx --no-install pyright` | 0 errors, 2 pre-existing environment warnings |
 | `npm run check:vault` | Pass, 89 notes, no broken links or source paths |
@@ -63,10 +63,10 @@ Measured on 2026-09-25 after the repair pass:
 
 1. Live provider behavior is unverified because no provider key is committed or used in tests; the browser path is covered by mocks and backend contract tests only.
 2. `pyright` still reports two environment/source warnings (`defusedxml`, `setuptools`).
-3. The build still warns on the `656 kB` main chunk and `528 kB` Three.js chunk; no bundle budget is enforced in CI.
+3. The build still warns on the `646 kB` main chunk and `516 kB` Three.js chunk; no bundle budget is enforced in CI.
 4. Full `npm audit` still reports 5 development-only vulnerabilities; the production tree is clean.
 5. GitHub MCP browser OAuth cannot complete: the remote endpoint does not support dynamic client registration and Docker is unavailable. A pre-registered OAuth app or an environment-backed PAT is required.
-6. `fetch` MCP still reports `Connection closed`; `npx playwright install chromium` times out, so browser tests rely on the system Chrome channel.
+6. `fetch` MCP reported `Connection closed` and `npx playwright install chromium` times out, so browser verification runs on the system Chrome channel via `PLAYWRIGHT_CHANNEL=chrome`. Verified working 2026-09-26.
 7. The Figma credential stored in the ignored local config was exposed in an earlier session and must be rotated or revoked by the user.
 8. Reading Lens rate limiting is per process and in-memory; multi-user auth and durable quotas are not implemented.
 

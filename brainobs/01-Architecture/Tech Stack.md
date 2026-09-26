@@ -27,6 +27,11 @@ Every dependency with the exact job it does. Nothing here is decorative.
 | `tesseract.js-core` | 7.0.0 | WASM OCR cores |
 | `@tesseract.js-data/eng` | 1.0.0 | Bundled English trained data |
 | `three` | 0.186.0 | Ambient visual layer only |
+| `lenis` | 1.3.26 | Sentence-paced smooth scroll for the reader scroll container |
+| `gsap` | 3.15.0 | Single shared ticker driving Lenis, and ScrollTrigger for widget reveal |
+| `animejs` | 4.5.0 | Widget value tweens and ring fills, scoped per widget |
+| `@splinetool/runtime` | 1.12.96 | Optional Spline scene for the focus bar. Loaded only when a `.splinecode` URL is configured; otherwise a procedural shader is used |
+| `pdf-lib` | 1.17.1 | Test fixture PDF generation. Lives in `dependencies` but is not imported from `src/` |
 
 ## Frontend development dependencies
 
@@ -39,7 +44,6 @@ Every dependency with the exact job it does. Nothing here is decorative.
 | `vitest` | 2.1.8 | Unit test runner |
 | `eslint` | 9.17.0 | Lint with `@eslint/js`, react-hooks, react-refresh |
 | `globals` | 15.14.0 | ESLint global definitions |
-| `pdf-lib` | 1.17.1 | Test fixture PDF generation only, never bundled |
 
 ## Backend dependencies
 
@@ -60,6 +64,11 @@ Every dependency with the exact job it does. Nothing here is decorative.
 | `python-dotenv` | Environment loading |
 | `pytest` / `pytest-asyncio` | Backend tests |
 
+| `@playwright/test` | 1.63.0 | Browser test runner for smoke, long-import, and Reading Lens specs |
+| `@playwright/mcp` | 0.0.82 | MCP server exposing the browser to the agent. Installed as a devDependency and launched with `node node_modules/@playwright/mcp/cli.js` |
+| `@modelcontextprotocol/server-sequential-thinking` | 2026.8.31 | MCP server for structured reasoning |
+| `@modelcontextprotocol/server-memory` | 2026.8.31 | MCP server for the knowledge-graph memory store |
+| `@upstash/context7-mcp` | 4.1.1 | MCP server for up-to-date library documentation |
 ## Build configuration facts
 
 | Setting | Value | Effect |

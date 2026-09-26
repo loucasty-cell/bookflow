@@ -19,6 +19,7 @@ How Bookflow looks, moves, lays out, and stays accessible.
 - [[Accessibility Rules]] - targets, names, focus order, contrast
 - [[Responsive Breakpoints]] - desktop, tablet, mobile behaviour and overflow rules
 - [[Figma Inspection Evidence]] - inspected Figma file keys, node IDs, and measured values
+- [[Home Widgets]] - Figma-derived home widget grid, geometry, and data bindings
 
 ## The design position
 

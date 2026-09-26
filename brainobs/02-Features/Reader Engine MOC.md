@@ -18,6 +18,8 @@ The reader is Bookflow's product. Everything else supports it.
 - [[Themes and Atmospheres]] - theme tokens per atmosphere
 - [[Navigation and Controls]] - keyboard, scroll intent, progress, touch
 - [[Notes and Bookmarks]] - selection tooltip, margin notes, persistence
+- [[Reading Lens and Focus Bar]] - consent-gated assistant card, both surfaces, drag, minimal card
+- [[Sentence-Paced Scroll]] - Lenis configuration, single-ticker rule, programmatic scroll routing
 - Long-book windowing - `useChapterWindow` keeps a bounded chapter window with spacers
 - Local definition lookup - opt-in starter lexicon in `dictionary.js`; no network lookup
 

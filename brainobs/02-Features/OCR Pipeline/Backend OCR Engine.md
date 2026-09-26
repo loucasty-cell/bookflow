@@ -2,7 +2,7 @@
 title: Backend OCR Engine
 type: feature
 status: verified
-updated: 2026-09-25
+updated: 2026-09-26
 tags: [bookflow, ocr, backend, fastapi, performance]
 source-files: [backend/main.py, backend/app/routers/ocr.py, backend/app/core/config.py, backend/app/services/ocr_service.py, backend/app/services/paddle_ocr.py, backend/app/services/huggingface_ocr.py, backend/tests/test_accelerated_ocr.py, updateOCRdata.md]
 ---
@@ -171,7 +171,7 @@ pytest backend/tests/ -v
 npx pyright
 ```
 
-The current suite contains 45 tests across 8 modules; re-count from the command output rather than
+The current suite contains 75 tests across 10 modules; re-count from the command output rather than
 copying an older baseline.
 
 Then behaviourally: start the backend, scan a scanned PDF, confirm page order in the reader

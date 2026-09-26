@@ -2,7 +2,7 @@
 title: Current State Matrix
 type: reference
 status: verified
-updated: 2026-09-25
+updated: 2026-09-26
 tags: [bookflow, roadmap, status, matrix]
 source-files: [goals.md, features.md, scripts/bench.md, src/App.jsx, src/features/document-import/index.js, src/features/document-import/hooks/useDocumentImport.js, src/features/document-import/lib/importCoordinator.js, src/features/reader/config.js, src/features/reader/hooks/useChapterWindow.js, src/features/library/index.js, src/features/library/hooks/useReadingSession.js, tests/e2e/smoke.spec.js, tests/e2e/long-import.spec.js, backend/main.py, backend/tests]
 ---
@@ -17,7 +17,7 @@ with this table, this table is correct until it is updated with evidence.
 | Capability | Status | Evidence |
 | --- | --- | --- |
 | Multi-format import | Verified | PDF, EPUB, TXT, Markdown up to 50 MB with drag and drop |
-| Local-first privacy | Partial | Default import/OCR paths stay local, but the pulled Reading Lens currently sends selected passages to Gemini without an explicit consent gate |
+| Local-first privacy | Verified | Import and OCR stay local. The Reading Lens requires explicit `consent: true` before a passage is sent, and refuses with 403 otherwise. See [[Backend Endpoints]]. |
 | Sentence and paragraph focus rail | Verified | `FOCUS_RAIL_RATIO = 0.38` |
 | Pin and resume focus | Verified | Click/tap, focused-paragraph `Enter`/`Space`, `Escape`, Resume control; pin is transient and not persisted |
 | Static region handling | Verified | Front and end matter scroll without snapping |
@@ -28,8 +28,8 @@ with this table, this table is correct until it is updated with evidence.
 | Letter tracking options | Verified | normal, wide, spacious |
 | Theme atmospheres | Verified | Paper, Dusk, and additional exposed palettes |
 | Selection context tooltip | Verified | Note, copy, bookmark |
-| Reading Lens | Partial | Draggable focus card, selection hook, quick actions, and Gemini proxy exist; build, transport, consent, and drag gaps remain |
-| Notes PDF export | Partial | `notesPdfExport.js` and tests exist; long-note pagination and non-WinAnsi failures remain |
+| Reading Lens | Verified | Draggable focus card, selection hook, quick actions, consent gate, and Gemini SSE proxy all work. The 2026-09-25 repair pass closed the build, transport, consent, and drag gaps. See [[Reading Lens and Focus Bar]]. |
+| Notes PDF export | Verified | `notesPdfExport.js` paginates long notes across pages and sanitizes unsupported glyphs. |
 | Margin notes | Verified | Persisted per document with quoted excerpt |
 | Bookmarks | Verified | Paragraph id references |
 | Deterministic progress | Verified | `readingProgress` from position |
@@ -55,7 +55,7 @@ with this table, this table is correct until it is updated with evidence.
 | Manifest-first progressive import | Verified | `documentManifest.js`, `importScheduler.js`, `importCoordinator.js` |
 | Progressive PDF processing wired into app | Verified | `useDocumentImport` routes PDFs through `progressivePdfImport`; first-ready is internal only |
 | Terminal import policy | Verified | Progress starts at `5`, is monotonic and capped at `99` during work, reports `100`, then the app opens the reader |
-| 420-page browser probe | Verified | `390px` zero overflow, `2` mounted sections, progress `5 → 100`, reader afterward, `3.7s` probe |
+| 420-page browser probe | Verified | `390px` zero overflow, `2` mounted sections, progress `5 -> 100`, reader afterward, `3.7s` probe (2026-09-25). The `5.8s` figure in [[Testing Pipeline]] is a different single run, not a contradiction |
 | Progressive EPUB/TXT/Markdown path | Partial | Coordinators are exposed; `handleFile` currently uses blocking `parseDocument` |
 | Unit lifecycle and priority | Verified | `UNSEEN` to `READY`, `CURRENT` to `BACKGROUND` |
 | Bounded concurrency | Verified | 1 mobile, 2 to 3 desktop by hardware concurrency |
@@ -79,7 +79,7 @@ with this table, this table is correct until it is updated with evidence.
 | Retry and cold-start recovery | Verified | 3 attempts |
 | Partial failure reporting | Verified | Failed pages returned and surfaced |
 | Stale job pruning | Verified | TTL based cleanup |
-| Document and reader endpoints | Partial | Parse, validate, segment, reading-time, and health exist, but the pulled router prefix regression makes reading-time and notes export/import return 404 |
+| Document and reader endpoints | Verified | Parse, validate, segment, reading-time, notes export/import, and health all respond. The router prefix regression was restored with route-contract tests. See [[Backend Endpoints]]. |
 | Backend upload ceiling | Verified | 50 MB in `backend/main.py` and `backend/app/core/config.py` |
 
 ## Behavioral layer
@@ -101,8 +101,8 @@ with this table, this table is correct until it is updated with evidence.
 | Safe storage fallback | Verified | `getSafeStorage()` with in-memory fallback |
 | Code splitting | Verified | Vendor chunks plus lazy modals and parsers |
 | Reduced motion support | Verified | Respected across the reader |
-| Frontend unit tests | Verified | 36 test files, 251 passing tests (2026-09-25) |
-| Playwright browser tests | Verified | 2 smoke tests, 1 long-import test, and 2 Reading Lens responsive tests; 420-page probe measured at `5.8s` (2026-09-25) |
+| Frontend unit tests | Verified | 39 test files, 308 passing tests (2026-09-26) |
+| Playwright browser tests | Verified | 2 smoke tests, 1 long-import test, and 2 Reading Lens responsive tests; the 420-page probe is recorded as `3.7s` (2026-09-25) |
 | Backend test suite | Verified | 75 passing tests across reader, Lens, PDF-guard, OCR, and existing modules (2026-09-25) |
 | Pyright type checking | Verified | 0 errors; 2 pre-existing missing-source warnings (2026-09-25) |
 | Performance marks | Verified | 7 named `bookflow:` marks plus measure helpers; no published p50/p95 aggregator |

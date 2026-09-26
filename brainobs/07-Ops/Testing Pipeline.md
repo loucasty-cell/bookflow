@@ -2,7 +2,7 @@
 title: Testing Pipeline
 type: guide
 status: verified
-updated: 2026-09-25
+updated: 2026-09-26
 tags: [bookflow, ops, testing, quality, verification]
 source-files: [package.json, scripts/bench.md, backend/tests, tests/e2e/smoke.spec.js, tests/e2e/long-import.spec.js, playwright.config.js, AGENTS.md]
 ---
@@ -16,11 +16,11 @@ Every check, what it covers, and when it is required.
 ```bash
 npm run lint      # ESLint
 npm test          # Vitest
-npm run test:e2e  # 2 smoke tests plus the 420-page long-import test
+npm run test:e2e  # 2 smoke tests, 1 long-import, and 2 Reading Lens tests (5 total) plus the 420-page long-import test
 npm run build     # Production build
 ```
 
-Current command baseline measured 2026-09-25 after the 46fe51b repair: Vitest reports 36 test files and 251 passing tests;
+Current command baseline measured 2026-09-26 after the 46fe51b repair: Vitest reports 39 test files and 308 passing tests;
 `pytest backend/tests/ -q` reports 75 passing tests across the reader, lens, PDF-guard, and existing OCR modules. Re-run the commands
 before relying on timings or counts.
 
@@ -51,7 +51,7 @@ zero overflow at `320px` and `390px`.
 
 The measured long-import run on 2026-09-25 after the repair observed progress `5 → 100`, mounted the reader only
 after `100`, measured `0` horizontal overflow at `390 x 844`, mounted `2` reading sections, and
-completed in `5,774 ms`. This is a single probe, not a p50/p95 benchmark.
+completed in `5,774 ms on a separate run, against 3,847 ms in [[Success Metrics]]`. This is a single probe, not a p50/p95 benchmark.
 
 ## Backend
 
@@ -150,7 +150,7 @@ Detail: [[Success Metrics]], [[File Placement Map]].
 | Scanned-PDF integration tests | P0 |
 | Accessibility checks in key flows | High |
 | OCR confidence benchmark corpus | Medium |
-| Bundle budget enforcement in CI | Medium; current build warns on the 656 kB main chunk and 528 kB Three.js chunk |
+| Bundle budget enforcement in CI | Medium; current build warns on the 645.8 kB main chunk and 516.1 kB Three.js chunk (rebuilt 2026-09-26) |
 | Remote Lens provider browser verification | Medium; unit and backend contract tests pass, but no live provider key is committed or used in tests |
 
 Related: [[Backlog P0-P1-P2]], [[Debugging Playbook]], [[Invariants]].
