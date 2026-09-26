@@ -12,6 +12,7 @@ export const createUIStore = (initialState = {}) => create((set) => ({
   dragging: false,
   loading: null,
   error: "",
+  focusBarOpen: true,
   ...initialState,
   
   setSettingsOpen: (open) =>
@@ -46,6 +47,10 @@ export const createUIStore = (initialState = {}) => create((set) => ({
   setDragging: (dragging) =>
     set((state) => ({
       dragging: typeof dragging === "function" ? Boolean(dragging(state.dragging)) : Boolean(dragging),
+    })),
+  setFocusBarOpen: (open) =>
+    set((state) => ({
+      focusBarOpen: typeof open === "function" ? Boolean(open(state.focusBarOpen)) : Boolean(open),
     })),
   setLoading: (loading) => set({ loading }),
   setError: (error) =>

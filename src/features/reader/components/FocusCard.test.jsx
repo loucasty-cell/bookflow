@@ -207,10 +207,17 @@ describe("FocusCard structure", () => {
     expect(styles).toMatch(/\.focus-card-drag-pill\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px;/s);
   });
 
-  it("avoids inline Tailwind utilities in the reader card", () => {
+  it("keeps surface color out of inline styles and class attributes", () => {
     const markup = renderCard();
-    for (const utility of ["prose", "text-amber-400", "text-slate-300", "font-semibold", "opacity-"]) {
-      expect(markup).not.toContain(utility);
-    }
+    expect(markup).not.toMatch(/style="[^"]*(?:#[0-9a-fA-F]{3,8}|rgba?\()/);
+    expect(markup).not.toMatch(/class="[^"]*\b(?:bg|text|border)-(?:slate|gray|zinc|neutral|stone|amber|emerald|sky|red|blue|green|yellow)-\d{2,3}\b/);
+  });
+
+  it("derives card geometry from the reading-lens token layer", () => {
+    const styles = readFileSync(new URL("../../../styles/reading-lens.css", import.meta.url), "utf8");
+    const cardBlock = styles.match(/\.focus-card\s*\{[^}]*\}/s);
+    expect(cardBlock).not.toBeNull();
+    expect(styles).toMatch(/--lens-|var\(--/);
+    expect(cardBlock[0]).not.toMatch(/#(?:[0-9a-fA-F]{3})\b/);
   });
 });

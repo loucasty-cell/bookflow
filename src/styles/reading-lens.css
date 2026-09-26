@@ -689,3 +689,21 @@
     transition: none !important;
   }
 }
+
+.focus-card--global {
+  display: flex !important;
+}
+
+.focus-card--global .lens-focus-preview span {
+  color: var(--reader-muted, rgba(255, 255, 255, 0.6));
+}
+
+[data-focus-bar-surface='global'] {
+  z-index: 70;
+}
+
+
+.focus-card--global .focus-card-label > span:not(.focus-status-indicator) {
+  display: none;
+}
+

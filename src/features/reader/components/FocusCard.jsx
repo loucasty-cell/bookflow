@@ -82,7 +82,9 @@ export function FocusCard({
   onAddNoteFromSelection,
   lensOpenRequest = 0,
   onLensOpened,
+  surface = "reader",
 }) {
+  const isGlobal = surface === "global";
   const [isHidden, setIsHidden] = useState(false);
   const [position, setPosition] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -190,14 +192,14 @@ export function FocusCard({
     [resolveBounds],
   );
 
-  const applyTarget = useCallback((next, originRect) => {
+  const applyTarget = useCallback((next) => {
     targetRef.current = next;
-    const deltaLeft = next.left - originRect.left;
-    const deltaTop = next.top - originRect.top;
     setPosition((current) => {
-      const base = current ?? { left: 0, top: 0 };
-      if (Math.abs(deltaLeft) < 0.5 && Math.abs(deltaTop) < 0.5) return base;
-      return { left: base.left + deltaLeft, top: base.top + deltaTop };
+      if (!current) return next;
+      if (Math.abs(next.left - current.left) < 0.5 && Math.abs(next.top - current.top) < 0.5) {
+        return current;
+      }
+      return next;
     });
   }, []);
 
@@ -210,7 +212,7 @@ export function FocusCard({
       width: rect.width,
       height: rect.height,
     });
-    applyTarget(next, rect);
+    applyTarget(next);
   }, [applyTarget, clampToBounds]);
 
   useEffect(() => {
@@ -276,7 +278,7 @@ export function FocusCard({
         },
         { width: drag.rect.width, height: drag.rect.height },
       );
-      applyTarget(next, drag.rect);
+      applyTarget(next);
     },
     [applyTarget, clampToBounds],
   );
@@ -367,13 +369,17 @@ export function FocusCard({
     onClearSelection?.();
   }, [onClearSelection]);
 
-  if (!focusedParagraph) return null;
+  if (!focusedParagraph && !isGlobal) return null;
+
+  const overlayProps = isGlobal
+    ? { "data-focus-bar-surface": "global" }
+    : { "data-reader-bottom-overlay": true };
 
   if (isHidden) {
     return (
       <section
-        className="focus-card is-collapsed"
-        data-reader-bottom-overlay
+        className="focus-card is-collapsed focus-card--global"
+        data-focus-bar-surface="global"
         aria-label="Paragraph in focus"
       >
         <button
@@ -408,8 +414,8 @@ export function FocusCard({
   return (
     <section
       ref={cardRef}
-      className={`focus-card${isExpanded ? " is-chat-expanded" : ""}${isDragging ? " is-dragging" : ""}`}
-      data-reader-bottom-overlay
+      className={`focus-card${isGlobal ? " focus-card--global" : ""}${isExpanded ? " is-chat-expanded" : ""}${isDragging ? " is-dragging" : ""}`}
+      {...overlayProps}
       data-lens-state={lensStateAttribute(status)}
       data-lens-dragging={isDragging ? "true" : "false"}
       aria-label="Reading Lens Assistant"
@@ -501,8 +507,12 @@ export function FocusCard({
           </blockquote>
         ) : (
           <div className="lens-focus-preview" data-lens-passage="none">
-            <span>Focused paragraph stays local until you select text.</span>
-            <p>{paragraphText}</p>
+            <span>
+              {isGlobal
+                ? "Open a book, or select text anywhere, to ground Lens."
+                : "Focused paragraph stays local until you select text."}
+            </span>
+            {paragraphText ? <p>{paragraphText}</p> : null}
           </div>
         )}
       </figure>
@@ -734,7 +744,8 @@ export function FocusCard({
         </div>
       )}
 
-      <div className="focus-card-actions">
+      {!isGlobal && (
+        <div className="focus-card-actions">
         <button
           type="button"
           className="focus-card-step"
@@ -818,7 +829,8 @@ export function FocusCard({
             <Check size={14} aria-hidden="true" /> Flow
           </button>
         )}
-      </div>
+        </div>
+      )}
     </section>
   );
 }

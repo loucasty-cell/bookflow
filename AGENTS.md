@@ -65,6 +65,46 @@ bookflow/
 - Edit existing files when practical. Create files only when the requested change or established structure requires them.
 - Ask for clarification instead of guessing when project documentation and existing patterns do not resolve an important decision.
 
+## Execution Discipline
+
+Two failure modes cost the most time in this repository: stating something that was never verified, and spending many tool calls to learn one fact. These rules govern both.
+
+### Evidence Over Recall
+
+- Never assert a fact about this repository that you have not read or measured in the current session. Line numbers, versions, test counts, file paths, and API names come from a tool result, never from memory.
+- Label every non-obvious claim as one of three states: **verified** with a `path:line` citation or exact command output, **inferred** with the reasoning shown, or **unknown** with the command that would resolve it.
+- Never invent a package name, file path, config key, schema field, or test result. If a lookup returns 404, a schema rejects a key, or a probe fails, report that exact error instead of substituting a plausible neighbor.
+- When a tool result contradicts your expectation, the tool wins. Re-measure and correct yourself; do not re-assert the original assumption.
+- A diff that looks correct is not a working change. Verify the behavior, or state plainly that it is unverified.
+- Do not present an inference, a plan, or an intended edit as a completed one.
+
+### Speed Must Not Cost Accuracy
+
+- Never trade correctness for speed. A fast wrong answer is worse than a slow right one, because it silently poisons every step built on top of it.
+- Narrow the command, never the rigor. A two-second targeted probe replaces a three-minute suite; it does not replace checking at all.
+- Never guess a value to save a round trip. One lookup is cheaper than one wrong constant propagated through the code.
+- Do not skip verification because a result looks obviously fine. Verify the exact claim you are about to make, not the entire project.
+- When the fast path and the precise path disagree, take the precise path and say which one you took and why.
+- Report uncertainty at the moment you notice it. Do not defer a known gap to the end of the task.
+
+### Bounded Time
+
+- One discovery pass per task. Batch independent reads, greps, and commands into a single message and never serialize calls that do not depend on each other.
+- Prefer the authoritative instrument over deduction: `opencode mcp list` for MCP health, `npx skills@latest list` for skills, the published config schema for config keys, `npm test` for behavior.
+- Hand open-ended repository search to a subagent instead of walking the tree yourself.
+- Isolate a failure with the narrowest command that reproduces it. Do not run a broad suite to learn one fact.
+- Never re-explore what an earlier turn already established. Re-read the prior result before repeating a lookup.
+- Do not spend more than a few tool calls without reaching a decision. When blocked, stop, report the blocker and the evidence, and ask one specific question.
+- State the plan, get a decision, then execute it. Do not re-plan after approval, and do not ask for confirmation the user already gave.
+- Prefer editing the existing file over creating a new one, and prefer one decisive edit over many incremental ones.
+
+### Reporting Shape
+
+- Lead with the result, then the evidence. No preamble, no restating the request.
+- Give the exact command and its exact result, including failures and non-zero exits. Report known baseline warnings as warnings, not as passes.
+- List every file touched, and separate ignored or untracked paths from tracked ones.
+- State residual risk and unfinished verification explicitly rather than letting silence imply success.
+
 ## Skills And MCP Rules
 
 - Project skills are discovered only under `.agents/skills/`; verify with `npx skills@latest list`.

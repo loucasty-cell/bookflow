@@ -18,6 +18,7 @@ import {
   useReaderStaticRegion,
 } from "./features/reader/index.js";
 import { useReadingSession } from "./features/library/index.js";
+import { FocusBarHost } from "./features/reader/components/FocusBarHost.jsx";
 
 const ENTRY_INTRO_STORAGE_KEY = "bookflow:entry-intro-seen";
 
@@ -354,7 +355,13 @@ function App() {
     ocrDialogRef, ocrCloseButtonRef, handleOcrDocumentLoaded,
   };
 
-  if (!book) return <AppLandingView {...landingViewProps} />;
+  if (!book)
+    return (
+      <>
+        <AppLandingView {...landingViewProps} />
+        <FocusBarHost />
+      </>
+    );
 
   // --- Reader view ---
   const readerViewProps = {

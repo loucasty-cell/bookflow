@@ -15,6 +15,18 @@ const OcrUploader = lazy(() =>
   }))
 );
 
+const WidgetGrid = lazy(() =>
+  import("../features/widgets/index.js").then((module) => ({
+    default: module.WidgetGrid,
+  }))
+);
+
+const WidgetGridSkeleton = lazy(() =>
+  import("../features/widgets/index.js").then((module) => ({
+    default: module.WidgetGridSkeleton,
+  }))
+);
+
 export function AppLandingView({
   showEntryIntro,
   completeEntryIntro,
@@ -64,6 +76,13 @@ export function AppLandingView({
         )}
         {settings.showAchievements && (
           <BadgeGallery enabled awarded={awardedBadges} onAward={awardBadges} />
+        )}
+        {settings.showAchievements && (
+          <div className="landing-widgets-wrap">
+            <Suspense fallback={<WidgetGridSkeleton />}>
+              <WidgetGrid onResume={handleResume} />
+            </Suspense>
+          </div>
         )}
         <SessionRecap session={sessionRecap} onClose={() => setSessionRecap(null)} />
       </div>

@@ -24,8 +24,6 @@ opencode.json
 brainobs/.obsidian/
 
 # Locally installed skill packages (not part of the tracked 46fe51b baseline)
-.agents/skills/archify/
-.agents/skills/archify-review/
 .agents/skills/brandkit/
 .agents/skills/design-motion-principles/
 .agents/skills/design-taste-frontend/

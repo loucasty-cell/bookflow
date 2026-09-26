@@ -746,3 +746,13 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+
+.landing-widgets-wrap {
+  width: 100%;
+  max-width: 100%;
+  padding: 16px 16px 0;
+  margin: 0 auto;
+  display: flex;
+  justify-content: center;
+}
+
