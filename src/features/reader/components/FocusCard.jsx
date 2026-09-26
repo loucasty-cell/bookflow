@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from "react";
+import { FocusBarAmbient } from "./FocusBarAmbient.jsx";
 import {
   AlignLeft,
   Bookmark,
@@ -423,6 +424,11 @@ export function FocusCard({
       style={positionStyle}
       onKeyDown={handleCardKeyDown}
     >
+      {isExpanded ? (
+        <span className="focus-card__ambient" aria-hidden="true">
+          <FocusBarAmbient />
+        </span>
+      ) : null}
       <div className="focus-card-header">
         <div className="focus-card-label">
           <span

@@ -1,7 +1,8 @@
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { DEFAULT_SETTINGS } from "../config.js";
 import { useReaderWindowEffects } from "../hooks/useReaderWindowEffects.js";
 import { useScrollPosition } from "../lib/useScrollPosition.js";
+import { useReaderSmoothScroll } from "../../scroll/useReaderSmoothScroll.js";
 import { ContentsPanel } from "./ContentsPanel.jsx";
 import { ReaderCanvas } from "./ReaderCanvas.jsx";
 import { ReaderHeader } from "./ReaderHeader.jsx";
@@ -88,6 +89,8 @@ export function ReaderPage({
     disabled: !book,
     measureParagraphs: false,
   });
+  const [readerNode, setReaderNode] = useState(null);
+  useReaderSmoothScroll(readerNode, Boolean(book));
   const isStaticFocusRegion = safeSettings.mode === "focus" && overStaticRegion;
   const safeProgress = Number.isFinite(progress)
     ? Math.min(100, Math.max(0, Math.round(progress)))
@@ -163,6 +166,7 @@ export function ReaderPage({
 
         <ReaderCanvas
           readerRef={readerRef}
+          onReaderNode={setReaderNode}
           safeSettings={safeSettings}
           isStaticFocusRegion={isStaticFocusRegion}
           activeParagraphIsLarge={activeParagraphIsLarge}

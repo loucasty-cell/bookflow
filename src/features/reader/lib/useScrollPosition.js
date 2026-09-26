@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FOCUS_RAIL_RATIO } from "./readingController.js";
 import { selectClosestParagraph } from "./focusRail.js";
+import { getSmoothScroll, scrollContainerTo } from "../../scroll/smoothScroll.js";
 
 export function computeScrollMetrics(scrollTop, clientHeight, scrollHeight) {
   const safeScrollTop = Math.max(0, Number(scrollTop) || 0);
@@ -135,6 +136,10 @@ export function useScrollPosition(containerRef, options = {}) {
     if (!container || disabled) return undefined;
 
     const handleScroll = () => {
+      if (getSmoothScroll(container.dataset?.smoothScrollReason)) {
+        updateScrollState();
+        return;
+      }
       if (rafIdRef.current) {
         cancelAnimationFrame(rafIdRef.current);
       }
@@ -164,10 +169,10 @@ export function useScrollPosition(containerRef, options = {}) {
       } else {
         targetTop = offsetTop;
       }
-      container.scrollTo({
-        top: Math.max(0, targetTop),
-        behavior,
-      });
+      const handled = scrollContainerTo(container, Math.max(0, targetTop), { behavior });
+      if (!handled) {
+        container.scrollTo({ top: Math.max(0, targetTop), behavior });
+      }
     },
     [],
   );

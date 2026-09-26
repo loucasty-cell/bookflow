@@ -7,6 +7,7 @@ import {
   evaluateAchievements,
 } from "../../library/index.js";
 import { WIDGET_SURFACES } from "../lib/tokens.js";
+import { useWidgetReveal } from "../lib/useWidgetReveal.js";
 import {
   ContinueWidget,
   GoalWidget,
@@ -43,6 +44,7 @@ export function WidgetGridSkeleton() {
 
 export function WidgetGrid({ onResume }) {
   const [snapshot, setSnapshot] = useState(readAll);
+  const gridRef = useWidgetReveal();
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -100,7 +102,7 @@ export function WidgetGrid({ onResume }) {
   );
 
   return (
-    <div className="widget-grid">
+    <div className="widget-grid" ref={gridRef}>
       {rings.length > 0 ? (
         <RingsWidget
           size="small"

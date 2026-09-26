@@ -1,9 +1,11 @@
+import { useCallback } from "react";
 import { formatReadingTime } from "../lib/readingTime.js";
 import { formatParagraphText } from "../lib/textFormatter.js";
 import { HorizonTeaser } from "./HorizonTeaser.jsx";
 
 export function ReaderCanvas({
   readerRef,
+  onReaderNode,
   safeSettings,
   isStaticFocusRegion,
   activeParagraphIsLarge,
@@ -29,6 +31,14 @@ export function ReaderCanvas({
   jumpToChapter,
   closeBook,
 }) {
+  const setCanvasNode = useCallback(
+    (node) => {
+      readerRef.current = node;
+      onReaderNode?.(node);
+    },
+    [readerRef, onReaderNode]
+  );
+
   return (
     <>
       <div
@@ -42,7 +52,7 @@ export function ReaderCanvas({
       <main
         id="main-content"
         data-modal-fallback-focus
-        ref={readerRef}
+        ref={setCanvasNode}
         className={`reader-canvas focus-${safeSettings.focus} reader-mode-${safeSettings.mode} ${activeParagraphIsLarge ? "has-large-selection" : ""} ${isStaticFocusRegion ? "is-over-static" : ""} ${isScrolling ? "is-scrolling" : ""}`}
         data-scroll-direction={scrollDirection}
         data-font={safeSettings.fontFamily}
