@@ -78,13 +78,15 @@ Nothing was lost for assistive technology: every explanation moved to `title` or
 
 ## Scroll-away behaviour
 
-Scrolling to a new paragraph folds the card to its pill and clears the native
-selection. Selecting new text restores it. The two resting states are therefore
-"reading" and "pinned to this passage", and the card never follows the reader
-around.
+The card rests folded to its pill. Entering a book shows the text, not a panel,
+and selecting text opens the card. Scrolling to a new paragraph folds it away
+again and clears the native selection, so the two resting states are "reading"
+and "pinned to this passage". The card never follows the reader around.
 
-The first render is deliberately exempt so that opening a book still shows the
-card rather than snapping to the pill.
+An earlier build exempted the first render so opening a book still showed the
+card. That exemption meant every book opened with a 332px panel over the first
+third of the text, which is the opposite of calm. The default is now collapsed,
+exposed as the `initiallyCollapsed` prop so both states stay testable.
 
 ## Selection toolbar
 
