@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { DEFAULT_SETTINGS } from "../config.js";
 import { useReaderWindowEffects } from "../hooks/useReaderWindowEffects.js";
 import { useScrollPosition } from "../lib/useScrollPosition.js";
-import { useReaderSmoothScroll } from "../../scroll/useReaderSmoothScroll.js";
+import { useReaderSmoothScroll } from "../../scroll/index.js";
 import { ContentsPanel } from "./ContentsPanel.jsx";
 import { ReaderCanvas } from "./ReaderCanvas.jsx";
 import { ReaderHeader } from "./ReaderHeader.jsx";

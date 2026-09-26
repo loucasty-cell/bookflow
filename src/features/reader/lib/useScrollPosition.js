@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FOCUS_RAIL_RATIO } from "./readingController.js";
 import { selectClosestParagraph } from "./focusRail.js";
-import { getSmoothScroll, scrollContainerTo } from "../../scroll/smoothScroll.js";
+import { getSmoothScroll, scrollContainerTo } from "../../scroll/index.js";
 
 export function computeScrollMetrics(scrollTop, clientHeight, scrollHeight) {
   const safeScrollTop = Math.max(0, Number(scrollTop) || 0);

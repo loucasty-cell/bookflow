@@ -1359,8 +1359,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
 }
 
 .reader-layout > section:nth-of-type(1).is-collapsed,
-div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-type(1).is-collapsed,
-.focus-card.is-collapsed {
+div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-type(1).is-collapsed {
   top: 14px !important;
   bottom: auto !important;
   left: 50% !important;

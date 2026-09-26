@@ -399,30 +399,42 @@ export function FocusCard({
 
   if (isHidden) {
     return (
-      <section
-        className="focus-card is-collapsed focus-card--global"
-        data-focus-bar-surface="global"
-        aria-label="Paragraph in focus"
+        <div
+        className={`focus-card is-collapsed${isGlobal ? " focus-card--global" : ""}`}
+        {...overlayProps}
+        aria-label="Reading Lens collapsed"
       >
         <button
           type="button"
-          className="focus-card-pill-btn"
+          className="lens-pill-toggle"
           onClick={() => {
             triggerHaptic(HAPTIC_PATTERNS.LIGHT);
             setIsHidden(false);
           }}
           aria-label="Show Reading Lens"
           title="Show Reading Lens"
-          style={forcedHitAreaStyle()}
+          style={hitAreaStyle({ minWidth: "0", minHeight: "44px" })}
         >
           <span
             className={`focus-status-indicator ${pinnedId ? "is-paused" : "is-live"}`}
             aria-hidden="true"
           />
-          <Focus size={13} aria-hidden="true" />
-          <span>Lens Focus</span>
+          <span className="lens-pill-text">
+            <span className="lens-pill-title">Reading Lens</span>
+            <span className="lens-pill-sub">{pinnedId ? "Held" : "Tap to open"}</span>
+          </span>
         </button>
-      </section>
+        <button
+          type="button"
+          className="focus-card-dismiss-btn lens-header-btn lens-pill-close"
+          onClick={handleDismiss}
+          aria-label="Hide Reading Lens"
+          title="Hide Reading Lens"
+          style={forcedHitAreaStyle()}
+        >
+          <X size={13} aria-hidden="true" />
+        </button>
+        </div>
     );
   }
 
@@ -434,7 +446,7 @@ export function FocusCard({
   };
 
   return (
-    <section
+      <div
       ref={cardRef}
       className={`focus-card${isGlobal ? " focus-card--global" : ""}${isExpanded ? " is-chat-expanded" : ""}${isDragging ? " is-dragging" : ""}`}
       {...overlayProps}
@@ -812,6 +824,6 @@ export function FocusCard({
         )}
         </div>
       )}
-    </section>
+      </div>
   );
 }

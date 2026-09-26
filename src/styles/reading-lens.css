@@ -43,11 +43,6 @@
   top: auto !important;
   right: auto !important;
   bottom: calc(20px + var(--safe-bottom)) !important;
-  width: auto !important;
-  min-width: 0 !important;
-  max-width: none !important;
-  max-height: none !important;
-  overflow: visible;
   transform: none !important;
   animation: none !important;
 }
@@ -941,5 +936,65 @@
   outline: 2px solid var(--reader-accent, #06b6d4);
   outline-offset: 2px;
   border-radius: 10px;
+}
+
+
+.focus-card.is-collapsed {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 5px 5px 14px !important;
+  width: auto !important;
+  min-width: 172px !important;
+  max-width: min(300px, calc(100vw - 24px)) !important;
+  max-height: none !important;
+  height: auto;
+  min-height: 52px;
+  overflow: visible;
+}
+
+.lens-pill-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0 !important;
+  border: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.lens-pill-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.lens-pill-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.lens-pill-sub {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--reader-muted, rgb(255 255 255 / 55%));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lens-pill-close {
+  flex: 0 0 auto;
 }
 

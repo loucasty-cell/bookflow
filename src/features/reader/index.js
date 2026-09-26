@@ -29,3 +29,6 @@ export { useReaderNavigation } from './hooks/useReaderNavigation.js'
 export { useReaderPersistence } from './hooks/useReaderPersistence.js'
 export { useReaderSession } from './hooks/useReaderSession.js'
 export { useReaderStaticRegion } from './hooks/useReaderStaticRegion.js'
+export { FocusBarHost } from './components/FocusBarHost.jsx'
+export { FocusBarAmbient, SPLINE_SCENE_CONFIGURED } from './components/FocusBarAmbient.jsx'
+

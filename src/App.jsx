@@ -18,7 +18,7 @@ import {
   useReaderStaticRegion,
 } from "./features/reader/index.js";
 import { useReadingSession } from "./features/library/index.js";
-import { FocusBarHost } from "./features/reader/components/FocusBarHost.jsx";
+import { FocusBarHost } from "./features/reader/index.js";
 
 const ENTRY_INTRO_STORAGE_KEY = "bookflow:entry-intro-seen";
 
