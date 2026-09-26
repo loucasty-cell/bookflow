@@ -2,7 +2,7 @@
 title: Navigation and Controls
 type: feature
 status: verified
-updated: 2026-09-25
+updated: 2026-09-26
 tags: [bookflow, reader, navigation, keyboard, touch]
 source-files: [src/features/reader/hooks/useReaderNavigation.js, src/features/reader/hooks/useReaderInput.js, src/features/reader/hooks/useReaderMeasurement.js, src/features/reader/hooks/useReaderStaticRegion.js, src/features/reader/lib/readingController.js, src/features/reader/components/ReaderPage.jsx, src/features/reader/components/ContentsPanel.jsx, src/App.jsx]
 ---
@@ -28,6 +28,26 @@ Both arrow-style and vim-style keys are supported because both habits exist. The
 handler ignores form controls and other interactive descendants. Global `Space` navigates focus;
 `Enter` or `Space` on a focused paragraph toggles that paragraph's pin. `Escape` toggles the
 active hold and is also used by the focus-managed panels to dismiss them.
+
+### The handler is scoped to the canvas, so the canvas must hold focus
+
+`useReaderInput` binds `keydown` to the reader element itself, not to `document`. Keyboard events
+only reach it while focus is inside the reader, so on arrival the reader claims focus once with
+`focus({ preventScroll: true })`.
+
+Without that, opening a book left focus on the "Read the sample" button, which unmounts, so focus
+fell back to `document.body` and every arrow key went nowhere until the reader was clicked.
+
+Two details make this safe:
+
+- `preventScroll` keeps the saved resume position. Plain `focus()` would scroll the canvas to the
+  top and silently discard where the reader left off, which is why the naive fix was rejected.
+- The claim only happens when `document.activeElement` is `document.body`, and only once, so an
+  open settings panel or a focused button is never stolen from. The rule lives in the exported
+  `shouldClaimReaderFocus` so it is unit-tested rather than buried in the effect.
+
+Note that a pinned paragraph intentionally blocks arrow navigation until `Escape` releases the
+hold. That is the "hold this paragraph in focus" behaviour, not a failure.
 
 ## Wheel and trackpad
 

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { selectClosestParagraph } from "../lib/focusRail.js";
 import { ensureSelectedSegmentVisible, getReaderSafeViewport } from "../lib/readerViewport.js";
 import {
@@ -9,6 +9,22 @@ import {
   getIntentDirection,
 } from "../lib/readingController.js";
 import { useReaderStore } from "../../../store/readerStore.js";
+
+/**
+ * The keydown listener is bound to the reader element, so keyboard navigation
+ * only arrives once focus is inside it. On arrival focus is still on the button
+ * that opened the book, which no longer exists, so it falls back to the body and
+ * the arrows go nowhere. The reader claims focus once the canvas exists.
+ *
+ * Never steals focus from a real control, and only ever runs once, so an open
+ * settings panel or a focused button keeps its place.
+ */
+export function shouldClaimReaderFocus({ reader, activeElement, body, alreadyClaimed }) {
+  if (!reader) return false;
+  if (alreadyClaimed) return false;
+  if (!body) return false;
+  return activeElement === body;
+}
 
 export function useReaderInput({
   book,
@@ -36,10 +52,24 @@ export function useReaderInput({
   wheelRef,
   touchStartRef,
 }) {
+  const hasFocusedReaderRef = useRef(false);
+
   useEffect(() => {
     if (!book || !readerRef.current) return undefined;
 
     const reader = readerRef.current;
+
+    if (
+      shouldClaimReaderFocus({
+        reader,
+        activeElement: document.activeElement,
+        body: document.body,
+        alreadyClaimed: hasFocusedReaderRef.current,
+      })
+    ) {
+      hasFocusedReaderRef.current = true;
+      reader.focus({ preventScroll: true });
+    }
 
     const handleScroll = () => {
       const anchorY = reader.scrollTop + reader.clientHeight * FOCUS_RAIL_RATIO;
