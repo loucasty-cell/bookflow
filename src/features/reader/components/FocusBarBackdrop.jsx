@@ -73,7 +73,8 @@ export function FocusBarBackdrop({ className = "" }) {
         return;
       }
 
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const isMobile = typeof window !== "undefined" && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+      const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2);
       renderer.setPixelRatio(dpr);
       renderer.setSize(mount.clientWidth || 1, mount.clientHeight || 1, false);
       renderer.domElement.style.cssText =
@@ -86,12 +87,26 @@ export function FocusBarBackdrop({ className = "" }) {
       let frame = 0;
       let visible = true;
 
-      const onPointerMove = (event) => {
+      const onPointerEvent = (event) => {
         const rect = mount.getBoundingClientRect();
         if (!rect.width || !rect.height) return;
         target.x = ((event.clientX - rect.left) / rect.width - 0.5) * 1.4;
         target.y = ((event.clientY - rect.top) / rect.height - 0.5) * 1.4;
       };
+
+      const handleContextLost = (event) => {
+        event.preventDefault();
+        cancelAnimationFrame(frame);
+      };
+
+      const handleContextRestored = () => {
+        if (!reduced && visible) {
+          frame = requestAnimationFrame(render);
+        }
+      };
+
+      renderer.domElement.addEventListener("webglcontextlost", handleContextLost, false);
+      renderer.domElement.addEventListener("webglcontextrestored", handleContextRestored, false);
 
       let lastW = 0;
       let lastH = 0;
@@ -162,7 +177,9 @@ export function FocusBarBackdrop({ className = "" }) {
         resizeObserver.observe(mount);
       }
 
-      window.addEventListener("pointermove", onPointerMove, { passive: true });
+      window.addEventListener("pointermove", onPointerEvent, { passive: true });
+      window.addEventListener("pointerdown", onPointerEvent, { passive: true });
+      window.addEventListener("pointerup", onPointerEvent, { passive: true });
       window.addEventListener("resize", resize);
       resize();
       frame = requestAnimationFrame(render);
@@ -172,8 +189,12 @@ export function FocusBarBackdrop({ className = "" }) {
         cancelAnimationFrame(frame);
         observer?.disconnect();
         resizeObserver?.disconnect();
-        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("pointermove", onPointerEvent);
+        window.removeEventListener("pointerdown", onPointerEvent);
+        window.removeEventListener("pointerup", onPointerEvent);
         window.removeEventListener("resize", resize);
+        renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
+        renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
         for (const item of disposables) item.dispose?.();
         renderer.forceContextLoss?.();
         renderer.dispose?.();
