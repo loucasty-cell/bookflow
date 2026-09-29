@@ -73,12 +73,27 @@ export function FocusBarBackdrop({ className = "" }) {
         return;
       }
 
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const isMobile = typeof window !== "undefined" && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+      const dpr = Math.min(window.devicePixelRatio || 1, isMobile ? 1.5 : 2);
       renderer.setPixelRatio(dpr);
       renderer.setSize(mount.clientWidth || 1, mount.clientHeight || 1, false);
       renderer.domElement.style.cssText =
         "position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:block";
       mount.appendChild(renderer.domElement);
+
+      const handleContextLost = (e) => {
+        e.preventDefault();
+        cancelAnimationFrame(frame);
+      };
+
+      const handleContextRestored = () => {
+        if (!disposed && visible) {
+          frame = requestAnimationFrame(render);
+        }
+      };
+
+      renderer.domElement.addEventListener("webglcontextlost", handleContextLost, false);
+      renderer.domElement.addEventListener("webglcontextrestored", handleContextRestored, false);
 
       const disposables = [];
       const pointer = { x: 0, y: 0 };
@@ -174,6 +189,10 @@ export function FocusBarBackdrop({ className = "" }) {
         resizeObserver?.disconnect();
         window.removeEventListener("pointermove", onPointerMove);
         window.removeEventListener("resize", resize);
+        if (renderer?.domElement) {
+          renderer.domElement.removeEventListener("webglcontextlost", handleContextLost);
+          renderer.domElement.removeEventListener("webglcontextrestored", handleContextRestored);
+        }
         for (const item of disposables) item.dispose?.();
         renderer.forceContextLoss?.();
         renderer.dispose?.();
