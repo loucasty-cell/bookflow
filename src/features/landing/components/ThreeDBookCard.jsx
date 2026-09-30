@@ -34,41 +34,34 @@ export function ThreeDBookCard({
   const specularX = useTransform(mouseX, [-0.5, 0.5], ["10%", "90%"]);
   const specularY = useTransform(mouseY, [-0.5, 0.5], ["10%", "90%"]);
 
-  const handleMouseMove = (e) => {
+  const handlePointerMove = (e) => {
     if (!cardRef.current || isOpening) return;
     const rect = cardRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
-    mouseX.set(x);
-    mouseY.set(y);
+    // Scale down movement slightly if it's touch, similar to old behavior but robust
+    const scale = e.pointerType === "touch" ? 0.5 : 1.0;
+    mouseX.set(x * scale);
+    mouseY.set(y * scale);
   };
 
-  const handleMouseEnter = () => {
+  const handlePointerEnter = () => {
     if (!isOpening) setIsHovered(true);
   };
 
-  const handleMouseLeave = () => {
+  const handlePointerLeave = () => {
     mouseX.set(0);
     mouseY.set(0);
     setIsHovered(false);
   };
 
-  const handleTouchStart = (e) => {
+  const handlePointerDown = () => {
     if (!cardRef.current || isOpening) return;
     setIsHovered(true);
-    if (e.touches && e.touches[0]) {
-      const rect = cardRef.current.getBoundingClientRect();
-      const x = (e.touches[0].clientX - rect.left) / rect.width - 0.5;
-      const y = (e.touches[0].clientY - rect.top) / rect.height - 0.5;
-      mouseX.set(x * 0.5);
-      mouseY.set(y * 0.5);
-    }
   };
 
-  const handleTouchEnd = () => {
-    setIsHovered(false);
-    mouseX.set(0);
-    mouseY.set(0);
+  const handlePointerUp = () => {
+    // Keep hover state for mouse, drop it for touch if needed, but pointerLeave handles it generally
   };
 
   const handleClick = () => {
@@ -129,12 +122,12 @@ export function ThreeDBookCard({
         ref={cardRef}
         type="button"
         className={`book-3d-prism ${isOpening ? "is-opening-book" : ""}`}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
+        onPointerMove={handlePointerMove}
+        onPointerEnter={handlePointerEnter}
+        onPointerLeave={handlePointerLeave}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerLeave}
         onClick={handleClick}
         style={{
           rotateX: reduceMotion ? 0 : isOpening ? 0 : rotateX,
