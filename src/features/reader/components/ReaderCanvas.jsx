@@ -55,6 +55,7 @@ export function ReaderCanvas({
         ref={setCanvasNode}
         className={`reader-canvas focus-${safeSettings.focus} reader-mode-${safeSettings.mode} ${activeParagraphIsLarge ? "has-large-selection" : ""} ${isStaticFocusRegion ? "is-over-static" : ""} ${isScrolling ? "is-scrolling" : ""}`}
         data-scroll-direction={scrollDirection}
+        data-reader-root
         data-font={safeSettings.fontFamily}
         data-letter-spacing={safeSettings.letterSpacing}
         data-bionic={safeSettings.bionic ? "true" : "false"}

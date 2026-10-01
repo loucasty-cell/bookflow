@@ -1,10 +1,12 @@
 import { useCallback, useState } from "react";
 import { ErrorBoundary } from "../../../shared/components/index.js";
+import { LensBar, LensBarLauncher } from "../../lens-bar/index.js";
 import { FocusCard } from "./FocusCard.jsx";
 import { NotesPanel } from "./NotesPanel.jsx";
 import { SettingsPanel } from "./SettingsPanel.jsx";
 import { SelectionTooltip } from "./SelectionTooltip.jsx";
 import { useReaderSelection } from "../hooks/useReaderSelection.js";
+import { useReadingLens } from "../hooks/useReadingLens.js";
 
 export function ReaderOverlays({
   bookTitle,
@@ -45,6 +47,17 @@ export function ReaderOverlays({
   });
   const [lensOpenRequest, setLensOpenRequest] = useState(0);
 
+  /**
+   * The single Reading Lens instance for the selection-scoped reader. The focus
+   * card and the lens bar both read from it, so one consent decision and one
+   * conversation govern both surfaces.
+   */
+  const lens = useReadingLens({
+    selectedText: selection.text,
+    chapterTitle: activeChapterTitle,
+    chapterText,
+  });
+
   const addNoteFromSelection = useCallback(
     (text) => {
       setNoteDraft(text);
@@ -84,6 +97,7 @@ export function ReaderOverlays({
              onClearSelection={clearSelection}
              onAddNoteFromSelection={addNoteFromSelection}
             lensOpenRequest={lensOpenRequest}
+            lens={lens}
           />
         </ErrorBoundary>
       )}
@@ -125,6 +139,16 @@ export function ReaderOverlays({
         onAskLens={openLensForSelection}
         onDismiss={clearSelection}
       />
+
+      <ErrorBoundary>
+        <LensBar
+          lens={lens}
+          getParagraph={() => selection.text}
+          onSaveNote={addNoteFromSelection}
+        />
+      </ErrorBoundary>
+
+      <LensBarLauncher />
     </>
   );
 }
