@@ -20,4 +20,6 @@ export {
 } from './text.js'
 export { clearMarks, clearMeasures, getMarks, getMeasures, mark, measure } from './perfMarks.js'
 export { useModalFocus } from './focusManagement.js'
+export { usePointerCssVars } from './usePointerCssVars.js'
+export { useProximityCssVars } from './useProximityCssVars.js'
 

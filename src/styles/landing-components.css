@@ -724,3 +724,123 @@
 .saccadic-return-pad {
   display: none !important;
 }
+
+.recent-shelf {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto var(--space-6);
+  padding: 0 var(--space-6);
+  color: var(--app-text, #1d222b);
+}
+
+.recent-shelf-header {
+  margin-bottom: var(--space-3);
+}
+
+.recent-shelf-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--app-text-muted, #5e6674);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.recent-shelf-list {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+  list-style: none;
+}
+
+.recent-shelf-item {
+  min-width: 0;
+}
+
+.recent-shelf-open {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  color: var(--app-text, #1d222b);
+  background: var(--app-surface, rgba(255, 255, 255, 0.82));
+  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-card);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--duration-short) ease, background var(--duration-short) ease;
+}
+
+.recent-shelf-open:hover {
+  border-color: color-mix(in srgb, var(--app-accent, #4169e1) 42%, var(--app-line, rgba(0, 0, 0, 0.08)));
+}
+
+.recent-shelf-copy {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.recent-shelf-title {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-shelf-when {
+  color: var(--app-text-muted, #5e6674);
+  font-size: 11px;
+}
+
+.recent-shelf-progress {
+  width: 84px;
+  height: 5px;
+  flex: 0 0 84px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--app-text-muted, #5e6674) 20%, transparent);
+  border-radius: var(--radius-full);
+}
+
+.recent-shelf-progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--app-accent, #4169e1);
+  border-radius: inherit;
+}
+
+.recent-shelf-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  color: var(--app-text-muted, #5e6674);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .recent-shelf {
+    padding: 0 var(--space-3);
+  }
+
+  .recent-shelf-open {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .recent-shelf-progress {
+    order: 3;
+    width: 100%;
+    flex-basis: 100%;
+  }
+}

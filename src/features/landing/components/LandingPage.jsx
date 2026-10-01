@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { lazy, Suspense, useState } from "react";
 import {
   BookOpen,
   Focus,
@@ -11,15 +11,21 @@ import {
   Zap,
 } from "lucide-react";
 import { ACCEPTED_FILES } from "../../document-import/index.js";
-import { Brand, LoadingOverlay, ThreeDButton, AmbientDustCanvas } from "../../../shared/components/index.js";
+import { RecentShelf } from "../../library/index.js";
+import { Brand, LoadingOverlay, ThreeDButton } from "../../../shared/components/index.js";
+import { usePointerCssVars } from "../../../shared/lib/usePointerCssVars.js";
 import bookflowArtwork from "../../../assets/bookflow-quill.png";
 import { SAMPLE_BOOK } from "../sampleBook.js";
 import { LivingShelf } from "./LivingShelf.jsx";
-// TODO(backlog-3): add a RecentShelf beside LivingShelf showing the last 3-5
-// library entries with progress + relative last-read time, sourced from
-// libraryStore recency (metadata only, never text). Keep the curated shelf for
-// first-session cold start; visually distinguish the reader's own books.
-// Acceptance: own books appear with progress; empty library shows no shell.
+
+// Imported from the module rather than the barrel on purpose: the barrel is a
+// static dependency of this file, so routing through it would put Three back in
+// the entry graph and preload it on every page view.
+const AmbientDustCanvas = lazy(() =>
+  import("../../../shared/components/AmbientDustCanvas.jsx").then((module) => ({
+    default: module.AmbientDustCanvas,
+  }))
+);
 
 export function LandingPage({
   dragging,
@@ -32,29 +38,28 @@ export function LandingPage({
   loading,
   theme,
   toggleTheme,
+  onLocateFile,
 }) {
   const [isPopped, setIsPopped] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0, isHovering: false });
-  const cardRef = useRef(null);
+  const cardRef = usePointerCssVars();
 
-  const handleMouseMove = (event) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width - 0.5) * 22;
-    const y = ((event.clientY - rect.top) / rect.height - 0.5) * 16;
-    setMousePos({ x, y, isHovering: true });
-  };
-
-  const handleMouseLeave = (event) => {
+  const handleDragLeave = (event) => {
     if (!event.currentTarget.contains(event.relatedTarget)) {
       setDragging(false);
-      setMousePos({ x: 0, y: 0, isHovering: false });
     }
   };
 
   const handleCardClick = () => {
     setIsPopped(true);
     setTimeout(() => setIsPopped(false), 500);
+  };
+
+  const handleOpenRecent = (entry) => {
+    if (entry?.kind === "SAMPLE" || entry?.documentId === "bookflow-sample") {
+      openBook(SAMPLE_BOOK, "bookflow-sample");
+      return;
+    }
+    onLocateFile?.(entry);
   };
 
   return (
@@ -65,7 +70,9 @@ export function LandingPage({
       data-theme={theme}
       tabIndex={-1}
     >
-      <AmbientDustCanvas active={true} theme={theme} />
+      <Suspense fallback={null}>
+        <AmbientDustCanvas active={true} theme={theme} />
+      </Suspense>
 
       <nav className="landing-nav relative z-10" aria-label="Primary navigation">
         <Brand />
@@ -100,23 +107,17 @@ export function LandingPage({
 
           <div
             ref={cardRef}
-            className={`drop-card ${dragging ? "is-dragging" : ""} ${isPopped ? "is-popped" : ""} ${mousePos.isHovering ? "is-hover-moving" : ""}`}
-            style={{
-              "--mouse-move-x": `${mousePos.x}px`,
-              "--mouse-move-y": `${mousePos.y}px`,
-            }}
-            onMouseMove={handleMouseMove}
+            className={`drop-card ${dragging ? "is-dragging" : ""} ${isPopped ? "is-popped" : ""}`}
             onMouseDown={handleCardClick}
             onDragEnter={(event) => {
               event.preventDefault();
               setDragging(true);
             }}
             onDragOver={(event) => event.preventDefault()}
-            onDragLeave={handleMouseLeave}
+            onDragLeave={handleDragLeave}
             onDrop={(event) => {
               event.preventDefault();
               setDragging(false);
-              setMousePos({ x: 0, y: 0, isHovering: false });
               const dropped = event.dataTransfer.files?.[0];
               if (dropped) handleFile(dropped);
             }}
@@ -213,6 +214,7 @@ export function LandingPage({
 
       {/* Interactive 3D Living Shelf Section */}
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-12">
+        <RecentShelf onSelect={handleOpenRecent} onLocateFile={onLocateFile} />
         <LivingShelf
           onOpenBook={(book, id) => openBook(book, id ?? (book.kind === "SAMPLE" ? "bookflow-sample" : `curated:${book.title}`))}
           onUploadClick={() => fileInputRef.current?.click()}

@@ -2,27 +2,21 @@
  * ResumeCard: returns the reader to the exact paragraph they left.
  *
  * Renders nothing when there is no honest in-progress book to resume.
- * If the source file is unavailable it says so and offers re-selection,
- * never failing silently.
+ * Bookflow stores metadata only, never the document, so when the source file
+ * is unavailable it says so plainly and offers re-selection instead of
+ * failing silently or pretending the book is still loaded.
  */
-import { useState } from 'react';
-import { BookOpen, ArrowRight, RotateCcw, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { BookOpen, ArrowRight, FolderSearch, RotateCcw, X } from 'lucide-react';
 import { getResumeEntry } from '../lib/libraryStore.js';
+import {
+  canResume,
+  clampProgress,
+  describeSource,
+  formatLastOpened,
+  formatProgress,
+} from '../lib/librarySelectors.js';
 import '../library.css';
-
-function formatRelative(timestamp) {
-  if (!timestamp) return '';
-  const seconds = Math.max(0, (Date.now() - timestamp) / 1000);
-  if (seconds < 60) return 'just now';
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  if (days === 1) return 'yesterday';
-  if (days < 30) return `${days}d ago`;
-  return 'a while ago';
-}
 
 export function ResumeCard({ entry: entryOverride, onResume, onReopen, onDismiss, compact = false }) {
   const [dismissed, setDismissed] = useState(false);
@@ -31,10 +25,13 @@ export function ResumeCard({ entry: entryOverride, onResume, onReopen, onDismiss
   if (dismissed || !entry || !(entry.progress > 0)) return null;
 
   const clampedChapter = Math.min(Math.max(0, entry.activeChapter), Math.max(0, entry.totalChapters - 1));
-  const safeProgress = Math.min(100, Math.max(0, Math.round(entry.progress)));
+  const safeProgress = clampProgress(entry.progress);
   const chapterLabel = entry.totalChapters > 1
     ? `Ch. ${clampedChapter + 1}/${entry.totalChapters}`
     : null;
+  const relative = formatLastOpened(entry.lastOpenedAt);
+  const source = describeSource(entry);
+  const resumable = canResume(entry);
 
   const handleDismiss = (e) => {
     e.stopPropagation();
@@ -57,13 +54,13 @@ export function ResumeCard({ entry: entryOverride, onResume, onReopen, onDismiss
             <RotateCcw size={10} aria-hidden="true" />
             Pick up where you left off
           </span>
-          <span className="resume-card-chip">{safeProgress}% done</span>
+          <span className="resume-card-chip">{formatProgress(safeProgress)} done</span>
         </div>
         <div className="resume-card-body-line">
-          <h3 className="resume-card-title">{entry.title}</h3>
+          <h3 className="resume-card-title" title={entry.title}>{entry.title}</h3>
           <div className="resume-card-meta">
             {chapterLabel && <span className="resume-meta-item">{chapterLabel}</span>}
-            <span className="resume-meta-item">{formatRelative(entry.lastOpenedAt)}</span>
+            {relative && <span className="resume-meta-item">{relative}</span>}
           </div>
         </div>
         <div
@@ -74,12 +71,17 @@ export function ResumeCard({ entry: entryOverride, onResume, onReopen, onDismiss
           aria-valuemax="100"
           aria-label={`${entry.title} progress`}
         >
-          <span className="resume-card-progress-fill" style={{ width: `${safeProgress}%` }} />
+          <span className="resume-card-progress-fill" style={{ width: formatProgress(safeProgress) }} />
         </div>
+        {source === 'missing' && (
+          <p className="resume-card-note">
+            Bookflow kept your progress, not the file. Choose the same file to continue.
+          </p>
+        )}
       </div>
 
       <div className="resume-card-actions">
-        {onResume && (
+        {resumable && onResume && (
           <button
             type="button"
             className="resume-card-primary"
@@ -90,15 +92,15 @@ export function ResumeCard({ entry: entryOverride, onResume, onReopen, onDismiss
             <ArrowRight size={13} aria-hidden="true" />
           </button>
         )}
-        {onReopen && !onResume && (
+        {source !== 'file' && onReopen && (
           <button
             type="button"
             className="resume-card-secondary"
             onClick={() => onReopen(entry)}
-            title="Re-open file"
+            title="Choose the file again to continue"
           >
-            <span>Resume</span>
-            <ArrowRight size={13} aria-hidden="true" />
+            <FolderSearch size={13} aria-hidden="true" />
+            <span>Locate file</span>
           </button>
         )}
         <button
