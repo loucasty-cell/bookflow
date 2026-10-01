@@ -58,6 +58,9 @@
   --duration-micro: 120ms;
   --duration-short: 220ms;
   --duration-medium: 320ms;
+  --duration-enter: 380ms;
+  --ease-emphasized: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-enter: cubic-bezier(0.16, 1, 0.3, 1);
   --safe-top: env(safe-area-inset-top);
   --safe-bottom: env(safe-area-inset-bottom);
   --safe-left: env(safe-area-inset-left);

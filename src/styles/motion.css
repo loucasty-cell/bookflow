@@ -8,3 +8,23 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+@media (prefers-reduced-transparency: reduce) {
+  .drop-card,
+  .nav-trust,
+  .theme-toggle,
+  .hero-artwork figcaption,
+  .loading-overlay {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .drop-card {
+    background: var(--landing-primary-surface, var(--landing-surface));
+  }
+
+  .nav-trust,
+  .theme-toggle {
+    background: var(--landing-surface-strong, var(--landing-surface));
+  }
+}

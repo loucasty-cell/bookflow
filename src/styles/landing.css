@@ -9,6 +9,9 @@
   --landing-line: rgba(0, 0, 0, 0.08);
   --landing-fill: rgba(184, 153, 114, 0.09);
   --landing-glass: rgba(255, 255, 255, 0.76);
+  --landing-primary-surface: rgba(255, 255, 255, 0.92);
+  --landing-primary-line: rgba(23, 29, 58, 0.12);
+  --landing-float-surface: rgba(255, 255, 255, 0.58);
   --landing-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.06), 0 4px 16px -2px rgba(0, 0, 0, 0.03);
   position: relative;
   overflow: hidden;
@@ -29,6 +32,9 @@
   --landing-line: rgba(255, 255, 255, 0.08);
   --landing-fill: rgba(245, 158, 11, 0.08);
   --landing-glass: rgba(16, 18, 24, 0.76);
+  --landing-primary-surface: rgba(20, 23, 31, 0.94);
+  --landing-primary-line: rgba(255, 255, 255, 0.14);
+  --landing-float-surface: rgba(16, 18, 24, 0.58);
   --landing-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
   background:
     radial-gradient(circle at 16% 14%, rgba(38, 28, 18, 0.45), transparent 30rem),
@@ -281,16 +287,16 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
   gap: var(--space-4);
   position: relative;
   color: var(--landing-text);
-  background: var(--landing-surface);
-  border: 1px solid var(--landing-line);
+  background: var(--landing-primary-surface);
+  border: 1px solid var(--landing-primary-line);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-md);
   -webkit-backdrop-filter: saturate(180%) blur(24px);
   backdrop-filter: saturate(180%) blur(24px);
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
-              box-shadow 0.22s ease,
-              border-color 0.2s ease,
-              background 0.2s ease;
+  transition: transform var(--duration-short) var(--ease-emphasized),
+              box-shadow var(--duration-short) ease,
+              border-color var(--duration-short) ease,
+              background var(--duration-short) ease;
   transform: translate3d(0, 0, 0);
   will-change: transform, box-shadow;
   cursor: pointer;
@@ -299,8 +305,8 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 .drop-card.is-hover-moving,
 .drop-card:hover {
   transform: translate3d(
-    calc(var(--mouse-move-x, 0px) * 0.35),
-    calc(-3px + var(--mouse-move-y, 0px) * 0.35),
+    calc(var(--pointer-x, 0) * 22px),
+    calc(-3px + var(--pointer-y, 0) * 16px),
     0
   ) scale(1.012);
   border-color: color-mix(in srgb, var(--brand-navy) 40%, var(--landing-line));
@@ -489,6 +495,19 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
   border: 1px solid #f4bfc2;
   border-radius: var(--radius-card);
   font-size: 13px;
+  animation: landing-error-enter var(--duration-enter) var(--ease-enter) both;
+}
+
+@keyframes landing-error-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .landing-shell[data-theme="dusk"] .error-card {
@@ -574,13 +593,11 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--landing-text);
-  background: var(--landing-glass);
+  color: var(--landing-muted);
+  background: var(--landing-float-surface);
   border: 1px solid var(--landing-line);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-md);
-  -webkit-backdrop-filter: saturate(180%) blur(24px);
-  backdrop-filter: saturate(180%) blur(24px);
+  box-shadow: var(--shadow-sm);
 }
 
 .visual-card svg {
@@ -601,15 +618,16 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 .visual-card strong {
   color: var(--landing-text);
   font-size: 13px;
+  font-weight: 600;
 }
 
 .visual-card-focus {
-  left: -30px;
+  left: 0;
   top: 14%;
 }
 
 .visual-card-private {
-  right: -26px;
+  right: 0;
   bottom: 14%;
 }
 
