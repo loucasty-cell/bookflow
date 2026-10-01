@@ -1,4 +1,5 @@
 export { DEFAULT_SETTINGS, FONT_SIZE_MAX, FONT_SIZE_MIN } from './config.js'
+export { CommandPalette, filterCommands } from './components/CommandPalette.jsx'
 export { ReaderPage } from './components/ReaderPage.jsx'
 export { ReaderShell } from './components/ReaderShell.jsx'
 export { SelectionTooltip } from './components/SelectionTooltip.jsx'

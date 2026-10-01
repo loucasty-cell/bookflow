@@ -305,6 +305,9 @@ Method      Spatial sorting on x and y rather than y alone
 File        src/features/reader/components/resonance.css
 Finding     No importer exists anywhere in src/
 Action      Either wire it to [[Social Resonance]] when that work starts, or delete it
+Status      RESOLVED - deleted. No importer, and its only two custom properties
+            (--text-muted, --bookflow-blue) exist nowhere in the token layer.
+            Social styling is not designed yet, so the file was dead weight.
 ```
 
 ### 23. Wire or retire unused haptic patterns

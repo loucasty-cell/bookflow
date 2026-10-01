@@ -119,7 +119,7 @@ verified against source on 2026-09-25:
 | `backlog-17` | `index.html` | PWA manifest + service worker, never cache documents |
 | `backlog-20`, `backlog-23` | `src/shared/lib/haptics.js` | Reduced-motion gate; wire or reserve unused patterns |
 | `backlog-21` | `src/features/document-import/lib/pdfParser.js` | Spatial x/y column sorting with two-column fixture |
-| `backlog-22` | `src/features/reader/components/resonance.css` | Wire orphaned stylesheet or delete it |
+| `backlog-22` | `src/features/reader/components/resonance.css` | **DONE** - deleted; no importer and its tokens never existed |
 | `backlog-24` | `src/shared/lib/perfMarks.js` | Publish p50/p95 import benchmarks with a date; one 420-page probe exists |
 | `improvements-gap-4` | `src/features/reader/hooks/useReaderPersistence.js` | Quote-hash anchors + repair report |
 

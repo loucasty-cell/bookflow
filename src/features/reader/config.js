@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS = {
   showSessionRecap: false,
   showAchievements: false,
   showDefinitionLookup: false,
+  progressDisplay: 'percent',
   enableAnnualGoal: false,
   annualGoalTarget: 12,
   // TODO(backlog-16): readingMoods presets (Morning, Deep Work, Night, Gentle
