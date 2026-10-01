@@ -22,6 +22,15 @@
   cursor: pointer;
 }
 
+/**
+ * The topbar is grouped into navigation, identity and tools for clarity, but
+ * `display: contents` keeps every control a direct flex child of the bar. The
+ * proven layout and every responsive override stay exactly as they were.
+ */
+.reader-topbar-group {
+  display: contents;
+}
+
 .book-identity {
   min-width: 0;
   flex: 1 1 auto;
