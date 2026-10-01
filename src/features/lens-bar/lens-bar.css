@@ -1,0 +1,388 @@
+/* ==========================================================================
+   Lens bar: one floating pill, portaled to <body>, self-themed.
+   Only --lens-* custom properties carry colour. No rule below hard-codes a
+   colour value outside that block.
+   ========================================================================== */
+
+.lens-bar {
+  --lens-bg: rgba(255, 254, 250, 0.94);
+  --lens-raised: #fffefa;
+  --lens-border: rgba(23, 29, 58, 0.12);
+  --lens-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 10px 30px rgba(23, 29, 58, 0.14);
+  --lens-ink: #171d3a;
+  --lens-ink-2: #4f566e;
+  --lens-ink-3: #6b7189;
+  --lens-send-bg: #171d3a;
+  --lens-send-ink: #fffefa;
+  --lens-focus: #3d6a8c;
+  --lens-error: #a12c7b;
+  --lens-hover: rgba(23, 29, 58, 0.06);
+}
+
+.lens-bar[data-lens-theme="dark"] {
+  --lens-bg: rgba(14, 14, 17, 0.92);
+  --lens-raised: #15151a;
+  --lens-border: rgba(255, 255, 255, 0.12);
+  --lens-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 12px 36px rgba(0, 0, 0, 0.55);
+  --lens-ink: #f4f1ea;
+  --lens-ink-2: #b9b5ae;
+  --lens-ink-3: #8f8b84;
+  --lens-send-bg: #f4f1ea;
+  --lens-send-ink: #0b0b0d;
+  --lens-focus: #8db8d9;
+  --lens-error: #e07ab8;
+  --lens-hover: rgba(255, 255, 255, 0.08);
+}
+
+.lens-bar,
+.lens-btn,
+.lens-input,
+.lens-menu {
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.lens-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  /* 90 keeps the bar above the reader panels (60 lens, 70 lens panel, 80
+     reader extras) and below the selection tooltip and skip link (1000). */
+  z-index: 90;
+  width: min(400px, calc(100vw - 24px));
+  display: grid;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: 20px;
+  background: var(--lens-bg);
+  border: 1px solid var(--lens-border);
+  box-shadow: var(--lens-shadow);
+  color: var(--lens-ink);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  font-family: var(--font-system, system-ui, sans-serif);
+  will-change: transform;
+  /* layout only: paint containment would clip the absolutely positioned menu */
+  contain: layout;
+}
+
+.lens-bar[data-collapsed] {
+  width: 44px;
+  padding: 4px;
+  border-radius: 999px;
+}
+
+.lens-grip {
+  display: grid;
+  place-items: center;
+  height: 14px;
+  margin-top: -2px;
+  color: var(--lens-ink-3);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.lens-grip:active {
+  cursor: grabbing;
+}
+
+.lens-grip:focus-visible,
+.lens-btn:focus-visible,
+.lens-actions button:focus-visible,
+.lens-menu button:focus-visible,
+.lens-menu input:focus-visible,
+.lens-quote button:focus-visible,
+.lens-consent-actions button:focus-visible {
+  outline: 2px solid var(--lens-focus);
+  outline-offset: 2px;
+}
+
+.lens-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: end;
+  gap: 6px;
+}
+
+.lens-input {
+  min-width: 0;
+  resize: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.4;
+  padding: 9px 2px;
+  max-height: 96px;
+  caret-color: var(--lens-ink);
+}
+
+.lens-input::placeholder {
+  color: var(--lens-ink-3);
+}
+
+.lens-btn {
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--lens-border);
+  background: transparent;
+  color: inherit;
+}
+
+.lens-btn:hover,
+.lens-actions button:hover,
+.lens-menu button:hover {
+  background: var(--lens-hover);
+}
+
+.lens-send {
+  background: var(--lens-send-bg);
+  color: var(--lens-send-ink);
+  border-color: transparent;
+}
+
+.lens-send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.lens-send:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.lens-quote {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  color: var(--lens-ink-2);
+  padding: 2px 6px;
+}
+
+.lens-quote span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.lens-quote button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.lens-consent {
+  padding: 6px 8px;
+  font-size: 12px;
+  color: var(--lens-ink-2);
+  border-top: 1px solid var(--lens-border);
+}
+
+.lens-consent p {
+  margin: 0 0 6px;
+}
+
+.lens-consent-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.lens-consent-actions button {
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--lens-border);
+  background: transparent;
+  color: var(--lens-ink);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.lens-answer {
+  max-height: min(36vh, 240px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 8px;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.lens-answer:empty {
+  display: none;
+}
+
+.lens-answer p {
+  margin: 0 0 8px;
+  overflow-wrap: anywhere;
+}
+
+.lens-muted {
+  color: var(--lens-ink-2);
+  font-size: 12px;
+}
+
+.lens-error {
+  color: var(--lens-error);
+  font-size: 13px;
+}
+
+.lens-actions {
+  display: flex;
+  gap: 2px;
+  padding-bottom: 4px;
+}
+
+.lens-actions button {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--lens-ink-2);
+}
+
+.lens-menu {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  min-width: 200px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--lens-raised);
+  border: 1px solid var(--lens-border);
+  box-shadow: var(--lens-shadow);
+  color: var(--lens-ink);
+}
+
+.lens-menu[data-flip] {
+  top: calc(100% + 6px);
+  bottom: auto;
+}
+
+.lens-menu-item {
+  width: 100%;
+  min-height: 40px;
+  text-align: left;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  border-radius: 10px;
+}
+
+.lens-menu [aria-checked="true"]::after {
+  content: "  \2713";
+}
+
+.lens-menu-separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--lens-border);
+}
+
+.lens-menu-language {
+  display: grid;
+  gap: 4px;
+  padding: 6px 12px 8px;
+  font-size: 12px;
+  color: var(--lens-ink-2);
+}
+
+.lens-menu-language input {
+  min-height: 40px;
+  padding: 0 8px;
+  border-radius: 10px;
+  border: 1px solid var(--lens-border);
+  background: var(--lens-bg);
+  color: var(--lens-ink);
+  font: inherit;
+}
+
+.lens-bar ::selection {
+  background: color-mix(in srgb, var(--lens-focus) 35%, transparent);
+}
+
+/* The launcher lives in the reader topbar, so it borrows the reader icon. */
+.lens-bar-launcher {
+  color: inherit;
+}
+
+@media (pointer: coarse) {
+  .lens-btn,
+  .lens-actions button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .lens-menu-item {
+    min-height: 44px;
+  }
+
+  .lens-bar[data-collapsed] {
+    width: 52px;
+  }
+}
+
+@media (max-width: 480px) {
+  .lens-bar {
+    width: calc(100vw - 24px);
+  }
+}
+
+@media (max-height: 480px) {
+  .lens-answer {
+    max-height: min(30vh, 160px);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .lens-bar {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--lens-raised);
+  }
+}
+
+@media (prefers-contrast: more) {
+  .lens-bar {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: var(--lens-raised);
+    border-color: var(--lens-ink-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lens-bar,
+  .lens-bar * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .lens-bar {
+    border: 1px solid CanvasText;
+  }
+
+  .lens-send {
+    border: 1px solid ButtonText;
+  }
+}
+
+@media print {
+  .lens-bar {
+    display: none;
+  }
+}

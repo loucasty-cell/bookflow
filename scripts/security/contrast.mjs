@@ -25,6 +25,21 @@ const LARGE_MIN = 3.0;
 
 const WHITE = { r: 255, g: 255, b: 255, a: 1 };
 
+/**
+ * The lens bar is portaled to <body> and themes itself, so its contrast has to
+ * be measured from its own block rather than from the app theme layer.
+ */
+const LENS_SOURCES = ['src/features/lens-bar/lens-bar.css'];
+const LENS_PAIRS = [
+  { name: 'lens ink on lens bg', fg: '--lens-ink', bg: '--lens-bg', min: BODY_MIN },
+  { name: 'lens ink 2 on lens bg', fg: '--lens-ink-2', bg: '--lens-bg', min: BODY_MIN },
+  { name: 'lens ink 3 on lens bg', fg: '--lens-ink-3', bg: '--lens-bg', min: BODY_MIN },
+  { name: 'lens send ink on send bg', fg: '--lens-send-ink', bg: '--lens-send-bg', min: BODY_MIN },
+  { name: 'lens focus on lens raised', fg: '--lens-focus', bg: '--lens-raised', min: LARGE_MIN },
+  { name: 'lens ink on lens raised', fg: '--lens-ink', bg: '--lens-raised', min: BODY_MIN },
+  { name: 'lens ink 2 on lens raised', fg: '--lens-ink-2', bg: '--lens-raised', min: BODY_MIN },
+];
+
 /** Foreground, background, the opaque surface behind it, and the threshold. */
 const PAIRS = [
   { name: 'app text on app background', fg: '--app-text', bg: '--app-bg', min: BODY_MIN },
@@ -185,6 +200,41 @@ for (const [theme, vars] of [...layers.entries()].sort()) {
 }
 
 const failures = results.filter((row) => !row.pass);
+
+// The lens bar themes itself, so light and dark are checked as two palettes.
+for (const source of LENS_SOURCES) {
+  const css = stripComments(readFileSync(join(ROOT, source), 'utf8'));
+  const light = {};
+  const dark = {};
+  for (const block of collectBlocks(css)) {
+    const target = /\[data-lens-theme=["']dark["']\]/.test(block.selector) ? dark : light;
+    if (block.selector.startsWith('.lens-bar')) Object.assign(target, block.vars);
+  }
+
+  for (const [label, vars] of [['lens-light', light], ['lens-dark', dark]]) {
+    const parent = parseColor(vars['--lens-bg']) ?? WHITE;
+    for (const pair of LENS_PAIRS) {
+      const fg = parseColor(vars[pair.fg]);
+      const bg = parseColor(vars[pair.bg]);
+      if (!fg || !bg) {
+        skipped.push(`${label} :: ${pair.name} (unresolved)`);
+        continue;
+      }
+      const measured = ratio(fg, bg, parent);
+      results.push({
+        theme: label,
+        pair: pair.name,
+        ratio: measured,
+        min: pair.min,
+        pass: measured >= pair.min,
+        fg: vars[pair.fg],
+        bg: vars[pair.bg],
+      });
+    }
+  }
+}
+
+const allFailures = results.filter((row) => !row.pass);
 const vacuous = results.length === 0;
 
 console.log('WCAG contrast gate');
@@ -211,10 +261,10 @@ if (skipped.length) {
 console.log('');
 if (vacuous) {
   console.log('FAIL: no token pairs could be measured. The gate must never pass vacuously.');
-} else if (failures.length === 0) {
+} else if (allFailures.length === 0) {
   console.log(`PASS: ${results.length} token pairs meet their WCAG threshold.`);
 } else {
-  console.log(`FAIL: ${failures.length} token pair(s) below threshold.`);
+  console.log(`FAIL: ${allFailures.length} token pair(s) below threshold.`);
 }
 
-process.exit(vacuous || failures.length === 0 ? (vacuous ? 1 : 0) : 1);
+process.exit(vacuous || allFailures.length === 0 ? (vacuous ? 1 : 0) : 1);
