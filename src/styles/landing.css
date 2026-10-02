@@ -49,7 +49,7 @@
   --landing-surface-strong: var(--app-surface, #ffffff);
   --landing-line: var(--app-line, rgba(0, 0, 0, 0.08));
   position: relative;
-  z-index: 20;
+  z-index: var(--z-layer);
   color: var(--landing-text);
   height: auto;
   min-height: 0;
@@ -105,7 +105,7 @@
   padding: 8px 16px 0;
   margin: 0 auto;
   position: relative;
-  z-index: 25;
+  z-index: var(--z-float);
   background: transparent !important;
   pointer-events: none;
 }
@@ -130,7 +130,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
   align-items: center;
   justify-content: space-between;
   position: relative;
-  z-index: 10;
+  z-index: var(--z-edge);
   transition: padding 0.2s ease, min-height 0.2s ease;
 }
 
@@ -230,7 +230,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
   align-items: center;
   gap: clamp(48px, 7vw, 96px);
   position: relative;
-  z-index: 1;
+  z-index: var(--z-content);
 }
 
 .hero-copy-column {
@@ -331,7 +331,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 .drop-card input {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: var(--z-raised);
   width: 100%;
   height: 100%;
   opacity: 0;
@@ -553,7 +553,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 
 .hero-artwork figcaption {
   position: absolute;
-  z-index: 1;
+  z-index: var(--z-content);
   left: var(--space-6);
   right: var(--space-6);
   bottom: var(--space-6);
@@ -587,7 +587,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 
 .visual-card {
   position: absolute;
-  z-index: 2;
+  z-index: var(--z-raised);
   min-height: 68px;
   padding: 12px 14px;
   display: flex;
@@ -638,7 +638,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   position: relative;
-  z-index: 1;
+  z-index: var(--z-content);
 }
 
 .feature-strip article {
@@ -673,7 +673,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 .loading-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: var(--z-palette-panel);
   display: grid;
   place-items: center;
   padding: var(--space-5);

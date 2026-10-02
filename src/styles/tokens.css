@@ -52,7 +52,7 @@
   --shadow-lg: 0 8px 22px rgba(0, 0, 0, 0.1), 0 24px 70px rgba(0, 0, 0, 0.16);
   --hairline: 0.5px;
   --ui-text: 13px;
-  --ui-label: 11px;
+  --ui-label: 12px;
   --ui-title: 15px;
   --spring: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --duration-micro: 120ms;
@@ -65,6 +65,34 @@
   --safe-bottom: env(safe-area-inset-bottom);
   --safe-left: env(safe-area-inset-left);
   --safe-right: env(safe-area-inset-right);
+  /* Reader scroll-margin. The chrome inset is a floor, not a replacement:
+     without it a scroll target lands flush under the sticky topbar on desktop,
+     and on a notched device it would sit under the inset too. */
+  --reader-chrome-inset: 24px;
+  --reader-safe-top: calc(var(--safe-top) + var(--reader-chrome-inset));
+  --reader-safe-bottom: calc(var(--safe-bottom) + var(--reader-chrome-inset));
+
+  /* Layering scale. Order is the contract. Each stop reserves the gap above it,
+     so a new surface slots in without renumbering anything beneath it. */
+  --z-decor: 0; /* decorative fill inside a component: sheen, grain, ambient plane */
+  --z-content: 1; /* the component's own content, above its own decorative fill */
+  --z-raised: 2; /* stacked content inside a card: cover art, grids, list rows */
+  --z-texture: 3; /* grain and specular passes drawn above content */
+  --z-edge: 10; /* viewport-edge affordances: landing nav, focus rail */
+  --z-label: 12; /* in-flow inline label: static region name */
+  --z-layer: 20; /* page layers that scroll with the content */
+  --z-float: 25; /* floating page chrome: resume wrap, notes drawer */
+  --z-sticky: 30; /* sticky blurred bars: reader topbar */
+  --z-scrim: 35; /* dismiss scrim behind a mobile sheet */
+  --z-panel: 40; /* docked panel raised above the page layer on small screens */
+  --z-overlay: 45; /* reader overlay floating above docked panels */
+  --z-modal: 60; /* modal surfaces and their backdrops */
+  --z-popover: 70; /* menus and popovers that must clear a modal */
+  --z-drawer: 80; /* full-width drawer backdrops */
+  --z-menu: 90; /* floating menus and bars: lens bar, OCR overlay */
+  --z-palette: 95; /* command palette scrim */
+  --z-palette-panel: 100; /* palette panel, intro video, loading overlay */
+  --z-blocking: 1000; /* blocking full-screen modals, and the skip link above them */
 }
 
 *,
@@ -129,7 +157,7 @@ img {
   position: fixed;
   top: calc(var(--space-3) + var(--safe-top));
   left: calc(var(--space-3) + var(--safe-left));
-  z-index: 1000;
+  z-index: var(--z-blocking);
   padding: 10px 14px;
   color: #ffffff;
   background: var(--brand-navy);

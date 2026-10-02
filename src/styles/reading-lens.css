@@ -1,6 +1,6 @@
 .focus-card {
   position: fixed !important;
-  z-index: 60;
+  z-index: var(--z-modal);
   left: 12px;
   top: calc(var(--safe-top) + 76px);
   right: auto;
@@ -707,7 +707,7 @@
 }
 
 [data-focus-bar-surface='global'] {
-  z-index: 70;
+  z-index: var(--z-popover);
 }
 
 
@@ -719,7 +719,7 @@
 .focus-card__ambient {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: var(--z-decor);
   overflow: hidden;
   border-radius: inherit;
   pointer-events: none;

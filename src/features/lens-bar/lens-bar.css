@@ -47,7 +47,7 @@
   left: 0;
   /* 90 keeps the bar above the reader panels (60 lens, 70 lens panel, 80
      reader extras) and below the selection tooltip and skip link (1000). */
-  z-index: 90;
+  z-index: var(--z-menu);
   width: min(400px, calc(100vw - 24px));
   display: grid;
   gap: 4px;

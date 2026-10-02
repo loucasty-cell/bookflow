@@ -28,8 +28,6 @@
   --sidebar-muted: #5d6c7a;
   --sidebar-number-bg: rgba(194, 220, 255, 0.56);
   --sidebar-action-bg: rgba(80, 123, 156, 0.12);
-  --reader-safe-top: 24px;
-  --reader-safe-bottom: 24px;
   color: var(--reader-ink);
   background: var(--app-bg);
 }

@@ -96,7 +96,7 @@
 .notes-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 80;
+  z-index: var(--z-drawer);
   background: radial-gradient(circle at center, rgba(15, 23, 42, 0.72) 0%, rgba(9, 10, 15, 0.88) 100%);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
@@ -117,7 +117,7 @@
   bottom: auto !important;
   width: min(92vw, 560px) !important;
   height: min(88dvh, 740px) !important;
-  z-index: 100 !important;
+  z-index: var(--z-palette-panel) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 20px !important;
   transform: translate(-50%, -50%) !important;
@@ -885,7 +885,7 @@
 .command-palette-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 95;
+  z-index: var(--z-palette);
   display: flex;
   align-items: flex-start;
   justify-content: center;
