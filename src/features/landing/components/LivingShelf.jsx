@@ -1,8 +1,22 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState } from "react";
 import { BookOpen, Plus } from "lucide-react";
 import { ThreeDBookCard } from "./ThreeDBookCard.jsx";
 import { SAMPLE_BOOK } from "../sampleBook.js";
 import { getSafeStorage } from "../../../shared/lib/storage.js";
+import { useProximityCssVars } from "../../../shared/lib/useProximityCssVars.js";
+
+const SHELF_PROXIMITY_REACH_Y = 320;
+const SHELF_PROXIMITY_REACH_X_PADDING = 120;
+
+function shelfProximityStyles(proximity) {
+  return {
+    "--shelf-proximity-intensity": (1 + proximity * 0.08).toFixed(3),
+    "--shelf-proximity-blur-shift": `${(proximity * 1.8).toFixed(2)}px`,
+    "--shelf-proximity-spread": (1 + proximity * 0.04).toFixed(3),
+    "--shelf-proximity-y": `${(proximity * 1.4).toFixed(2)}px`,
+    "--shelf-plank-lift": `${(proximity * -1.5).toFixed(2)}px`,
+  };
+}
 
 function textOf(paragraph) {
   if (typeof paragraph === "string") return paragraph;
@@ -52,7 +66,7 @@ const CURATED_LIBRARY = [
   },
   {
     title: "Meditations on First Philosophy",
-    author: "René Descartes",
+    author: "RenÃ© Descartes",
     kind: "PHILOSOPHY",
     badge: "Classic",
     coverColor: "navy",
@@ -109,7 +123,11 @@ const CURATED_LIBRARY = [
 ];
 
 export function LivingShelf({ onOpenBook, onUploadClick }) {
-  const plankRef = useRef(null);
+  const plankRef = useProximityCssVars({
+    format: shelfProximityStyles,
+    reachY: SHELF_PROXIMITY_REACH_Y,
+    reachXPadding: SHELF_PROXIMITY_REACH_X_PADDING,
+  });
   const [shadowDepth, setShadowDepth] = useState(() => {
     try {
       return getSafeStorage().getItem("bookflow_shelf_shadow") || "medium";
@@ -131,91 +149,6 @@ export function LivingShelf({ onOpenBook, onUploadClick }) {
     onOpenBook?.(toNormalizedBook(bookItem), `curated:${bookItem.title}`);
   };
 
-  useEffect(() => {
-    const plank = plankRef.current;
-    if (!plank || typeof window === "undefined") return;
-
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reducedMotion) return;
-
-    let rafId = null;
-    let targetProximity = 0;
-    let currentProximity = 0;
-
-    const updateProximityStyles = () => {
-      // Fluid spring restitution towards pointer proximity
-      currentProximity += (targetProximity - currentProximity) * 0.12;
-
-      // Dynamically shifts shadow intensity by 5-10% (from 1.00 up to 1.08 max)
-      const intensityShift = 1 + currentProximity * 0.08;
-      const blurShift = (currentProximity * 1.8).toFixed(2);
-      const spreadShift = (1 + currentProximity * 0.04).toFixed(3);
-      const yShift = (currentProximity * 1.4).toFixed(2);
-      const plankLift = (-currentProximity * 1.5).toFixed(2);
-
-      plank.style.setProperty("--shelf-proximity-intensity", intensityShift.toFixed(3));
-      plank.style.setProperty("--shelf-proximity-blur-shift", `${blurShift}px`);
-      plank.style.setProperty("--shelf-proximity-spread", spreadShift);
-      plank.style.setProperty("--shelf-proximity-y", `${yShift}px`);
-      plank.style.setProperty("--shelf-plank-lift", `${plankLift}px`);
-
-      if (Math.abs(targetProximity - currentProximity) > 0.002 || targetProximity > 0.005) {
-        rafId = requestAnimationFrame(updateProximityStyles);
-      } else {
-        currentProximity = targetProximity;
-        const finalIntensity = 1 + currentProximity * 0.08;
-        plank.style.setProperty("--shelf-proximity-intensity", finalIntensity.toFixed(3));
-        plank.style.setProperty("--shelf-proximity-blur-shift", `${(currentProximity * 1.8).toFixed(2)}px`);
-        plank.style.setProperty("--shelf-proximity-spread", (1 + currentProximity * 0.04).toFixed(3));
-        plank.style.setProperty("--shelf-proximity-y", `${(currentProximity * 1.4).toFixed(2)}px`);
-        plank.style.setProperty("--shelf-plank-lift", `${(-currentProximity * 1.5).toFixed(2)}px`);
-        rafId = null;
-      }
-    };
-
-    const handlePointerMove = (e) => {
-      const rect = plank.getBoundingClientRect();
-      const plankCenterY = rect.top + rect.height / 2;
-      const plankCenterX = rect.left + rect.width / 2;
-
-      const distX = Math.abs(e.clientX - plankCenterX);
-      const distY = Math.abs(e.clientY - plankCenterY);
-
-      // Vertical proximity influence zone (covering book grid above and space below)
-      const maxDistY = 320;
-      const maxDistX = rect.width / 2 + 120;
-
-      if (distY < maxDistY && distX < maxDistX) {
-        const normY = 1 - distY / maxDistY;
-        const normX = 1 - Math.min(1, distX / maxDistX);
-        const rawProx = Math.max(0, Math.min(1, normY * normX));
-        // Smoothstep curve for natural tactile tactile response
-        targetProximity = rawProx * rawProx * (3 - 2 * rawProx);
-      } else {
-        targetProximity = 0;
-      }
-
-      if (!rafId) {
-        rafId = requestAnimationFrame(updateProximityStyles);
-      }
-    };
-
-    const handlePointerLeave = () => {
-      targetProximity = 0;
-      if (!rafId) {
-        rafId = requestAnimationFrame(updateProximityStyles);
-      }
-    };
-
-    window.addEventListener("pointermove", handlePointerMove, { passive: true });
-    document.addEventListener("mouseleave", handlePointerLeave);
-
-    return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      document.removeEventListener("mouseleave", handlePointerLeave);
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, []);
 
   return (
     <section className="living-shelf-section" aria-label="Curated Library Shelf">

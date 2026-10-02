@@ -5,6 +5,7 @@ import {
   MAX_LIBRARY_ENTRIES,
   SHELVES,
   addToReadQueue,
+  documentIdForFile,
   enforceCap,
   emptyLibrary,
   getEntries,
@@ -116,6 +117,35 @@ describe('libraryStore', () => {
     const entry = getEntry('book.pdf:1000:42');
     expect(entry.shelf).toBe(SHELVES.TO_READ);
     expect(entry.kind).toBe('PDF');
+  });
+
+  it('builds the one canonical document id for a picked file', () => {
+    expect(documentIdForFile({ name: 'book.pdf', size: 1000, lastModified: 42 })).toBe('book.pdf:1000:42');
+  });
+
+  it('refuses to invent a document id for a nameless or hostile file', () => {
+    expect(documentIdForFile(null)).toBe('');
+    expect(documentIdForFile(undefined)).toBe('');
+    expect(documentIdForFile({})).toBe('');
+    expect(documentIdForFile({ name: '' })).toBe('');
+    expect(documentIdForFile({ name: 123 })).toBe('');
+  });
+
+  it('normalises hostile file metadata inside the document id', () => {
+    const id = documentIdForFile({ name: 'a.pdf', size: -5, lastModified: 'nope' });
+    expect(id).toBe('a.pdf:0:0');
+  });
+
+  it('keeps addToReadQueue on the same id format as documentIdForFile', () => {
+    const file = { name: 'same.pdf', size: 77, lastModified: 9 };
+    addToReadQueue(file);
+    expect(getEntry(documentIdForFile(file))).not.toBeNull();
+  });
+
+  it('does nothing when a nameless file is queued', () => {
+    const before = getEntries().length;
+    addToReadQueue({ size: 10, lastModified: 1 });
+    expect(getEntries()).toHaveLength(before);
   });
 
   it('removes entries cleanly', () => {

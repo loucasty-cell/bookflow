@@ -97,6 +97,7 @@ export function AppLandingView({
         error={error}
         loading={loading}
         theme={settings.theme}
+        onLocateFile={() => fileInputRef.current?.click()}
         toggleTheme={() =>
           setSettings((current) => ({
             ...current,

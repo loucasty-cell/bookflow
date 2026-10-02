@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { QUALITY_TIERS, getGraphicsQuality } from "../graphics/quality.js";
 
 /**
  * Three.js Atmospheric & Floating New Romantics Letter Canvas
@@ -88,13 +89,26 @@ const STARDUST_GLYPHS = [
   "l", "m", "o", "q", "r", "s", "x", "z"
 ];
 
+/**
+ * Glyph budget split across the three depth tiers. Proportions match the
+ * original 26/12/16 arrangement so thinning a tier never empties another.
+ */
+function splitGlyphBudget(budget) {
+  const total = Math.max(0, Math.round(budget));
+  const mid = Math.round(total * 0.48);
+  const big = Math.round(total * 0.22);
+  return { mid, big, stardust: Math.max(0, total - mid - big) };
+}
+
 function pickRandomAlphabets(count = 12) {
+  const take = Math.max(0, Math.round(count));
+  if (!take) return [];
   const pool = [...ALPHABET_A_TO_Z];
   for (let i = pool.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
-  return pool.slice(0, count);
+  return pool.slice(0, take);
 }
 
 function createMoteTexture() {
@@ -153,14 +167,22 @@ function createGlyphTexture(char, fontSize, maxAnisotropy = 4, canvasSize = 512)
   return { texture, aspect: 1.0 };
 }
 
-export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "paper" }) {
+export function AmbientDustCanvas({ active = true, particleCount = null, theme = "paper" }) {
   const containerRef = useRef(null);
   const themeRef = useRef(theme);
   themeRef.current = theme;
 
+  // Decided once per mount so a governor change never rebuilds the scene.
+  const qualityRef = useRef(null);
+  if (qualityRef.current === null) qualityRef.current = getGraphicsQuality();
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container || !active) return undefined;
+
+    const quality = qualityRef.current;
+    const glyphs = splitGlyphBudget(quality.glyphs);
+    const moteCount = Math.max(0, Math.round(particleCount ?? quality.particles));
 
     let isDisposed = false;
     let renderer = null;
@@ -172,6 +194,11 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
     const reducedMotion =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    /** Reduced motion and the static tier both render one frame and stop. */
+    const stillFrame = reducedMotion || quality.tier === QUALITY_TIERS.STATIC;
+    const frameIntervalMs = quality.targetFps > 0 ? 1000 / quality.targetFps : 0;
+    let lastFrameAt = 0;
 
     async function initScene() {
       // Ensure New Romantics font is ready for canvas rendering
@@ -200,9 +227,7 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
         return;
       }
 
-      const isMobile = typeof window !== "undefined" && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-      const dpr = Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, isMobile ? 1.5 : 2);
-      renderer.setPixelRatio(dpr);
+      renderer.setPixelRatio(quality.dpr);
 
       const width = container.offsetWidth || window.innerWidth || 1200;
       const height = container.offsetHeight || window.innerHeight || 800;
@@ -224,7 +249,7 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
       };
 
       const handleContextRestored = () => {
-        if (!reducedMotion && !animId) {
+        if (!stillFrame && !animId) {
           animId = requestAnimationFrame(animate);
         }
       };
@@ -317,11 +342,11 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
       const moteTexture = createMoteTexture();
       if (moteTexture) disposables.push(moteTexture);
 
-      const particlePositions = new Float32Array(particleCount * 3);
-      const particleSpeeds = new Float32Array(particleCount * 2);
-      const particlePhases = new Float32Array(particleCount);
+      const particlePositions = new Float32Array(moteCount * 3);
+      const particleSpeeds = new Float32Array(moteCount * 2);
+      const particlePhases = new Float32Array(moteCount);
 
-      for (let i = 0; i < particleCount; i++) {
+      for (let i = 0; i < moteCount; i++) {
         particlePositions[i * 3 + 0] = (Math.random() - 0.5) * 26;
         particlePositions[i * 3 + 1] = (Math.random() - 0.5) * 18;
         particlePositions[i * 3 + 2] = (Math.random() - 0.5) * 6;
@@ -356,7 +381,8 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
       disposables.push(letterPlaneGeo);
 
       // 1. Midground Romantic Alphabets (Full 26 letters A to Z)
-      MID_ALPHABETS.forEach((char, index) => {
+      const midTiers = Math.max(1, Math.ceil(glyphs.mid / 3));
+        MID_ALPHABETS.slice(0, glyphs.mid).forEach((char, index) => {
         // Individualized organic size roll
         const sizeRoll = Math.random();
         let fontSize;
@@ -395,7 +421,7 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
         // Distribute harmoniously across 3 depth tiers
         const ringTier = index % 3;
         const tierIndex = Math.floor(index / 3);
-        const baseAngle = (tierIndex / 9) * Math.PI * 2;
+        const baseAngle = (tierIndex / midTiers) * Math.PI * 2;
         const angle = baseAngle + (Math.random() - 0.5) * 0.45;
         let radiusX, radiusY, homeZ;
 
@@ -468,7 +494,7 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
       });
 
       // 2. Monumental Big Letter Alphabets in Deep Floating Background (12 sample letters)
-      const bigLetters = pickRandomAlphabets(12);
+      const bigLetters = pickRandomAlphabets(glyphs.big);
       bigLetters.forEach((char, index) => {
         const baseScale = Math.random() * 0.80 + 1.55;
         const fontSize = Math.floor(Math.random() * 40 + 340);
@@ -489,7 +515,7 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
 
         const mesh = new THREE.Mesh(letterPlaneGeo, bigMat);
 
-        const angle = (index / 12) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
+        const angle = (index / Math.max(1, glyphs.big)) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
         const radiusX = Math.random() * 5.5 + 6.0;
         const radiusY = Math.random() * 3.8 + 3.0;
         const homeZ = -(Math.random() * 1.8 + 2.0); // Deep background: -2.0 to -3.8
@@ -549,7 +575,7 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
       });
 
       // 3. Delicate Foreground Stardust Glyphs (16 whispering flourish letters)
-      STARDUST_GLYPHS.forEach((char, index) => {
+      STARDUST_GLYPHS.slice(0, glyphs.stardust).forEach((char, index) => {
         const baseScale = Math.random() * 0.14 + 0.26; // 0.26 - 0.40
         const fontSize = Math.floor(Math.random() * 25 + 120);
 
@@ -569,7 +595,7 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
 
         const mesh = new THREE.Mesh(letterPlaneGeo, stardustMat);
 
-        const angle = (index / 16) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+        const angle = (index / Math.max(1, glyphs.stardust)) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
         const radiusX = Math.random() * 4.0 + 3.8;
         const radiusY = Math.random() * 2.8 + 2.2;
         const homeZ = Math.random() * 1.6 - 0.2; // Foreground volume: -0.2 to +1.4
@@ -729,6 +755,10 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
 
         if (!isVisible || isDisposed) return;
 
+        // The balanced tier keeps the rAF loop alive but pays for 30fps, not 60.
+        if (frameIntervalMs && lastFrameAt && timestamp - lastFrameAt < frameIntervalMs) return;
+        lastFrameAt = timestamp;
+
         if (timer) {
           timer.update(timestamp);
         }
@@ -762,7 +792,7 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
         const mouseSpeed = Math.hypot(mouseVelocity.x, mouseVelocity.y);
 
         // Update shader uniforms
-        shaderMaterial.uniforms.uTime.value = reducedMotion ? 0 : elapsedTime;
+        shaderMaterial.uniforms.uTime.value = stillFrame ? 0 : elapsedTime;
         shaderMaterial.uniforms.uMouse.value.set(currentMouse.x, currentMouse.y);
 
         // Smooth theme palette interpolation (live ref: no scene rebuild on toggle)
@@ -781,9 +811,9 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
         particlesMat.opacity = currentPalette.moteOpacity;
 
         // Animate floating reading motes with atmospheric cursor dispersion
-        if (!reducedMotion) {
+        if (!stillFrame) {
           const positions = particlesGeo.attributes.position.array;
-          for (let i = 0; i < particleCount; i++) {
+          for (let i = 0; i < moteCount; i++) {
             const idx = i * 3;
             particlePhases[i] += 0.02;
 
@@ -834,7 +864,7 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
             letter.mesh.visible = true;
           }
 
-          if (!reducedMotion) {
+          if (!stillFrame) {
             // Distance from cursor in 3D world space
             const dx = letter.currX - mouse3D.x;
             const dy = letter.currY - mouse3D.y;
@@ -965,14 +995,14 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
           // Idle breathing shimmer
           const breathTwinkle = Math.sin(elapsedTime * letter.breathSpeed + letter.breathPhase);
           const breathOpacityMod = 1.0 + breathTwinkle * (letter.tier === "stardust" ? 0.12 : 0.05);
-          const appearK = reducedMotion
+          const appearK = stillFrame
             ? 1
             : Math.min(1, Math.max(0, (elapsedTime - (letter.appearAt ?? 0)) / 1.4));
 
           // Smooth opacity & interactive ink glow
           letter.mesh.material.opacity = THREE.MathUtils.lerp(
             letter.mesh.material.opacity,
-            letter.targetOpacity * (reducedMotion ? 1.0 : breathOpacityMod) * appearK,
+            letter.targetOpacity * (stillFrame ? 1.0 : breathOpacityMod) * appearK,
             0.07
           );
 
@@ -986,7 +1016,20 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
         renderer.render(scene, camera);
       };
 
-      if (reducedMotion) {
+      if (import.meta.env.DEV) {
+        window.__bfGpu = {
+          tier: quality.tier,
+          targetFps: quality.targetFps,
+          glyphs,
+          motes: moteCount,
+          memory: () => ({
+            geometries: renderer.info.memory.geometries,
+            textures: renderer.info.memory.textures,
+          }),
+        };
+      }
+
+      if (stillFrame) {
         renderer.render(scene, camera);
       } else {
         animId = requestAnimationFrame(animate);
@@ -1038,6 +1081,8 @@ export function AmbientDustCanvas({ active = true, particleCount = 36, theme = "
           renderer.domElement.parentNode.removeChild(renderer.domElement);
         }
       }
+
+      if (import.meta.env.DEV && window.__bfGpu) delete window.__bfGpu;
     };
   }, [active, particleCount]);
 

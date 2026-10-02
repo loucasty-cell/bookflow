@@ -879,3 +879,93 @@
   color: var(--reader-muted);
 }
 
+
+/* Command palette. Reuses the shared motion and focus conventions so the
+   reader keeps one focus trap and one motion vocabulary. */
+.command-palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: calc(var(--space-6) + var(--safe-top)) var(--space-4) var(--space-4);
+  background: rgba(10, 12, 20, 0.32);
+}
+
+.command-palette {
+  width: min(520px, 100%);
+  max-height: min(70vh, 520px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: var(--reader-ink);
+  background: var(--chrome-solid);
+  border: 1px solid var(--app-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: command-palette-enter var(--duration-enter) var(--ease-enter) both;
+}
+
+@keyframes command-palette-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.command-palette-input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-4);
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--app-line);
+  font-size: var(--ui-title);
+}
+
+.command-palette-input:focus-visible {
+  outline: none;
+}
+
+.command-palette-list {
+  margin: 0;
+  padding: var(--space-2);
+  overflow-y: auto;
+  list-style: none;
+}
+
+.command-palette-item {
+  margin: 0;
+}
+
+.command-palette-command {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  display: flex;
+  align-items: center;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  font-size: var(--ui-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.command-palette-command:hover {
+  background: var(--accent-soft);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .command-palette-backdrop {
+    background: rgba(10, 12, 20, 0.72);
+  }
+}

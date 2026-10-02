@@ -77,7 +77,6 @@ src/features/reader/
     SelectionTooltip.jsx
     HorizonTeaser.jsx               Next-chapter preview
     SaccadicGuide.jsx               Experimental guide component; not mounted by ReaderShell
-    resonance.css                   Orphaned social-layer asset; no importer
   lib/
     readingController.js            FOCUS_RAIL_RATIO, scroll intent, readingProgress
     focusRail.js                    selectClosestParagraph, selectFocusTarget, selectNextParagraph

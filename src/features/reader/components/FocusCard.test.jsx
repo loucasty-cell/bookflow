@@ -21,7 +21,40 @@ const paragraph = {
   text: "Call me Ishmael. Some years ago, never mind how long precisely, having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little.",
 };
 
+/**
+ * FocusCard no longer owns the Reading Lens hook. ReaderOverlays creates one and
+ * passes it down so the focus card and the lens bar share a single consent
+ * decision, so the tests supply the same shape here.
+ */
+function makeLens(overrides = {}) {
+  return {
+    messages: [],
+    status: "idle",
+    statusLabel: "",
+    isLoading: false,
+    error: null,
+    provider: "",
+    attempts: [],
+    usedFallback: false,
+    isExpanded: false,
+    setIsExpanded: vi.fn(),
+    activePassage: "",
+    hasSelection: false,
+    consentGranted: false,
+    setConsentGranted: vi.fn(),
+    includeChapterContext: false,
+    setIncludeChapterContext: vi.fn(),
+    canIncludeChapterContext: false,
+    ask: vi.fn(),
+    askAction: vi.fn(),
+    cancel: vi.fn(),
+    clear: vi.fn(),
+    ...overrides,
+  };
+}
+
 function renderCard(props = {}) {
+  const selectedText = props.selectedText ?? "";
   return renderToStaticMarkup(
     <FocusCard
       focusedParagraph={paragraph}
@@ -32,6 +65,11 @@ function renderCard(props = {}) {
       moveFocus={vi.fn()}
       resumeFlow={vi.fn()}
       initiallyCollapsed={false}
+      lens={makeLens({
+        // The real hook derives activePassage from selectedText.
+        activePassage: String(selectedText).trim(),
+        hasSelection: Boolean(String(selectedText).trim()),
+      })}
       {...props}
     />,
   );
@@ -132,6 +170,7 @@ describe("FocusCard structure", () => {
         copyFocusedParagraph={vi.fn()}
         moveFocus={vi.fn()}
         resumeFlow={vi.fn()}
+        lens={makeLens()}
       />,
     );
     expect(markup).toContain("focus-card is-collapsed");

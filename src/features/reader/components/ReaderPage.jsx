@@ -1,8 +1,10 @@
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_SETTINGS } from "../config.js";
 import { useReaderWindowEffects } from "../hooks/useReaderWindowEffects.js";
 import { useScrollPosition } from "../lib/useScrollPosition.js";
+import { getChapterMinutesLeft, getProgressLabel, normalizeProgressDisplay } from "../lib/progressLabel.js";
 import { useReaderSmoothScroll } from "../../scroll/index.js";
+import { CommandPalette } from "./CommandPalette.jsx";
 import { ContentsPanel } from "./ContentsPanel.jsx";
 import { ReaderCanvas } from "./ReaderCanvas.jsx";
 import { ReaderHeader } from "./ReaderHeader.jsx";
@@ -109,6 +111,74 @@ export function ReaderPage({
   const settingsButtonRef = useRef(null);
   const notesButtonRef = useRef(null);
   const navigatorButtonRef = useRef(null);
+  const commandsButtonRef = useRef(null);
+  const [commandsOpen, setCommandsOpen] = useState(false);
+  const progressDisplay = normalizeProgressDisplay(safeSettings.progressDisplay);
+  const progressLabel = useMemo(
+    () =>
+      getProgressLabel({
+        mode: progressDisplay,
+        progress: safeProgress,
+        chapterMinutesLeft: getChapterMinutesLeft({
+          chapters: safeChapters,
+          activeChapter,
+        }),
+      }),
+    [progressDisplay, safeProgress, safeChapters, activeChapter],
+  );
+
+  const openCommands = useCallback(() => setCommandsOpen(true), []);
+  const closeCommands = useCallback(() => setCommandsOpen(false), []);
+
+  useEffect(() => {
+    if (!book) return undefined;
+    const handleShortcut = (event) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key?.toLowerCase() !== "k") return;
+      const target = event.target instanceof Element ? event.target : null;
+      if (target?.closest("input, textarea, select, [contenteditable='true']")) return;
+      event.preventDefault();
+      setCommandsOpen(true);
+    };
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, [book]);
+
+  const readerCommands = useMemo(
+    () => [
+      {
+        id: "navigator",
+        label: sidebarCollapsed ? "Show navigator" : "Hide navigator",
+        keywords: ["contents", "chapters", "sidebar"],
+        run: () => setSidebarCollapsed(!sidebarCollapsed),
+      },
+      {
+        id: "notes",
+        label: notesOpen ? "Close notes" : "Open notes",
+        keywords: ["margin", "annotations"],
+        run: () => {
+          setNotesOpen((open) => !open);
+          setSettingsOpen(false);
+        },
+      },
+      {
+        id: "settings",
+        label: settingsOpen ? "Close reading settings" : "Open reading settings",
+        keywords: ["type", "font", "theme", "atmosphere"],
+        run: () => {
+          setSettingsOpen((open) => !open);
+          setNotesOpen(false);
+        },
+      },
+      {
+        id: "home",
+        label: "Back to library",
+        keywords: ["close", "exit", "home"],
+        run: () => closeBook(),
+      },
+    ],
+    [sidebarCollapsed, setSidebarCollapsed, notesOpen, setNotesOpen, settingsOpen, setSettingsOpen, closeBook],
+  );
+
   const readerStatus = {
     focused: "In focus",
     transitioning: "Moving",
@@ -137,12 +207,16 @@ export function ReaderPage({
         setSettingsOpen={setSettingsOpen}
         notes={notes}
         safeProgress={safeProgress}
+        progressLabel={progressLabel}
+        progressDisplay={progressDisplay}
         readerStatus={readerStatus}
         safeChapterLabel={safeChapterLabel}
         closeBook={closeBook}
         navigatorButtonRef={navigatorButtonRef}
         notesButtonRef={notesButtonRef}
         settingsButtonRef={settingsButtonRef}
+        onOpenCommands={openCommands}
+        commandsButtonRef={commandsButtonRef}
       />
 
       <div
@@ -223,9 +297,15 @@ export function ReaderPage({
           addNote={addNote}
           readerRef={readerRef}
           focusId={focusId}
-          lookupEnabled={safeSettings.showDefinitionLookup === true}
+           lookupEnabled={safeSettings.showDefinitionLookup === true}
         />
       </div>
+
+      <CommandPalette
+        open={commandsOpen}
+        onClose={closeCommands}
+        commands={readerCommands}
+      />
     </div>
   );
 }

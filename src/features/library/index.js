@@ -11,6 +11,7 @@ export {
   SHELVES,
   addToReadQueue,
   clearLibrary,
+  documentIdForFile,
   enforceCap,
   emptyLibrary,
   getEntries,
@@ -23,6 +24,17 @@ export {
   setShelf,
   upsertEntry,
 } from './lib/libraryStore.js';
+
+export {
+  clampProgress,
+  formatLastOpened,
+  formatProgress,
+  hasReopenableSource,
+  selectContinueReading,
+  selectFinished,
+  selectRecent,
+  selectToRead,
+} from './lib/librarySelectors.js';
 
 export {
   DEFAULT_WORDS_PER_MINUTE,
@@ -88,6 +100,7 @@ export {
 } from './lib/durableStorage.js';
 
 export { BadgeGallery } from './components/BadgeGallery.jsx';
+export { RecentShelf } from './components/RecentShelf.jsx';
 export { ResumeCard } from './components/ResumeCard.jsx';
 export { SessionRecap } from './components/SessionRecap.jsx';
 export { useReadingSession } from './hooks/useReadingSession.js';

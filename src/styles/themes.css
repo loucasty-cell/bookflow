@@ -25,7 +25,7 @@
   --sidebar-active-bg: rgba(194, 220, 255, 0.52);
   --sidebar-active-text: #17263a;
   --sidebar-text: #263746;
-  --sidebar-muted: #697989;
+  --sidebar-muted: #5d6c7a;
   --sidebar-number-bg: rgba(194, 220, 255, 0.56);
   --sidebar-action-bg: rgba(80, 123, 156, 0.12);
   --reader-safe-top: 24px;
@@ -60,11 +60,11 @@ body[data-theme="dusk"],
   --app-line: rgba(235, 235, 245, 0.12);
   --focus-bg: rgba(143, 29, 44, 0.34);
   --focus-surface: rgba(143, 29, 44, 0.13);
-  --focus-edge: #aa2638;
+  --focus-edge: #c92d42;
   --reader-accent: #8f1d2c;
   --reader-accent-strong: #aa2638;
   --reader-accent-soft: rgba(143, 29, 44, 0.18);
-  --accent: #aa2638;
+  --accent: #c92d42;
   --accent-soft: rgba(143, 29, 44, 0.18);
   --accent-strong: #c94a5a;
   --sidebar-bg: #18181b;

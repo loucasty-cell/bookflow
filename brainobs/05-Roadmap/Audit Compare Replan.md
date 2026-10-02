@@ -156,6 +156,10 @@ These corrections were made in the vault during this audit and matter for planni
 The `resonance.css` finding is confirmed: no file imports it, and `ReaderPage.jsx` does not
 reference resonance styles. It is either unfinished social-layer styling or leftover work.
 
+Resolved: the file was deleted rather than wired. It had no importer, and its only two custom
+properties (`--text-muted`, `--bookflow-blue`) exist nowhere in the token layer, so nothing could
+have inherited from it. Social styling is not designed yet.
+
 ## Replan
 
 The replan reorders the upgrade path around what the competitor research proved matters.

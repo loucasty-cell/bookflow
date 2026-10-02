@@ -267,11 +267,24 @@ export function recordSession({
   });
 }
 
+/**
+ * The canonical document id for a picked file: `${name}:${size}:${lastModified}`.
+ * Keep every caller on this one shape so a re-selected file can be matched.
+ */
+export function documentIdForFile(file) {
+  if (!file || typeof file !== 'object') return '';
+  const name = toStringOrEmpty(file.name);
+  if (!name) return '';
+  return `${name}:${toNonNegativeInt(file.size)}:${toFiniteNumber(file.lastModified, 0)}`;
+}
+
 /** Queues a file the reader intends to read, without parsing or copying it. */
 export function addToReadQueue(file) {
   if (!file) return readLibrary();
 
-  const id = `${file.name}:${file.size}:${file.lastModified}`;
+  const id = documentIdForFile(file);
+  if (!id) return readLibrary();
+
   const nameParts = String(file.name).split('.');
   const extension = nameParts.length > 1 ? nameParts.pop() : 'file';
 

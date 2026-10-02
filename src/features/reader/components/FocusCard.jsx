@@ -39,7 +39,6 @@ import {
   parseLensPosition,
   quickActionStatus,
   serializeLensPosition,
-  useReadingLens,
 } from "../hooks/useReadingLens.js";
 
 const HIT_AREA_PX = 44;
@@ -76,13 +75,12 @@ export function FocusCard({
   selectedText = "",
   initiallyCollapsed = true,
   boundsRef = null,
-  chapterTitle = "",
-  chapterText = "",
   onClearSelection,
   onAddNoteFromSelection,
   lensOpenRequest = 0,
   onLensOpened,
   surface = "reader",
+  lens,
 }) {
   const isGlobal = surface === "global";
   const [isHidden, setIsHidden] = useState(initiallyCollapsed);
@@ -123,11 +121,7 @@ export function FocusCard({
     askAction,
     cancel,
     clear,
-  } = useReadingLens({
-    selectedText,
-    chapterTitle,
-    chapterText,
-  });
+  } = lens;
 
   const hasSelection = Boolean(selectedText.trim());
   const hasPassage = Boolean(activePassage);
