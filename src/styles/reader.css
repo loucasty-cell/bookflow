@@ -1,5 +1,8 @@
 .reader-topbar {
-  min-height: 56px;
+  /* Height is owned by components.css, which imports later at equal
+     specificity. It declares min-height: 68px and that is the rendered value.
+     An earlier 56px declaration here was dead and was removed; do not restore
+     it, or the two files will disagree again about the same surface. */
   padding: calc(var(--space-2) + var(--safe-top)) calc(var(--space-3) + var(--safe-right)) var(--space-2) calc(var(--space-3) + var(--safe-left));
   display: flex;
   align-items: center;
@@ -249,6 +252,13 @@ div#root:nth-of-type(1) > div.app-shell > div.reader-layout,
 }
 
 .contents-panel {
+  /* Three rules declare this width and they do not agree: width/flex here
+     (294px), width/flex-basis in components.css (308px, imports later and
+     wins), and max-width here, which nothing overrides and which therefore
+     clamps the used width to 294px regardless of the other two. The panel is
+     resized by ratio, so all three are replaced by --panel-ratio; until then
+     keep this note, because deleting max-width alone silently changes the
+     rendered width by 14px. */
   width: 294px;
   flex: 0 0 294px;
   max-width: 294px;
