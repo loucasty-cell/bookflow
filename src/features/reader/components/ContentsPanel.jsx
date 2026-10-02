@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Library, PanelLeftClose, Plus, X } from "lucide-react";
 import { useModalFocus } from "../../../shared/lib/index.js";
 // TODO(backlog-10): build LookBackPanel (chapter + heading map with current
@@ -6,6 +6,7 @@ import { useModalFocus } from "../../../shared/lib/index.js";
 // page-flip, never animate the reading column. Looking back is a core failure
 // mode of scroll readers; this panel is the fix.
 import bookflowArtwork from "../../../assets/bookflow-quill.png";
+import { usePanelResize } from "../hooks/usePanelResize.js";
 import { formatReadingTime } from "../lib/readingTime.js";
 
 function safeProgressValue(progress) {
@@ -26,6 +27,8 @@ export function ContentsPanel({
   jumpToChapter,
   closeBook,
   returnFocusRef,
+  panelRatio,
+  onPanelRatioChange,
 }) {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== "undefined" && window.matchMedia?.("(max-width: 900px)").matches,
@@ -58,6 +61,17 @@ export function ContentsPanel({
     onClose: () => setSidebarOpen(false),
     initialFocusRef: closeButtonRef,
     returnFocusRef,
+  });
+
+  // Below 900px the panel is an off-canvas dialog, not a pane in a split view,
+  // so there is nothing to drag a divider against. The same boundary already
+  // decides isMobile above.
+  const resizable = !isMobile && !sidebarCollapsed;
+  const { gripProps } = usePanelResize({
+    ratio: panelRatio,
+    onRatioChange: onPanelRatioChange,
+    panelRef,
+    disabled: !resizable,
   });
 
   return (
@@ -172,6 +186,8 @@ export function ContentsPanel({
             </button>
           </div>
         </div>
+
+        {resizable ? <div className="contents-resize-grip" {...gripProps} /> : null}
       </aside>
       {sidebarOpen && (
         <div

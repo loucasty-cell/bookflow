@@ -4,6 +4,10 @@
  * Focus containment, Escape and focus restoration are delegated entirely to
  * useModalFocus so the reader has one focus-trap implementation, not two.
  * The query is a local React string: it is never logged, stored or sent.
+ *
+ * A command renders its `shortcut` inline when it has one. The shortcut is
+ * shown, never inferred: nothing here guesses a binding, because an inline
+ * hint that does not work is worse than no hint.
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useModalFocus } from "../../../shared/lib/index.js";
@@ -86,7 +90,10 @@ export function CommandPalette({ open, onClose, commands = [] }) {
                 className="command-palette-command"
                 onClick={() => runCommand(command)}
               >
-                {command.label}
+                <span className="command-palette-label">{command.label}</span>
+                {command.shortcut ? (
+                  <kbd className="command-palette-shortcut">{command.shortcut}</kbd>
+                ) : null}
               </button>
             </li>
           ))}

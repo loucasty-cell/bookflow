@@ -16,7 +16,7 @@
   background: color-mix(in srgb, var(--chrome-solid) 72%, transparent);
   border: 1px solid var(--app-line);
   border-radius: 12px;
-  font-size: 9px;
+  font-size: var(--ui-caption);
   line-height: 1.1;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -24,7 +24,7 @@
 
 .reader-continue strong {
   color: var(--reader-ink);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
@@ -49,7 +49,7 @@
 div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-navigator:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(4) > div:nth-of-type(1) > span:nth-of-type(1) {
   color: var(--sidebar-muted);
   font-family: var(--font-ios);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -57,7 +57,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 
 .contents-continue small {
   color: var(--sidebar-muted);
-  font-size: 9px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -65,7 +65,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 
 .contents-continue strong {
   color: var(--sidebar-active-text);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-variant-numeric: tabular-nums;
 }
 
@@ -90,7 +90,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 550;
   letter-spacing: 0;
   text-transform: none;
@@ -118,7 +118,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 .document-continue span,
 .document-continue small {
   color: var(--reader-muted);
-  font-size: 9px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -134,7 +134,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 }
 
 .document-continue small {
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 550;
   letter-spacing: 0;
   text-transform: none;
@@ -249,8 +249,10 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > header:nth-of-type(1) > button:nt
 }
 
 .contents-panel {
-  width: 308px;
-  flex-basis: 308px;
+  /* Width is owned by reader.css, which resolves it from --panel-ratio. The
+     308px pair that used to live here was a second opinion that silently won on
+     import order while reader.css's max-width clamped it straight back, so the
+     real value was neither 294 nor 308. Only the background belongs here. */
   background:
     linear-gradient(
       180deg,
@@ -266,7 +268,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > header:nth-of-type(1) > button:nt
 
 .contents-panel .panel-heading > span {
   color: var(--sidebar-text);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   letter-spacing: 0.13em;
 }
 
@@ -293,7 +295,12 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > header:nth-of-type(1) > button:nt
   margin: 4px 14px 12px;
   padding: 10px 4px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Content-sized columns, not equal thirds. The three labels are 62, 81 and
+     69px as uppercase tracked text, which fits the row, but an equal split gave
+     every label a 72px cell and ellipsised "Bookmarks". Columns size to their
+     label and the leftover space is distributed by justify-content instead. */
+  grid-template-columns: repeat(3, auto);
+  justify-content: space-between;
   gap: 0;
   background: color-mix(in srgb, var(--sidebar-bg) 65%, var(--chrome-solid));
   border: 1px solid color-mix(in srgb, var(--sidebar-border) 80%, transparent);
@@ -308,7 +315,10 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > header:nth-of-type(1) > button:nt
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 2px 6px;
+  /* 3px, not 6px: at 6px the three cells' padding consumed 18px of a 243px
+     row, which is what ellipsised "Bookmarks" once the caption token raised the
+     label from 10.5px to 12px. */
+  padding: 2px 3px;
   gap: 3px;
 }
 
@@ -339,7 +349,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   overflow: hidden;
   max-width: 100%;
   color: var(--sidebar-muted);
-  font-size: 10.5px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   line-height: 1.25;
   letter-spacing: 0.05em;
@@ -521,7 +531,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   border: 1px solid rgba(245, 158, 11, 0.3);
   border-radius: var(--radius-full);
   color: #b45309;
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.04em;
   margin-bottom: var(--space-3);
@@ -612,7 +622,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 }
 
 .dropzone-hint {
-  font-size: 12px;
+  font-size: var(--ui-caption);
   color: var(--landing-muted, #647384);
 }
 
@@ -642,7 +652,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   gap: 6px;
   min-width: min(100%, 280px);
   color: var(--landing-muted, #647384);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   text-align: left;
 }
@@ -779,7 +789,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 }
 
 .metric-label {
-  font-size: 11px;
+  font-size: var(--ui-caption);
   color: var(--landing-muted, #647384);
 }
 
@@ -918,7 +928,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   padding: 4px 8px;
   border: 1px solid var(--landing-line, rgba(80, 123, 156, 0.25));
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   background: transparent;
 }
 
@@ -944,7 +954,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   padding: 5px 10px 5px 28px;
   border: 1px solid var(--landing-line, rgba(80, 123, 156, 0.25));
   border-radius: var(--radius-full);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   background: transparent;
   width: 140px;
 }
@@ -987,7 +997,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   border: 1px solid var(--landing-line, rgba(80, 123, 156, 0.25));
   border-radius: var(--radius-sm);
   background: transparent;
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   cursor: pointer;
 }
@@ -1016,7 +1026,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 }
 
 .badge-page {
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   color: var(--brand-royal, #4169e1);
 }
@@ -1027,7 +1037,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 }
 
 .meta-tag {
-  font-size: 11px;
+  font-size: var(--ui-caption);
   color: var(--landing-muted, #647384);
 }
 
@@ -1084,7 +1094,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 }
 
 .strip-title {
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   color: var(--landing-muted, #647384);
 }
@@ -1101,7 +1111,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   height: var(--control-size);
   min-height: var(--control-size);
   padding: 0 4px;
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   border-radius: var(--radius-sm);
   border: 1px solid var(--landing-line, rgba(80, 123, 156, 0.2));

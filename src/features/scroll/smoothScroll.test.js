@@ -22,7 +22,10 @@ vi.mock("lenis", () => ({
 
 vi.mock("gsap", () => ({
   gsap: {
-    ticker: { add: vi.fn(), clear: vi.fn(), lagSmoothing: vi.fn() },
+    // Only what GSAP's ticker really exposes. An earlier mock here also carried
+    // a `clear` method that GSAP does not have, which hid a TypeError that
+    // fired on every reader unmount.
+    ticker: { add: vi.fn(), remove: vi.fn(), lagSmoothing: vi.fn() },
     lagSmoothing: vi.fn(),
   },
 }));
@@ -90,6 +93,38 @@ describe("smooth scroll lifecycle", () => {
     const wrapper = { dataset: {}, isConnected: false };
     await expect(startSmoothScroll("landing", { wrapper })).resolves.toBeNull();
     expect(isSmoothScrollActive("landing")).toBe(false);
+  });
+
+  it("unmounts without throwing once the last instance is gone", async () => {
+    // GSAP's ticker has no clear(). Calling it threw a TypeError on every
+    // reader teardown, which the ErrorBoundary swallowed, so closing a book
+    // logged an error the user could do nothing about.
+    const wrapper = makeWrapper();
+    await startReaderSmoothScroll(wrapper, undefined);
+    await expect(async () => stopReaderSmoothScroll()).not.toThrow();
+  });
+
+  it("removes the ticker callback it added rather than clearing the ticker", async () => {
+    const { gsap } = await import("gsap");
+    gsap.ticker.remove.mockClear();
+    const wrapper = makeWrapper();
+    await startReaderSmoothScroll(wrapper, undefined);
+    stopReaderSmoothScroll();
+    expect(gsap.ticker.add).toHaveBeenCalled();
+    expect(gsap.ticker.remove).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the ticker bound while another instance is still alive", async () => {
+    const { gsap } = await import("gsap");
+    gsap.ticker.remove.mockClear();
+    const a = makeWrapper();
+    const b = makeWrapper();
+    await startReaderSmoothScroll(a, undefined);
+    await startSmoothScroll("landing", { wrapper: b });
+    stopReaderSmoothScroll();
+    expect(gsap.ticker.remove).not.toHaveBeenCalled();
+    stopAllSmoothScroll();
+    expect(gsap.ticker.remove).toHaveBeenCalledTimes(1);
   });
 });
 

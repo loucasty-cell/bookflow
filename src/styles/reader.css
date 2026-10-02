@@ -1,16 +1,22 @@
 .reader-topbar {
-  min-height: 56px;
+  /* Height is owned by components.css, which imports later at equal
+     specificity. It declares min-height: 68px and that is the rendered value.
+     An earlier 56px declaration here was dead and was removed; do not restore
+     it, or the two files will disagree again about the same surface. */
   padding: calc(var(--space-2) + var(--safe-top)) calc(var(--space-3) + var(--safe-right)) var(--space-2) calc(var(--space-3) + var(--safe-left));
   display: flex;
   align-items: center;
   gap: var(--space-1);
   color: var(--reader-ink);
+  /* The topbar's visible background is a gradient declared in components.css,
+     which imports later and wins. The blur below is this rule's, and is the
+     only part that is actually glass here. */
   background: var(--chrome);
   border-bottom: 1px solid var(--app-line);
   position: relative;
   z-index: var(--z-sticky);
-  -webkit-backdrop-filter: saturate(180%) blur(24px);
-  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
 }
 
 .brand-button {
@@ -54,7 +60,7 @@
 .book-identity small {
   margin-top: 2px;
   color: var(--reader-muted);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -119,7 +125,7 @@
   gap: 7px;
   border: 1px solid transparent;
   border-radius: var(--radius-full);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   cursor: pointer;
 }
@@ -130,7 +136,7 @@
   color: #fff;
   background: var(--accent);
   border-radius: var(--radius-full);
-  font-size: 9px;
+  font-size: var(--ui-caption);
   text-align: center;
 }
 
@@ -246,9 +252,17 @@ div#root:nth-of-type(1) > div.app-shell > div.reader-layout,
 }
 
 .contents-panel {
-  width: 294px;
-  flex: 0 0 294px;
-  max-width: 294px;
+  /* Width is a ratio of the reader layout, not a pixel count, so the panel
+     keeps its proportion when the window changes. The bounds are two-sided on
+     purpose: the ratio can only be dragged between its own limits, and clamp()
+     then floors and caps the result in absolute pixels so a wide window cannot
+     let a legal ratio crush the chapter list and a narrow one cannot let it
+     swallow the reading column. Both domains are needed: neither alone holds on
+     every viewport. The 900px breakpoint re-asserts its own drawer width
+     below in responsive.css, which imports later and wins.
+     Ratio domain and pixel domain: lib/panelRatio.js. */
+  width: clamp(280px, var(--panel-ratio), 480px);
+  flex: 0 0 clamp(280px, var(--panel-ratio), 480px);
   height: 100%;
   pointer-events: auto !important;
   color: var(--sidebar-text);
@@ -261,6 +275,9 @@ div#root:nth-of-type(1) > div.app-shell > div.reader-layout,
   backdrop-filter: blur(28px) saturate(180%);
   z-index: var(--z-layer);
   overflow: hidden;
+  /* Positioning context for the resize grip. Relative on a flex item changes
+     nothing about its layout, it only anchors the absolutely positioned child. */
+  position: relative;
 }
 
 .contents-panel button,
@@ -282,6 +299,42 @@ div#root:nth-of-type(1) > div.app-shell > div.reader-layout,
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   backdrop-filter: blur(28px) saturate(180%);
   pointer-events: auto !important;
+}
+
+/* The divider. It lives inside the panel rather than straddling its edge
+   because the panel clips its overflow, and an outside-the-edge grip would be
+   cut in half. A 14px strip that runs the full height is a far larger target
+   than the 44px minimum asks for in the dimension that matters here. */
+.contents-resize-grip {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  cursor: col-resize;
+  /* pan-y so a vertical drag still scrolls the chapter list; the horizontal
+     axis is ours. touch-action:none would kill scrolling outright. */
+  touch-action: pan-y;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid transparent;
+  transition: border-color var(--duration-micro) var(--ease-emphasized);
+}
+
+.contents-resize-grip:hover,
+.contents-resize-grip:focus-visible {
+  border-left-color: var(--accent);
+}
+
+.contents-resize-grip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contents-resize-grip {
+    transition: none;
+  }
 }
 
 .panel-heading {
@@ -338,7 +391,7 @@ div#root:nth-of-type(1) > div.app-shell > div.reader-layout,
   align-items: center;
   gap: 7px;
   color: var(--sidebar-text);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -349,7 +402,7 @@ div#root:nth-of-type(1) > div.app-shell > div.reader-layout,
   align-items: center;
   gap: 9px;
   color: var(--reader-muted, #aab7d6);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.11em;
   text-transform: uppercase;
@@ -417,7 +470,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--font-ios);
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   font-weight: 550;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -447,7 +500,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 
 .contents-stats span {
   color: var(--sidebar-muted);
-  font-size: 10.5px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -466,7 +519,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 }
 
 .contents-category-header small {
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   padding: 2px 7px;
   background: var(--sidebar-number-bg);
@@ -531,7 +584,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   color: var(--sidebar-active-text);
   background: var(--sidebar-number-bg);
   border-radius: 6px;
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 700;
 }
 
@@ -573,7 +626,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   background: var(--sidebar-action-bg);
   border: 1px solid var(--sidebar-border);
   border-radius: var(--radius-md);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   cursor: pointer;
 }
@@ -701,7 +754,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-
 
 .document-kind {
   color: var(--brand-red);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -733,7 +786,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-
   flex-wrap: wrap;
   gap: 9px;
   color: var(--reader-muted);
-  font-size: 9px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -945,7 +998,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-
   background: var(--chrome-solid);
   border: 1px solid var(--app-line);
   border-radius: var(--radius-full);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   cursor: pointer;
 }
@@ -1072,7 +1125,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
 }
 
 .focus-selection-tag {
-  font-size: 8.5px;
+  font-size: var(--ui-caption);
   padding: 1px 6px;
   border-radius: 9999px;
   background: rgba(234, 179, 8, 0.2);
@@ -1085,7 +1138,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
 
 .focus-card-passage-preview {
   margin: 0;
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   line-height: 1.4;
   color: var(--reader-ink);
   opacity: 0.85;
@@ -1135,7 +1188,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
   background: transparent;
   border: none;
   outline: none;
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   color: var(--reader-ink);
   padding: 2px 4px;
 }
@@ -1181,7 +1234,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
 }
 
 .focus-quick-pill {
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   padding: 2px 9px;
   border-radius: 9999px;
@@ -1235,7 +1288,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 10px;
+  font-size: var(--ui-caption);
   color: var(--reader-muted);
   background: transparent;
   border: none;
@@ -1267,7 +1320,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
   text-align: center;
   padding: 16px 8px;
   color: var(--reader-muted);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   gap: 6px;
 }
 
@@ -1278,7 +1331,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
   gap: 6px;
   padding: 6px 10px;
   border-radius: 10px;
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   line-height: 1.45;
 }
 
@@ -1349,7 +1402,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
 
 .focus-chat-error {
   color: #f87171;
-  font-size: 11px;
+  font-size: var(--ui-caption);
   padding: 4px 8px;
   background: rgba(239, 68, 68, 0.1);
   border-radius: 6px;
@@ -1390,7 +1443,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
   align-items: center;
   gap: 6px;
   color: var(--focus-edge, #06b6d4);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1422,7 +1475,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
   background: var(--chrome-strong);
   border: 1px solid var(--app-line);
   border-radius: 9999px;
-  font-size: 8.5px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   letter-spacing: 0.05em;
 }
@@ -1462,7 +1515,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   -webkit-line-clamp: unset;
   -webkit-box-orient: unset;
   font-family: var(--font-ios);
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   line-height: 1.4;
   font-weight: 420;
   letter-spacing: -0.01em;
@@ -1494,7 +1547,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 9999px;
-  font-size: 10.5px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.18);
@@ -1593,7 +1646,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   border: none;
   background: transparent;
   color: var(--reader-ink);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   border-radius: var(--radius-full);
   cursor: pointer;
@@ -1647,7 +1700,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 750;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1663,16 +1716,16 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   bottom: var(--space-4);
   padding: 11px 13px;
   color: var(--reader-muted);
-  background: var(--chrome);
+  background: var(--glass);
   border: 1px solid var(--app-line);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  -webkit-backdrop-filter: saturate(180%) blur(24px);
-  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-saturate)) blur(var(--glass-blur));
 }
 
 .settings-popover,
@@ -1683,7 +1736,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   right: 0;
   height: 100%;
   color: var(--reader-ink);
-  background: var(--chrome);
+  background: var(--glass);
   border-left: 1px solid var(--app-line);
   font-family: var(--font-ios);
   -webkit-font-smoothing: antialiased;
@@ -1691,8 +1744,8 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   box-shadow: -22px 0 70px rgba(0, 0, 0, 0.18);
   transform: translateX(105%);
   transition: transform var(--duration-medium) var(--spring);
-  -webkit-backdrop-filter: saturate(180%) blur(30px);
-  backdrop-filter: saturate(180%) blur(30px);
+  -webkit-backdrop-filter: saturate(var(--glass-saturate)) blur(calc(var(--glass-blur) * 1.5));
+  backdrop-filter: saturate(var(--glass-saturate)) blur(calc(var(--glass-blur) * 1.5));
 }
 
 .settings-popover button,
@@ -1742,7 +1795,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   display: flex;
   justify-content: space-between;
   color: var(--reader-muted);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1770,7 +1823,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   border-radius: 7px;
   color: var(--reader-muted);
   background: transparent;
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 500;
   text-transform: capitalize;
   cursor: pointer;
@@ -1793,7 +1846,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
 .setting-group > p {
   margin: 9px 0 0;
   color: var(--reader-muted);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   line-height: 1.45;
 }
 
@@ -1821,7 +1874,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   color: var(--reader-muted);
   border-left: 2px solid var(--focus-edge);
   font-family: var(--font-ios);
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   line-height: 1.5;
   font-style: italic;
 }
@@ -1851,7 +1904,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   background: var(--accent);
   border: 0;
   border-radius: var(--radius-md);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   cursor: pointer;
 }
@@ -1924,7 +1977,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
 .empty-notes span {
   max-width: 220px;
   margin-top: 6px;
-  font-size: 12px;
+  font-size: var(--ui-caption);
   line-height: 1.5;
 }
 

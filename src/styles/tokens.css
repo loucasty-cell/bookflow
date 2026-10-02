@@ -38,9 +38,9 @@
   --radius-xs: 6px;
   --radius-sm: 10px;
   --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
-  --radius-card: 13px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-card: 14px;
   --radius-full: 999px;
   --control-size: 44px;
   --scrollbar-track-size: 8px;
@@ -50,10 +50,34 @@
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
   --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.08), 0 10px 30px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 8px 22px rgba(0, 0, 0, 0.1), 0 24px 70px rgba(0, 0, 0, 0.16);
-  --hairline: 0.5px;
-  --ui-text: 13px;
+  --hairline-width: 1px;
+  --hairline: color-mix(in srgb, currentColor 10%, transparent);
+  /* Glass material. One formula, so a translucent surface is the same optical
+     weight everywhere and the reduced-transparency fallback has a single
+     solid counterpart to restore. */
+  --glass-tint: 72%;
+  --glass-blur: 20px;
+  --glass-saturate: 1.4;
+  --glass: color-mix(in srgb, var(--chrome-solid, #ffffff) var(--glass-tint), transparent);
+  --ui-caption: 12px;
+  --ui-caption-line-height: 16px;
+  --ui-small: 14px;
+  --ui-small-line-height: 20px;
+  --ui-text: 16px;
+  --ui-text-line-height: 24px;
+  --ui-title: 19px;
+  --ui-title-line-height: 28px;
+  --ui-heading: 23px;
+  --ui-heading-line-height: 32px;
+  --ui-title-3: 28px;
+  --ui-title-3-line-height: 36px;
+  --ui-display: 33px;
+  --ui-display-line-height: 40px;
   --ui-label: 12px;
-  --ui-title: 15px;
+  /* Navigator width as a share of the reader layout. Kept here rather than
+     inlined at the use site so the CSS default and PANEL_RATIO_DEFAULT in
+     lib/panelRatio.js have one shared home to be changed from. */
+  --panel-ratio: 20.4%;
   --spring: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --duration-micro: 120ms;
   --duration-short: 220ms;
@@ -113,7 +137,11 @@ html {
 }
 
 body {
-  min-width: 320px;
+  /* The 320px floor the design assumes, but never wider than the space actually
+     available. At exactly a 320px viewport a classic scrollbar takes ~15px, so
+     a hard min-width: 320px made the floor itself the overflow. min() keeps the
+     floor everywhere it can hold and yields to reality where it cannot. */
+  min-width: min(320px, 100%);
   background: #fffefa;
 }
 
@@ -158,13 +186,22 @@ img {
   top: calc(var(--space-3) + var(--safe-top));
   left: calc(var(--space-3) + var(--safe-left));
   z-index: var(--z-blocking);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-size);
   padding: 10px 14px;
+  /* 44px so the skip link is a legal touch target while it is on screen. It is
+     only visible on focus, so the extra height costs nothing the rest of the
+     time. */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   color: #ffffff;
   background: var(--brand-navy);
   border: 2px solid #ffffff;
   border-radius: var(--radius-full);
   box-shadow: var(--shadow-md);
-  font-size: 13px;
+  font-size: var(--ui-small);
   font-weight: 700;
   text-decoration: none;
   transform: translateY(-180%);

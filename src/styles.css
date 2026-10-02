@@ -1,6 +1,11 @@
 @import "lenis/dist/lenis.css";
-@import "./styles/tokens.css";
+/* Tailwind 4's theme.css declares its own --radius-xs through --radius-4xl in
+   an unlayered :root. Both it and tokens.css are unlayered, so source order
+   decides. Tailwind must come first or it silently overrides Bookflow's radius
+   scale with 2/4/6/8/12px values. No Tailwind rounded-* utility is used anywhere
+   in the app, so this costs nothing. Order is load-bearing; do not swap. */
 @import "./styles/tailwind.css";
+@import "./styles/tokens.css";
 @import "./styles/landing.css";
 @import "./styles/themes.css";
 @import "./styles/reader.css";
@@ -11,3 +16,6 @@
 @import "./styles/landing-components.css";
 @import "./styles/reader-extras.css";
 @import "./styles/reading-lens.css";
+/* Last. Holds the global forced-colors, prefers-contrast and
+   prefers-reduced-transparency fallbacks, which override component rules. */
+@import "./styles/a11y.css";

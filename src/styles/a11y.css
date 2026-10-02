@@ -1,0 +1,75 @@
+/**
+ * a11y: the global fallback layer.
+ *
+ * Imported last on purpose. These rules exist so that a surface is covered the
+ * moment it is created, instead of relying on a per-file media query that a new
+ * component would forget. There are 54 backdrop-filter declarations spread
+ * across 11 stylesheets and only 5 of those files carried any transparency
+ * fallback at all, so the fallback was the thing most likely to be missing.
+ *
+ * The universal selectors mirror the reduced-motion block in motion.css, which
+ * already establishes this pattern in this codebase.
+ */
+
+/* Reduce transparency: remove every blur in one place, then restore a solid
+   surface wherever a translucent one was carrying the text. */
+@media (prefers-reduced-transparency: reduce) {
+  *,
+  *::before,
+  *::after {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Surfaces built on the translucent chrome token fall back to its solid
+     sibling, so the contrast ratios the gate measures are preserved. */
+  .reader-topbar,
+  .settings-popover,
+  .notes-drawer,
+  .static-region-label,
+  .command-palette {
+    background: var(--chrome-solid);
+  }
+
+  .drop-card,
+  .visual-card,
+  .nav-trust,
+  .theme-toggle,
+  .loading-overlay {
+    background: var(--landing-surface-strong, var(--landing-surface));
+  }
+}
+
+/* Forced colors: the operating system palette takes over. Everything that
+   blurred a backdrop behind forced text has to stop, because the blur is what
+   makes the resulting contrast unpredictable. */
+@media (forced-colors: active) {
+  *,
+  *::before,
+  *::after {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Focus has to survive without the themed accent, so borrow the system
+     highlight color instead. */
+  :focus-visible {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+  }
+
+  /* The skip link is the only way past the landing chrome for keyboard users,
+     so its background must not depend on a translucent custom color. */
+  .skip-link {
+    border-color: ButtonText;
+  }
+}
+
+/* Higher contrast requested. Text pairs already clear 4.5:1 in all five themes,
+   so strengthen the hairline rather than the ink: borders are what separate
+   one surface from the next once shadows are less visible. */
+@media (prefers-contrast: more) {
+  :root {
+    --hairline: color-mix(in srgb, currentColor 32%, transparent);
+  }
+}

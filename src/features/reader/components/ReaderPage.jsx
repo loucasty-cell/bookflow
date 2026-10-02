@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DEFAULT_SETTINGS } from "../config.js";
+import { clampPanelRatio, ratioToPercent } from "../lib/panelRatio.js";
 import { useReaderWindowEffects } from "../hooks/useReaderWindowEffects.js";
 import { useScrollPosition } from "../lib/useScrollPosition.js";
 import { getChapterMinutesLeft, getProgressLabel, normalizeProgressDisplay } from "../lib/progressLabel.js";
@@ -86,6 +87,7 @@ export function ReaderPage({
     sidebarCollapsed,
     settingsOpen,
     notesOpen,
+    safeSettings.panelRatio,
   ].join("|");
   const { isScrolling, direction: scrollDirection } = useScrollPosition(readerRef, {
     disabled: !book,
@@ -113,6 +115,10 @@ export function ReaderPage({
   const navigatorButtonRef = useRef(null);
   const commandsButtonRef = useRef(null);
   const [commandsOpen, setCommandsOpen] = useState(false);
+  const setPanelRatio = useCallback(
+    (value) => setSettings((current) => ({ ...current, panelRatio: clampPanelRatio(value) })),
+    [setSettings],
+  );
   const progressDisplay = normalizeProgressDisplay(safeSettings.progressDisplay);
   const progressLabel = useMemo(
     () =>
@@ -221,6 +227,7 @@ export function ReaderPage({
 
       <div
         className={`reader-layout ${sidebarCollapsed ? "is-sidebar-collapsed" : ""} ${settingsOpen || notesOpen ? "has-reader-panel" : ""} ${settingsOpen ? "has-settings-panel" : ""} ${notesOpen ? "has-notes-panel" : ""}`}
+        style={{ "--panel-ratio": ratioToPercent(safeSettings.panelRatio) }}
       >
         <ContentsPanel
           book={book}
@@ -236,6 +243,8 @@ export function ReaderPage({
           jumpToChapter={jumpToChapter}
           closeBook={closeBook}
           returnFocusRef={navigatorButtonRef}
+          panelRatio={safeSettings.panelRatio}
+          onPanelRatioChange={setPanelRatio}
         />
 
         <ReaderCanvas

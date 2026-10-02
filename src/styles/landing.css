@@ -194,7 +194,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
   background: var(--landing-glass);
   border: 1px solid var(--landing-line);
   border-radius: var(--radius-full);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
@@ -243,7 +243,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
   align-items: center;
   gap: 7px;
   color: var(--brand-blue);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -401,7 +401,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 .drop-card-copy small {
   margin-top: 7px;
   color: var(--brand-blue);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 600;
 }
 
@@ -418,7 +418,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
   color: var(--landing-muted);
   background: var(--landing-fill);
   border-radius: 6px;
-  font-size: 9px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.06em;
 }
@@ -426,7 +426,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 .import-guidance {
   margin: 10px 2px 0;
   color: var(--landing-muted);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   line-height: 1.5;
 }
 
@@ -464,7 +464,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
   align-items: center;
   gap: 7px;
   color: var(--landing-muted);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 600;
 }
 
@@ -474,7 +474,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
   flex-wrap: wrap;
   gap: var(--space-5);
   color: var(--landing-muted);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 600;
 }
 
@@ -574,7 +574,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 .hero-artwork figcaption span {
   margin-bottom: 5px;
   color: #cbdcff;
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -611,7 +611,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 
 .visual-card span {
   color: var(--landing-muted);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   line-height: 1.4;
 }
 
@@ -652,7 +652,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 
 .feature-strip article > span {
   color: var(--brand-red);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 700;
 }
 
@@ -706,7 +706,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 
 .loading-card small {
   color: var(--brand-red);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -735,7 +735,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 .loading-copy > span {
   margin-top: 7px;
   display: block;
-  font-size: 11px;
+  font-size: var(--ui-caption);
   line-height: 1.45;
 }
 
@@ -760,7 +760,7 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
   display: block;
   color: var(--landing-muted);
   text-align: right;
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }

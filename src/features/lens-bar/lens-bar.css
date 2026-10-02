@@ -160,7 +160,7 @@
   align-items: center;
   gap: 6px;
   margin: 0;
-  font-size: 12px;
+  font-size: var(--ui-caption);
   color: var(--lens-ink-2);
   padding: 2px 6px;
 }
@@ -182,7 +182,7 @@
 
 .lens-consent {
   padding: 6px 8px;
-  font-size: 12px;
+  font-size: var(--ui-caption);
   color: var(--lens-ink-2);
   border-top: 1px solid var(--lens-border);
 }
@@ -203,7 +203,7 @@
   border: 1px solid var(--lens-border);
   background: transparent;
   color: var(--lens-ink);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 650;
 }
 
@@ -227,7 +227,7 @@
 
 .lens-muted {
   color: var(--lens-ink-2);
-  font-size: 12px;
+  font-size: var(--ui-caption);
 }
 
 .lens-error {
@@ -295,7 +295,7 @@
   display: grid;
   gap: 4px;
   padding: 6px 12px 8px;
-  font-size: 12px;
+  font-size: var(--ui-caption);
   color: var(--lens-ink-2);
 }
 

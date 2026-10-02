@@ -94,7 +94,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -102,7 +102,7 @@
 }
 
 .resume-card-chip {
-  font-size: 9.5px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   padding: 1px 7px;
   border-radius: 9999px;
@@ -135,7 +135,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: var(--ui-caption);
   color: var(--landing-muted, #5e6674);
   white-space: nowrap;
 }
@@ -180,7 +180,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   border: 1px solid #663b3b;
   border-color: #663b3b;
   border-radius: 9999px;
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   color: #fff2eb;
   background: linear-gradient(135deg, #5c342c 0%, #361c16 100%);
@@ -207,7 +207,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   padding: 0 10px;
   border: 1px solid var(--app-line, var(--landing-line, rgba(0, 0, 0, 0.1)));
   border-radius: 9999px;
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   color: var(--landing-muted, #5e6674);
   background: transparent;
   cursor: pointer;
@@ -369,7 +369,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
 
 .badge-gallery-subtitle {
   margin: 2px 0 0;
-  font-size: 12px;
+  font-size: var(--ui-caption);
   color: var(--landing-muted, #5e6674);
 }
 
@@ -474,7 +474,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
 
 .badge-latin {
   font-family: var(--font-reading);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-style: italic;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -491,7 +491,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
 
 .badge-subtitle {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--ui-caption);
   line-height: 1.4;
   color: var(--landing-muted, #5e6674);
 }
@@ -504,7 +504,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   margin-top: var(--space-2);
   padding: 3px 10px;
   border-radius: var(--radius-full);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   letter-spacing: 0.04em;
   color: var(--badge-sepia);
@@ -580,7 +580,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
 }
 
 .session-recap-eyebrow {
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -638,7 +638,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
 
 .session-recap-stat-label {
   display: block;
-  font-size: 10px;
+  font-size: var(--ui-caption);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--landing-muted, #5e6674);

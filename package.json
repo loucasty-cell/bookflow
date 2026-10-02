@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
     "check:vault": "node scripts/check-vault.mjs"
   },
   "dependencies": {
@@ -46,6 +47,7 @@
     "eslint-plugin-react-refresh": "^0.4.16",
     "globals": "^15.14.0",
     "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
     "vite": "^8.2.2",
     "vitest": "^2.1.8"
   }
