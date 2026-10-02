@@ -249,8 +249,10 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > header:nth-of-type(1) > button:nt
 }
 
 .contents-panel {
-  width: 308px;
-  flex-basis: 308px;
+  /* Width is owned by reader.css, which resolves it from --panel-ratio. The
+     308px pair that used to live here was a second opinion that silently won on
+     import order while reader.css's max-width clamped it straight back, so the
+     real value was neither 294 nor 308. Only the background belongs here. */
   background:
     linear-gradient(
       180deg,
@@ -293,7 +295,12 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > header:nth-of-type(1) > button:nt
   margin: 4px 14px 12px;
   padding: 10px 4px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Content-sized columns, not equal thirds. The three labels are 62, 81 and
+     69px as uppercase tracked text, which fits the row, but an equal split gave
+     every label a 72px cell and ellipsised "Bookmarks". Columns size to their
+     label and the leftover space is distributed by justify-content instead. */
+  grid-template-columns: repeat(3, auto);
+  justify-content: space-between;
   gap: 0;
   background: color-mix(in srgb, var(--sidebar-bg) 65%, var(--chrome-solid));
   border: 1px solid color-mix(in srgb, var(--sidebar-border) 80%, transparent);
@@ -308,7 +315,10 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > header:nth-of-type(1) > button:nt
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 2px 6px;
+  /* 3px, not 6px: at 6px the three cells' padding consumed 18px of a 243px
+     row, which is what ellipsised "Bookmarks" once the caption token raised the
+     label from 10.5px to 12px. */
+  padding: 2px 3px;
   gap: 3px;
 }
 

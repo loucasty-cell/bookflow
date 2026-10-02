@@ -74,6 +74,10 @@
   --ui-display: 33px;
   --ui-display-line-height: 40px;
   --ui-label: 12px;
+  /* Navigator width as a share of the reader layout. Kept here rather than
+     inlined at the use site so the CSS default and PANEL_RATIO_DEFAULT in
+     lib/panelRatio.js have one shared home to be changed from. */
+  --panel-ratio: 20.4%;
   --spring: cubic-bezier(0.25, 0.46, 0.45, 0.94);
   --duration-micro: 120ms;
   --duration-short: 220ms;

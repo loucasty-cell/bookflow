@@ -1,3 +1,5 @@
+import { PANEL_RATIO_DEFAULT } from './lib/panelRatio.js'
+
 export const FONT_SIZE_MIN = 17
 export const FONT_SIZE_MAX = 24
 
@@ -20,6 +22,10 @@ export const DEFAULT_SETTINGS = {
   showAchievements: false,
   showDefinitionLookup: false,
   progressDisplay: 'percent',
+  // Navigator width as a fraction of the reader layout, not a pixel width, so
+  // the panel keeps its proportion when the window changes size. Bounds live in
+  // lib/panelRatio.js and the absolute px guardrails live in reader.css.
+  panelRatio: PANEL_RATIO_DEFAULT,
   enableAnnualGoal: false,
   annualGoalTarget: 12,
   // TODO(backlog-16): readingMoods presets (Morning, Deep Work, Night, Gentle

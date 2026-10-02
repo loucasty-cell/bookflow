@@ -252,16 +252,17 @@ div#root:nth-of-type(1) > div.app-shell > div.reader-layout,
 }
 
 .contents-panel {
-  /* Three rules declare this width and they do not agree: width/flex here
-     (294px), width/flex-basis in components.css (308px, imports later and
-     wins), and max-width here, which nothing overrides and which therefore
-     clamps the used width to 294px regardless of the other two. The panel is
-     resized by ratio, so all three are replaced by --panel-ratio; until then
-     keep this note, because deleting max-width alone silently changes the
-     rendered width by 14px. */
-  width: 294px;
-  flex: 0 0 294px;
-  max-width: 294px;
+  /* Width is a ratio of the reader layout, not a pixel count, so the panel
+     keeps its proportion when the window changes. The bounds are two-sided on
+     purpose: the ratio can only be dragged between its own limits, and clamp()
+     then floors and caps the result in absolute pixels so a wide window cannot
+     let a legal ratio crush the chapter list and a narrow one cannot let it
+     swallow the reading column. Both domains are needed: neither alone holds on
+     every viewport. The 900px breakpoint re-asserts its own drawer width
+     below in responsive.css, which imports later and wins.
+     Ratio domain and pixel domain: lib/panelRatio.js. */
+  width: clamp(280px, var(--panel-ratio), 480px);
+  flex: 0 0 clamp(280px, var(--panel-ratio), 480px);
   height: 100%;
   pointer-events: auto !important;
   color: var(--sidebar-text);
@@ -274,6 +275,9 @@ div#root:nth-of-type(1) > div.app-shell > div.reader-layout,
   backdrop-filter: blur(28px) saturate(180%);
   z-index: var(--z-layer);
   overflow: hidden;
+  /* Positioning context for the resize grip. Relative on a flex item changes
+     nothing about its layout, it only anchors the absolutely positioned child. */
+  position: relative;
 }
 
 .contents-panel button,
@@ -295,6 +299,42 @@ div#root:nth-of-type(1) > div.app-shell > div.reader-layout,
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   backdrop-filter: blur(28px) saturate(180%);
   pointer-events: auto !important;
+}
+
+/* The divider. It lives inside the panel rather than straddling its edge
+   because the panel clips its overflow, and an outside-the-edge grip would be
+   cut in half. A 14px strip that runs the full height is a far larger target
+   than the 44px minimum asks for in the dimension that matters here. */
+.contents-resize-grip {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  cursor: col-resize;
+  /* pan-y so a vertical drag still scrolls the chapter list; the horizontal
+     axis is ours. touch-action:none would kill scrolling outright. */
+  touch-action: pan-y;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid transparent;
+  transition: border-color var(--duration-micro) var(--ease-emphasized);
+}
+
+.contents-resize-grip:hover,
+.contents-resize-grip:focus-visible {
+  border-left-color: var(--accent);
+}
+
+.contents-resize-grip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contents-resize-grip {
+    transition: none;
+  }
 }
 
 .panel-heading {
