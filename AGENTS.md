@@ -158,7 +158,7 @@ Bookflow is a private, browser-based reading application that turns PDFs, EPUB e
 - **Frontend**: React 19, Vite 8, Zustand (persisted state), Framer Motion, SWR, Lucide React, Three.js ambient layer, Tailwind CSS utility layer.
 - **Local Parsing**: `pdfjs-dist` (local worker), `jszip` (EPUB parsing), `tesseract.js` WASM (on-device OCR fallback).
 - **Typography & Ergonomics**: Bionic Reading fixations (`textFormatter.js`), accessible typefaces (Atkinson Hyperlegible, OpenDyslexic), and variable letter tracking.
-- **Testing & Quality**: Vitest (36 test files, 251 tests, measured 2026-09-25), ESLint, Playwright (2 smoke tests, the 420-page long-import test, and 2 Reading Lens responsive tests, run with `PLAYWRIGHT_CHANNEL=chrome`).
+- **Testing & Quality**: Vitest (57 test files, 555 tests, measured 2026-10-02), ESLint, `tsc --noEmit` via `npm run typecheck`, Playwright (19 browser tests across smoke, long-import, Reading Lens and the lens bar, run with `PLAYWRIGHT_CHANNEL=chrome`).
 - **Backend (Optional / Accelerated)**: FastAPI, Uvicorn ASGI, PyMuPDF (fitz) thread pool rasterization, PaddleOCR worker (`Dockerfile.ocr`), vLLM / Hugging Face OpenAI-compatible vision payloads (Qwen2-VL / DeepSeek-OCR-2), Server-Sent Events (SSE), Docker Compose.
 
 ---

@@ -61,8 +61,8 @@ npx --no-install pyright
 | Check | Result |
 |---|---|
 | `npm run lint` | 0 errors, 1 warning |
-| `npm test` | 55 files, 529 tests passing |
-| `npm run build` | succeeds, ~25s |
+| `npm test` | 57 files, 555 tests passing |
+| `npm run build` | succeeds, ~3-25s depending on Vite cache state |
 | `npm run check:vault` | PASS, 0 missing fields, 0 broken wikilinks, 0 orphans |
 | `contrast.mjs` | PASS, 63 token pairs |
 | `npm run test:e2e` | 19 passing |
