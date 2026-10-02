@@ -57,7 +57,7 @@
 .book-identity small {
   margin-top: 2px;
   color: var(--reader-muted);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -122,7 +122,7 @@
   gap: 7px;
   border: 1px solid transparent;
   border-radius: var(--radius-full);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   cursor: pointer;
 }
@@ -133,7 +133,7 @@
   color: #fff;
   background: var(--accent);
   border-radius: var(--radius-full);
-  font-size: 9px;
+  font-size: var(--ui-caption);
   text-align: center;
 }
 
@@ -341,7 +341,7 @@ div#root:nth-of-type(1) > div.app-shell > div.reader-layout,
   align-items: center;
   gap: 7px;
   color: var(--sidebar-text);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -352,7 +352,7 @@ div#root:nth-of-type(1) > div.app-shell > div.reader-layout,
   align-items: center;
   gap: 9px;
   color: var(--reader-muted, #aab7d6);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.11em;
   text-transform: uppercase;
@@ -420,7 +420,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: var(--font-ios);
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   font-weight: 550;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -450,7 +450,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 
 .contents-stats span {
   color: var(--sidebar-muted);
-  font-size: 10.5px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -469,7 +469,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
 }
 
 .contents-category-header small {
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   padding: 2px 7px;
   background: var(--sidebar-number-bg);
@@ -534,7 +534,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   color: var(--sidebar-active-text);
   background: var(--sidebar-number-bg);
   border-radius: 6px;
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 700;
 }
 
@@ -576,7 +576,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > aside#book-n
   background: var(--sidebar-action-bg);
   border: 1px solid var(--sidebar-border);
   border-radius: var(--radius-md);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   cursor: pointer;
 }
@@ -704,7 +704,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-
 
 .document-kind {
   color: var(--brand-red);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.13em;
   text-transform: uppercase;
@@ -736,7 +736,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-
   flex-wrap: wrap;
   gap: 9px;
   color: var(--reader-muted);
-  font-size: 9px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -948,7 +948,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-
   background: var(--chrome-solid);
   border: 1px solid var(--app-line);
   border-radius: var(--radius-full);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   cursor: pointer;
 }
@@ -1075,7 +1075,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
 }
 
 .focus-selection-tag {
-  font-size: 8.5px;
+  font-size: var(--ui-caption);
   padding: 1px 6px;
   border-radius: 9999px;
   background: rgba(234, 179, 8, 0.2);
@@ -1088,7 +1088,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
 
 .focus-card-passage-preview {
   margin: 0;
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   line-height: 1.4;
   color: var(--reader-ink);
   opacity: 0.85;
@@ -1138,7 +1138,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
   background: transparent;
   border: none;
   outline: none;
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   color: var(--reader-ink);
   padding: 2px 4px;
 }
@@ -1184,7 +1184,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
 }
 
 .focus-quick-pill {
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   padding: 2px 9px;
   border-radius: 9999px;
@@ -1238,7 +1238,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 10px;
+  font-size: var(--ui-caption);
   color: var(--reader-muted);
   background: transparent;
   border: none;
@@ -1270,7 +1270,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
   text-align: center;
   padding: 16px 8px;
   color: var(--reader-muted);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   gap: 6px;
 }
 
@@ -1281,7 +1281,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
   gap: 6px;
   padding: 6px 10px;
   border-radius: 10px;
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   line-height: 1.45;
 }
 
@@ -1352,7 +1352,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
 
 .focus-chat-error {
   color: #f87171;
-  font-size: 11px;
+  font-size: var(--ui-caption);
   padding: 4px 8px;
   background: rgba(239, 68, 68, 0.1);
   border-radius: 6px;
@@ -1393,7 +1393,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
   align-items: center;
   gap: 6px;
   color: var(--focus-edge, #06b6d4);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1425,7 +1425,7 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
   background: var(--chrome-strong);
   border: 1px solid var(--app-line);
   border-radius: 9999px;
-  font-size: 8.5px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   letter-spacing: 0.05em;
 }
@@ -1465,7 +1465,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   -webkit-line-clamp: unset;
   -webkit-box-orient: unset;
   font-family: var(--font-ios);
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   line-height: 1.4;
   font-weight: 420;
   letter-spacing: -0.01em;
@@ -1497,7 +1497,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 9999px;
-  font-size: 10.5px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.18);
@@ -1596,7 +1596,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   border: none;
   background: transparent;
   color: var(--reader-ink);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   border-radius: var(--radius-full);
   cursor: pointer;
@@ -1650,7 +1650,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 750;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1745,7 +1745,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   display: flex;
   justify-content: space-between;
   color: var(--reader-muted);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1773,7 +1773,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   border-radius: 7px;
   color: var(--reader-muted);
   background: transparent;
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 500;
   text-transform: capitalize;
   cursor: pointer;
@@ -1796,7 +1796,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
 .setting-group > p {
   margin: 9px 0 0;
   color: var(--reader-muted);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   line-height: 1.45;
 }
 
@@ -1824,7 +1824,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   color: var(--reader-muted);
   border-left: 2px solid var(--focus-edge);
   font-family: var(--font-ios);
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   line-height: 1.5;
   font-style: italic;
 }
@@ -1854,7 +1854,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
   background: var(--accent);
   border: 0;
   border-radius: var(--radius-md);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   cursor: pointer;
 }
@@ -1927,7 +1927,7 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
 .empty-notes span {
   max-width: 220px;
   margin-top: 6px;
-  font-size: 12px;
+  font-size: var(--ui-caption);
   line-height: 1.5;
 }
 

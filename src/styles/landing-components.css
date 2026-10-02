@@ -14,7 +14,7 @@
   gap: 5px;
   min-height: 44px;
   padding: 8px 6px;
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 500;
   border: 1px solid transparent;
   background: transparent;
@@ -234,7 +234,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -259,7 +259,7 @@
 }
 
 .book-cover-author {
-  font-size: 12px;
+  font-size: var(--ui-caption);
   opacity: 0.85;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -269,7 +269,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 500;
   padding-top: var(--space-3);
   border-top: 1px solid rgba(255, 255, 255, 0.15);
@@ -312,7 +312,7 @@
 .spine-title-vertical {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   letter-spacing: 0.06em;
   color: rgba(255, 255, 255, 0.6);
@@ -416,12 +416,12 @@
 
 .add-card-inner p {
   margin: 0 0 var(--space-3);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   color: var(--app-text-muted, #647384);
 }
 
 .add-privacy-tag {
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -659,7 +659,7 @@
 }
 
 .shadow-control-label {
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   color: var(--app-text-muted, #647384);
   letter-spacing: 0.01em;
@@ -756,7 +756,7 @@
   align-items: center;
   gap: 7px;
   color: var(--app-text-muted, #5e6674);
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -812,7 +812,7 @@
 
 .recent-shelf-when {
   color: var(--app-text-muted, #5e6674);
-  font-size: 11px;
+  font-size: var(--ui-caption);
 }
 
 .recent-shelf-progress {
@@ -837,7 +837,7 @@
   gap: 6px;
   flex: 0 0 auto;
   color: var(--app-text-muted, #5e6674);
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   white-space: nowrap;
 }

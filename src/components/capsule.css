@@ -16,7 +16,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--ui-caption);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--app-text-muted, var(--reader-muted, #647384));
@@ -46,7 +46,7 @@
 }
 
 .sparkline-label {
-  font-size: 12px;
+  font-size: var(--ui-caption);
   color: var(--app-text-muted, var(--reader-muted, #647384));
 }
 

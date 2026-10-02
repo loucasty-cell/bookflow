@@ -18,7 +18,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -172,7 +172,7 @@
 
 .notes-telemetry-badge {
   padding: 2px 7px;
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   border-radius: 9999px;
   background: rgba(6, 182, 212, 0.12);
@@ -211,7 +211,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px 18px;
-  font-size: 11px;
+  font-size: var(--ui-caption);
   background: rgba(0, 0, 0, 0.15);
   border-bottom: 1px solid var(--app-line, rgba(255, 255, 255, 0.06));
 }
@@ -241,7 +241,7 @@
 
 .notes-session-progress {
   color: var(--reader-muted);
-  font-size: 10px;
+  font-size: var(--ui-caption);
   letter-spacing: 0.03em;
   flex-shrink: 0;
 }
@@ -275,7 +275,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 10.5px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -286,7 +286,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 10px;
+  font-size: var(--ui-caption);
   background: transparent;
   border: 0;
   color: var(--reader-muted);
@@ -305,7 +305,7 @@
   margin: 0;
   padding: 0;
   border: 0;
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   line-height: 1.45;
   font-style: italic;
   color: var(--reader-muted);
@@ -338,7 +338,7 @@
   align-items: center;
   gap: 5px;
   padding: 5px 11px;
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 500;
   border-radius: 6px;
   border: 0;
@@ -366,7 +366,7 @@
 }
 
 .bold-status-tag {
-  font-size: 10.5px;
+  font-size: var(--ui-caption);
   color: var(--reader-muted);
   display: inline-flex;
   align-items: center;
@@ -418,14 +418,14 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font-size: 10px;
+  font-size: var(--ui-caption);
   color: var(--reader-muted);
 }
 
 .notes-shortcut-hint kbd {
   display: inline-block;
   padding: 1px 4px;
-  font-size: 9px;
+  font-size: var(--ui-caption);
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -437,7 +437,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  font-size: 12px;
+  font-size: var(--ui-caption);
   font-weight: 650;
   color: #ffffff;
   background: linear-gradient(135deg, #0284c7 0%, #06b6d4 100%);
@@ -488,7 +488,7 @@
   width: 100%;
   height: 28px;
   padding: 0 26px 0 28px;
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   border-radius: 6px;
   border: 1px solid var(--app-line, rgba(255, 255, 255, 0.08));
   background: var(--chrome-solid);
@@ -519,7 +519,7 @@
   gap: 4px;
   height: 28px;
   padding: 0 9px;
-  font-size: 11px;
+  font-size: var(--ui-caption);
   border-radius: 6px;
   border: 1px solid var(--app-line, rgba(255, 255, 255, 0.08));
   background: transparent;
@@ -627,7 +627,7 @@
   align-items: center;
   gap: 5px;
   padding: 5px 11px;
-  font-size: 11px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   color: var(--reader-ink);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 100%);
@@ -729,7 +729,7 @@
 }
 
 .notes-card-index {
-  font-size: 10px;
+  font-size: var(--ui-caption);
   font-weight: 600;
   color: #06b6d4;
   letter-spacing: 0.02em;
@@ -752,7 +752,7 @@
   align-items: center;
   gap: 3px;
   padding: 1px 6px;
-  font-size: 9.5px;
+  font-size: var(--ui-caption);
   font-weight: 700;
   letter-spacing: 0.04em;
   border-radius: 4px;
@@ -773,7 +773,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 10px;
+  font-size: var(--ui-caption);
   color: var(--reader-muted);
 }
 
@@ -820,7 +820,7 @@
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.15);
   border-left: 2.5px solid #8b5cf6;
-  font-size: 11.5px;
+  font-size: var(--ui-caption);
   font-style: italic;
   color: var(--reader-muted);
   display: flex;
