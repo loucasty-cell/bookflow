@@ -951,6 +951,8 @@
   padding: 0 var(--space-3);
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   color: inherit;
   background: transparent;
   border: 0;
@@ -962,6 +964,26 @@
 
 .command-palette-command:hover {
   background: var(--accent-soft);
+}
+
+.command-palette-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.command-palette-shortcut {
+  flex: 0 0 auto;
+  padding: 2px var(--space-2);
+  color: var(--reader-muted);
+  background: var(--chrome-strong, rgba(0, 0, 0, 0.06));
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-xs);
+  font-family: var(--font-system);
+  font-size: var(--ui-caption);
+  line-height: 1.4;
+  white-space: nowrap;
 }
 
 @media (prefers-reduced-transparency: reduce) {

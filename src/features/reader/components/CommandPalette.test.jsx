@@ -101,4 +101,28 @@ describe('CommandPalette markup', () => {
     expect(source).not.toMatch(/addEventListener\(\s*['"]keydown/);
     expect(source).not.toMatch(/event\.key === ['"]Tab['"]/);
   });
+
+  it('shows a shortcut only when the command declares one', () => {
+    const withShortcut = [
+      { id: 'notes', label: 'Open notes', shortcut: 'Ctrl B', run: vi.fn() },
+    ];
+    const shown = render({ commands: withShortcut });
+    expect(shown).toContain('command-palette-shortcut');
+    expect(shown).toContain('Ctrl B');
+
+    // A command with no binding must not be given a guessed hint.
+    const bare = render({ commands: COMMANDS });
+    expect(bare).not.toContain('command-palette-shortcut');
+  });
+
+  it('keeps the shortcut out of the accessible name of the command', () => {
+    const withShortcut = [
+      { id: 'notes', label: 'Open notes', shortcut: 'Ctrl B', run: vi.fn() },
+    ];
+    const markup = render({ commands: withShortcut });
+    // The label and the hint are separate elements, so a screen reader reading
+    // the button announces the action rather than the action plus raw keys.
+    expect(markup).toContain('<span class="command-palette-label">Open notes</span>');
+    expect(markup).toContain('<kbd class="command-palette-shortcut">Ctrl B</kbd>');
+  });
 });
