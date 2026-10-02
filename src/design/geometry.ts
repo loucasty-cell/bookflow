@@ -69,6 +69,12 @@ export const RADIUS_ALIASES = {
 /** Full-bleed pill. Outside the scale because it is derived, not chosen. */
 export const RADIUS_PILL = 999;
 
+/**
+ * Tokens whose value is legitimately unitless, beyond the z scale.
+ * `saturate()` takes a unitless multiplier, so --glass-saturate is 1.4, not 1.4px.
+ */
+export const OTHER_UNITLESS_TOKENS = ['--glass-saturate'] as const;
+
 /** Apple HIG minimum hit target, in CSS px. Visual size may be smaller. */
 export const HIT_TARGET = 44;
 

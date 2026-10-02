@@ -52,6 +52,13 @@
   --shadow-lg: 0 8px 22px rgba(0, 0, 0, 0.1), 0 24px 70px rgba(0, 0, 0, 0.16);
   --hairline-width: 1px;
   --hairline: color-mix(in srgb, currentColor 10%, transparent);
+  /* Glass material. One formula, so a translucent surface is the same optical
+     weight everywhere and the reduced-transparency fallback has a single
+     solid counterpart to restore. */
+  --glass-tint: 72%;
+  --glass-blur: 20px;
+  --glass-saturate: 1.4;
+  --glass: color-mix(in srgb, var(--chrome-solid, #ffffff) var(--glass-tint), transparent);
   --ui-caption: 12px;
   --ui-caption-line-height: 16px;
   --ui-small: 14px;

@@ -8,6 +8,7 @@ import {
   ELEVATION,
   GOLDEN_RATIO,
   HIT_TARGET,
+  OTHER_UNITLESS_TOKENS,
   RADIUS,
   RADIUS_PILL,
   SPACING,
@@ -130,11 +131,18 @@ describe('geometry and tokens.css agree', () => {
   });
 
   it('declares z-index tokens unitless and every length token in px', () => {
+    // Unitless is not a synonym for "broken": the z scale is unitless, and so is
+    // any multiplier that a CSS function consumes directly, such as the 1.4 fed
+    // to saturate(). Anything else carrying no unit is a defect.
+    const unitlessOk = new Set([
+      ...Object.keys(Z_INDEX),
+      ...OTHER_UNITLESS_TOKENS,
+    ]);
     const wrong = [];
     for (const [name, entry] of declared) {
-      const isZ = Object.prototype.hasOwnProperty.call(Z_INDEX, name);
-      if (isZ && entry.unit !== '') wrong.push(`${name} must be unitless, found "${entry.unit}"`);
-      if (!isZ && entry.unit !== 'px') wrong.push(`${name} must be px, found "${entry.unit}"`);
+      if (entry.unit === 'px') continue;
+      if (entry.unit === '' && unitlessOk.has(name)) continue;
+      wrong.push(`${name} must be px, found "${entry.unit}"`);
     }
     expect(wrong, `unit errors:\n${wrong.join('\n')}`).toEqual([]);
   });

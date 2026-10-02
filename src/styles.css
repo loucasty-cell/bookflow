@@ -16,3 +16,6 @@
 @import "./styles/landing-components.css";
 @import "./styles/reader-extras.css";
 @import "./styles/reading-lens.css";
+/* Last. Holds the global forced-colors, prefers-contrast and
+   prefers-reduced-transparency fallbacks, which override component rules. */
+@import "./styles/a11y.css";
