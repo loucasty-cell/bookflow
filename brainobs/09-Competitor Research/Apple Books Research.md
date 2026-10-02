@@ -2,7 +2,7 @@
 title: Apple Books Research
 type: research
 status: verified
-updated: 2026-09-23
+updated: 2026-10-02
 tags: [bookflow, competitor, apple-books, habits]
 source-files: [brainobs/09-Competitor Research/Competitor Research MOC.md, brainobs/05-Roadmap/Massive Upgrade Backlog.md]
 ---
@@ -92,7 +92,7 @@ state them either way.
 | Auto night theme | Adopt. Auto-switch on ambient or time signals |
 | Vertical scrolling option | Already partly present via reader mode |
 | Per-theme font stacks | Adopt. Cleaner than independent font and theme pickers |
-| Reading Now as the primary surface | Adopt. This is the Resume Card plus recent shelf |
+| Reading Now as the primary surface | Adopt. This is the Resume Card plus recent shelf. Both are now built: `src/features/library/components/ResumeCard.jsx` and `src/features/library/components/RecentShelf.jsx` |
 | Want to Read queue | Adopt. A local to-be-read list with no account |
 
 ## The critical constraint

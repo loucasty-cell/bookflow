@@ -2,9 +2,9 @@
 title: Debugging Playbook
 type: guide
 status: verified
-updated: 2026-09-25
+updated: 2026-10-02
 tags: [bookflow, ops, debugging, troubleshooting]
-source-files: [src/shared/components/ErrorBoundary.jsx, src/features/document-import/lib/backendOcrFallback.js, src/features/document-import/hooks/useDocumentImport.js, src/features/document-import/hooks/useOcrSession.js, src/features/reader/lib/focusEligibility.js, debugging.md, vite.config.js]
+source-files: [src/shared/components/ErrorBoundary.jsx,src/features/document-import/lib/backendOcrFallback.js,src/features/document-import/hooks/useDocumentImport.js,src/features/document-import/hooks/useOcrSession.js,src/features/reader/lib/focusEligibility.js,src/features/reader/lib/focusRail.js,src/features/reader/lib/progressLabel.js,debugging.md,vite.config.js,playwright.config.js,scripts/security/contrast.mjs,scripts/check-vault.mjs]
 ---
 
 # Debugging Playbook
@@ -55,7 +55,7 @@ Detail: [[Validation Rules]], [[OCR Decision Tree]].
 | `Failed to fetch` from the uploader | Backend unreachable, or the upload was rejected before a job was created | Start the backend, confirm `/api/health`, check the console for the first HTTP error |
 | "Cannot reach the OCR backend at {url}" | Backend not running | Start it, or use local OCR |
 | PaddleOCR returns no text | `PADDLEOCR_URL` empty, PaddleX not running, or response shape unexpected | Start PaddleX, set the URL, confirm `paddleocr_configured: true` |
-| `401 Unauthorized` on OCR endpoints | Missing or invalid provider token | Add a token in `backend/.env`, or pass `X-HF-Token` |
+| `401 Unauthorized` on OCR endpoints | Missing or invalid provider token | Add a token to `backend/.env` (the template is the repository-root `.env.example`; there is no `backend/.env.example`), or pass `X-HF-Token` |
 | `503 Model is Loading` | Serverless cold start | Handled automatically with up to 3 retries and backoff |
 | `429 Rate Limit Exceeded` | Provider quota exhausted | Reduce concurrency, use a dedicated endpoint, or fall back to local OCR |
 | Blank or low quality OCR output | Poor contrast, low resolution, multi-column layout | Confirm the image is upright, the model supports image-text-to-text, and try PaddleOCR |
@@ -78,6 +78,8 @@ Detail: [[SSE Progress Streaming]], [[Backend OCR Engine]].
 | Jitter on trackpad | Raw delta used instead of accumulator | Confirm `accumulateScrollIntent` and the threshold |
 | Focus stuck | Paragraph is pinned | Unpin with `Escape`, or focus the paragraph and use `Enter` or `Space` |
 | Notes not persisting | Storage blocked or wrong identity | Confirm the safe storage fallback and the document key |
+| Header shows only a percent, no `N min left` | Working as designed. `progressLabel.js` withholds the estimate until measured pace clears `MIN_SAMPLES_FOR_CONFIDENCE` sessions, and `percent` is the default display mode | Read more in this book, or switch the progress display mode in settings. Do not "fix" it by guessing a rate |
+| Header shows nothing at all | The progress display mode is `hidden` | Reset it to `percent` in settings |
 
 Front matter detection excludes headings containing words such as Contents, Copyright, or Title,
 and sections under roughly 40 words. That logic lives in `focusEligibility.js` and has a backend
@@ -126,6 +128,7 @@ Detail: [[Frontend Architecture]], [[Design Tokens]].
 | Memory climbs on a long book | Buffers retained | Confirm cleanup after extraction and OCR |
 | Slow first content | Blocking parse on the main path or terminal PDF preparation | Confirm PDF progressive import is enabled and that the reader waits for its terminal 100%; EPUB, TXT, and Markdown currently use the blocking path |
 | Janky focus transition | Animating layout properties | Animate opacity and transform only |
+| Focus rail selection feels slow on a long book | The linear fallback is active, which happens when paragraph tops are not strictly increasing | Check for a reordered or nested DOM. `focusRail.js` caches paragraph order in an identity-keyed `WeakMap` keyed on the list, invalidated when its length changes; a stale cache is a bug, not a tuning knob |
 
 Measure with the `bookflow:` performance marks rather than guessing.
 
@@ -138,6 +141,13 @@ Detail: [[Success Metrics]], [[Import Scheduler]].
 npm run lint
 npm test
 npm run build
+
+# Browser checks
+$env:PLAYWRIGHT_CHANNEL='chrome'; npm run test:e2e
+
+# Vault and design token checks
+npm run check:vault
+node scripts/security/contrast.mjs
 
 # Backend checks
 pytest backend/tests/ -v
@@ -153,6 +163,25 @@ curl http://localhost:8080/health
 git diff --check
 git status --short --branch
 ```
+
+`node scripts/security/contrast.mjs` is a manual step, not an npm script. It is the WCAG contrast
+gate over `src/styles/tokens.css`, `src/styles/themes.css`, and
+`src/styles/themes-overrides.css`; run it whenever a token or theme value changes. Current result
+on 2026-10-02 is PASS with 63 pairs checked and 11 skipped as token-absent.
+
+`npm run check:vault` validates the `brainobs` notes: required frontmatter fields, every
+`source-files` path existing on disk, every `[[wikilink]]` resolving, and every note having an
+inbound link from another note. Run it after editing any note, because a new note with no inbound
+link fails the gate.
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `npm run preview` seems to ignore its arguments | The script is `vite preview` with no arguments; the port comes from the caller | Playwright passes `--port 4175 --strictPort`. Do not add a `test` argument |
+| A unit test fails with `document is not defined` | Something expects a DOM | There is no jsdom or Testing Library installed. Use `renderToStaticMarkup` for components or mock `react` for hooks. Moving it to a Playwright spec is usually the right answer |
+| Browser test measures old behaviour | `dist/` is stale; Playwright runs `vite preview` on 4175, not the dev server | Run `npm run build`, then rerun `npm run test:e2e` |
+| Playwright cannot find a browser | Bundled Chromium download is unreliable here | `$env:PLAYWRIGHT_CHANNEL='chrome'` |
+| `check:vault` reports a bad `source-files` path | The `source-files` list is comma-split, so a path containing a comma breaks it | Remove the comma from the path or drop the entry |
+| `check:vault` reports an orphaned note | Nothing links to it from another note | Add an inbound wikilink from a MOC or a related note |
 
 ## Performance mark inspection
 
@@ -170,4 +199,4 @@ If a failure is not covered by the existing documentation, reproduce it with the
 possible input, capture the exact error text, and then update this note. An undocumented failure
 that recurs is a documentation defect.
 
-Detail: [[Context Sync Protocol]], [[Verification Checklist]].
+Detail: [[Context Sync Protocol]], [[Verification Checklist]], [[Testing Pipeline]], [[Design Tokens]].

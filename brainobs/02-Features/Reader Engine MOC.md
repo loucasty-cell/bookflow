@@ -18,7 +18,10 @@ The reader is Bookflow's product. Everything else supports it.
 - [[Themes and Atmospheres]] - theme tokens per atmosphere
 - [[Navigation and Controls]] - keyboard, scroll intent, progress, touch
 - [[Notes and Bookmarks]] - selection tooltip, margin notes, persistence
-- [[Reading Lens and Focus Bar]] - consent-gated assistant card, both surfaces, drag, minimal card
+- [[Reading Lens]] - consent-gated assistant card, both surfaces, drag, minimal card
+- [[Reading Lens Bar]] - the draggable floating bar, its three consent choices, and persisted position
+- [[Command Palette]] - Ctrl/Cmd+K control surface and the progress-display preference
+- [[Graphics Quality Tiers]] - device-tiered ambient canvas and the Three-off-entry rule
 - [[Sentence-Paced Scroll]] - Lenis configuration, single-ticker rule, programmatic scroll routing
 - Long-book windowing - `useChapterWindow` keeps a bounded chapter window with spacers
 - Local definition lookup - opt-in starter lexicon in `dictionary.js`; no network lookup

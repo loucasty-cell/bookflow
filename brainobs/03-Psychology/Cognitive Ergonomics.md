@@ -2,7 +2,7 @@
 title: Cognitive Ergonomics
 type: research
 status: verified
-updated: 2026-09-24
+updated: 2026-10-02
 tags: [bookflow, psychology, ergonomics, reading-science, research]
 source-files: [src/features/reader/lib/readingController.js, src/features/reader/lib/focusRail.js, src/features/reader/lib/textFormatter.js, src/features/reader/components/SaccadicGuide.jsx, frontendskills.md]
 ---

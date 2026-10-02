@@ -2,7 +2,7 @@
 title: Retention Research
 type: research
 status: verified
-updated: 2026-09-18
+updated: 2026-10-02
 tags: [bookflow, psychology, research, evidence, retention]
 source-files: [Bookflowideas.md, improvements.md, goals.md, detailsinfo.md]
 ---

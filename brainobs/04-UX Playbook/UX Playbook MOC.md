@@ -20,6 +20,7 @@ How Bookflow looks, moves, lays out, and stays accessible.
 - [[Responsive Breakpoints]] - desktop, tablet, mobile behaviour and overflow rules
 - [[Figma Inspection Evidence]] - inspected Figma file keys, node IDs, and measured values
 - [[Home Widgets]] - Figma-derived home widget grid, geometry, and data bindings
+- [[Graphics Quality Tiers]] - device-tiered ambient canvas, DPR caps, Three-off-entry rule
 
 ## The design position
 
@@ -38,8 +39,10 @@ leads. Motion is felt more than seen. Nothing competes with the paragraph being 
 
 ## Token-first rule
 
-Colour, spacing, radius, shadow, and duration live as CSS custom properties in `styles.css`.
-Components consume tokens. Adding a one-off hex value or a magic pixel value is a defect.
+Colour, spacing, radius, shadow, and duration live as CSS custom properties in
+`src/styles/tokens.css`. `src/styles.css` is only a 13-line `@import` manifest and holds no
+tokens itself. Components consume tokens. Adding a one-off hex value or a magic pixel value is a
+defect.
 
 Detail: [[Design Tokens]].
 

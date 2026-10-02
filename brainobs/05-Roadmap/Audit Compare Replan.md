@@ -2,9 +2,9 @@
 title: Audit Compare Replan
 type: strategy
 status: living
-updated: 2026-09-25
+updated: 2026-10-02
 tags: [bookflow, audit, compare, replan, strategy]
-source-files: [brainobs/09-Competitor Research/Competitor Research MOC.md, brainobs/03-Psychology/Competitor Mechanics Scorecard.md, src/features/reader/config.js, src/features/reader/lib/dictionary.js, src/features/reader/components/HorizonTeaser.jsx, src/features/document-import/hooks/useDocumentImport.js, src/features/library/index.js, src/features/library/lib/readingGoals.js, src/features/library/lib/readingStats.js, src/App.jsx]
+source-files: [brainobs/09-Competitor Research/Competitor Research MOC.md,brainobs/03-Psychology/Competitor Mechanics Scorecard.md,src/features/reader/config.js,src/features/reader/lib/dictionary.js,src/features/reader/lib/progressLabel.js,src/features/reader/components/HorizonTeaser.jsx,src/features/document-import/hooks/useDocumentImport.js,src/features/library/index.js,src/features/library/components/RecentShelf.jsx,src/features/library/lib/readingSpeed.js,src/features/library/lib/readingGoals.js,src/features/library/lib/readingStats.js,src/App.jsx]
 ---
 
 # Audit Compare Replan
@@ -21,9 +21,9 @@ authoritative.
 | Import of arbitrary files | 4 formats, local-first, progressive | None of them match this | **Ahead** |
 | Scanned and damaged PDFs | 2-tier local OCR plus backend | Kindle handles owned purchases only | **Ahead** |
 | Privacy | Local by default, no account | None | **Ahead** |
-| Library and return loop | Metadata library and resume card; recent shelf and automatic reopen remain open | Kindle, Apple, Goodreads | **Partial** |
-| Reading legibility over time | Metadata stats and opt-in goals exist; recent shelf remains open | Apple Books, Goodreads | **Partial** |
-| Progress fidelity | Percent only | Kindle percent plus page plus time left | **Behind** |
+| Library and return loop | Metadata library, resume card, session recap, and a built recent-books shelf; automatic reopen without re-selection remains open | Kindle, Apple, Goodreads | **Partial** |
+| Reading legibility over time | Metadata stats, opt-in goals, and a recent shelf all exist; no full statistics dashboard | Apple Books, Goodreads | **Partial** |
+| Progress fidelity | Percent, with an opt-in time-left-in-chapter label | Kindle percent plus page plus time left | **Behind** |
 | Comprehension aids | Local starter dictionary is wired behind an opt-in Define action; licensed dataset and look-back remain open | Kindle dictionary, X-Ray, translation | **Partial** |
 | Social layer | None | Goodreads, Fable | **Behind, intentionally** |
 | Annotation depth | Notes, bookmarks, quotes, tooltip | Kindle Notebook, Libby | **Parity, close** |
@@ -66,7 +66,7 @@ Detail: [[OCR Decision Tree]], [[OCR-Frontend Sync Contract]].
 
 | Feature | Status |
 | --- | --- |
-| Golden-ratio focus rail at 0.38 | Built, and unique in the research set |
+| Golden-ratio focus rail at 0.38 | Built in `src/features/reader/lib/readingController.js`, and unique in the research set |
 | Scroll intent accumulation | Built, prevents jitter |
 | Syntactic salience bionic fixation | Built, uses a low-salience particle set |
 | Paragraph classification heuristic | Built in `src/shared/lib/text.js` |
@@ -79,13 +79,14 @@ scrolling. This is the actual product innovation.
 
 ### 1. The return loop is partial
 
-Bookflow now has a metadata-only `bookflow:library`, session statistics, a `ResumeCard`, and a
-close-of-session recap. The reader can see an in-progress title and request the source file again.
-The recent-books shelf, file-handle reuse, and automatic reopen without re-selection are still
-missing, so the return loop is not yet equivalent to a competitor's library.
+Bookflow has a metadata-only `bookflow:library`, session statistics, a `ResumeCard`, a
+close-of-session recap, and a built recent-books shelf. The reader can see an in-progress title and
+request the source file again. File-handle reuse and automatic reopen without re-selection are
+still missing, so the return loop is not yet equivalent to a competitor's library.
 
-Evidence: `src/features/library/lib/libraryStore.js`, `ResumeCard.jsx`, and the `backlog-3`
-`RecentShelf` TODO in `LandingPage.jsx`.
+Evidence: `src/features/library/lib/libraryStore.js`, `ResumeCard.jsx`, and
+`src/features/library/components/RecentShelf.jsx`, which is exported from the library barrel and
+rendered by `LandingPage.jsx`. The `backlog-3` TODO this note previously cited there is gone.
 
 Detail: [[Library and Reading Stats]].
 
@@ -93,14 +94,14 @@ Detail: [[Library and Reading Stats]].
 
 | Kindle provides | Bookflow provides |
 | --- | --- |
-| Percent read | Percent read |
-| Real page numbers | Not available |
-| Time left in chapter, from actual reading speed | Local measured speed exists in the library feature, but the reader does not yet surface chapter time-left |
+| Percent read | Percent read, the default mode |
+| Real page numbers | Not available, and never fabricated; the reader has no page concept |
+| Time left in chapter, from actual reading speed | Built and opt-in: `progressLabel.js` renders `N min left` once measured pace clears `MIN_SAMPLES_FOR_CONFIDENCE` |
 | Time left in book | Whole document estimate only |
 
-`createSpeedTracker` and `computeWordsPerMinute` now measure active local reading, with idle gaps
-excluded. The remaining gap is presentation and sample confidence, not the absence of a speed
-calculation.
+`createSpeedTracker` and `computeWordsPerMinute` measure active local reading with idle gaps
+excluded, and `progressLabel.js` now surfaces chapter time-left from them. The remaining gap is
+time-left for the whole book, and the fact that the reader has no page mapping.
 
 ### 3. Comprehension aids are partial
 
@@ -114,8 +115,8 @@ off-device.
 ### 4. Legibility over time is partial
 
 Goodreads succeeds on shelves, a yearly count, and what friends read. Apple Books ships goals,
-streaks, and a yearly count. Bookflow now has opt-in local goals, measured stats, and deterministic
-achievement APIs, but no complete statistics dashboard or recent-books shelf.
+streaks, and a yearly count. Bookflow has opt-in local goals, measured stats, deterministic
+achievement APIs, and a built recent-books shelf, but no complete statistics dashboard.
 
 ### 5. Not installable, not offline-capable
 
@@ -146,19 +147,36 @@ These corrections were made in the vault during this audit and matter for planni
 
 | Discovery | Impact |
 | --- | --- |
+| Recent-books shelf is **built**, not open | Removes the top item of the Phase 1 replan; `backlog-3` no longer exists in `LandingPage.jsx` |
+| Chapter time-left is **built** and opt-in | Closes priority 6; `progressLabel.js` never shows it until measured pace is confident |
+| Note search is **built** in `NotesPanel.jsx` | Closes the search half of priority 11; cross-chapter consolidation and jump-to-quote remain unverified |
 | Haptic vocabulary is **built and wired**, not partial | Removes an item from the backlog |
 | Paragraph classification is **implemented** in `src/shared/lib/text.js` | Removes an item; status changes to verified |
 | `HorizonTeaser` is **built and wired** in `ReaderPage` | The craving mechanism already exists; its fallback estimate is derived from the next chapter's word count, while live speed samples remain open |
 | `FocusCard.jsx` exists as a separate focus surface | Affects UI refactor scoping |
-| `resonance.css` exists in reader components but is **orphaned**, no importer | Dead asset; either wire it to social resonance or delete it |
-| `HAPTIC_PATTERNS.HEAVY`, `WARNING`, `SELECTION` defined but **unused** | Either wire or mark reserved |
+| `resonance.css` existed in reader components but was **orphaned** | Dead asset; resolved by deletion |
+| `HAPTIC_PATTERNS.HEAVY`, `WARNING`, `SELECTION` defined but **unused** | Still open behind `TODO(backlog-23)` |
 
-The `resonance.css` finding is confirmed: no file imports it, and `ReaderPage.jsx` does not
-reference resonance styles. It is either unfinished social-layer styling or leftover work.
+The `resonance.css` finding is confirmed: no file imported it, and `ReaderPage.jsx` did not
+reference resonance styles.
 
 Resolved: the file was deleted rather than wired. It had no importer, and its only two custom
 properties (`--text-muted`, `--bookflow-blue`) exist nowhere in the token layer, so nothing could
 have inherited from it. Social styling is not designed yet.
+
+## What the replan rests on
+
+Re-measured 2026-10-02: `npm run lint` reports 0 errors and 1 warning,
+`src/features/reader/components/CommandPalette.jsx:12` (`react-refresh/only-export-components`).
+`npm test` reports 52 test files and 506 passing tests. `npm run build` succeeds with
+chunk-size warnings plus one `INEFFECTIVE_DYNAMIC_IMPORT` warning for `FocusCard.jsx`.
+`pytest backend/tests/` reports 75 passed with 1 Starlette deprecation warning.
+`npx playwright test --list` reports 19 tests in 4 spec files.
+
+CI (`.github/workflows/webpack.yml`, job `CI checks`) runs `npm ci`, lint, test, and build on Node
+20.x and 22.x, and `pytest backend/tests/ -v` on Python 3.11 and 3.12. It does **not** run
+`npm run test:e2e`, `npm run check:vault`, the contrast script, or pyright, so a green CI badge
+does not mean the browser or vault gates passed.
 
 ## Replan
 
@@ -167,23 +185,24 @@ The replan reorders the upgrade path around what the competitor research proved 
 ### Phase 1: close the return loop
 
 ```text
-Priority 1  Recent books shelf plus file reopen   highest remaining reading value
-Priority 2  Currently Reading surface             what Goodreads and Apple Books lead with
+Priority 1  Recent books shelf                     SHIPPED 2026-10-02
+Priority 2  File reopen without re-selection      the highest remaining value
 Priority 3  Want to Read queue                    present in almost every competitor
 Priority 4  Session recap on close                built; keep it opt-in
 ```
 
-Rationale: every researched app that retains readers does these four. Bookflow now has the
-metadata library, resume card, and opt-in recap, but still lacks the recent shelf and file-handle
-reopen.
+Rationale: every researched app that retains readers does these four. Bookflow has the metadata
+library, resume card, opt-in recap, and the recent shelf. File-handle reopen and the want-to-read
+queue are what remain.
 
 ### Phase 2: match Kindle on progress legibility
 
 ```text
-Priority 5  Measure real local reading speed
-Priority 6  Time left in chapter from that speed
-Priority 7  Unit count plus percent, no fake page mapping
-Priority 8  HorizonTeaser estimated from real word count
+Priority 5  Measure real local reading speed       built (readingSpeed.js)
+Priority 6  Time left in chapter from that speed   built (progressLabel.js)
+Priority 7  Unit count plus percent, no fake page mapping   percent and time-left ship;
+                                                            the unit-position string is unverified
+Priority 8  HorizonTeaser estimated from real word count    still on the derived 230 WPM fallback
 ```
 
 ### Phase 3: close the comprehension gap
@@ -238,8 +257,10 @@ State the metric before building, per [[Success Metrics]].
 ## The rebuild question
 
 Answering it directly: **no rebuild is needed.** The audit found a strong, differentiated reader
-with a partial return loop and a missing legibility layer. The remaining work is additive,
-metadata-first, and does not require moving parsing, OCR, or focus systems.
+with a partial return loop and a missing legibility layer. Since this note was written, the recent
+shelf, chapter time-left, note search, the Lens bar, the command palette, home widgets, and a
+device-tier ambient canvas have all landed. The remaining work is additive, metadata-first, and
+does not require moving parsing, OCR, or focus systems.
 
 The architecture is not the constraint. The return loop is.
 

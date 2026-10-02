@@ -2,7 +2,7 @@
 title: Ethical Guardrails
 type: rules
 status: verified
-updated: 2026-09-18
+updated: 2026-10-02
 tags: [bookflow, psychology, ethics, rules, strategy]
 source-files: [AGENTS.md, Bookflowideas.md, improvements.md, goals.md, src/features/reader/config.js]
 ---

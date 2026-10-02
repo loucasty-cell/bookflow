@@ -2,9 +2,9 @@
 title: Massive Upgrade Backlog
 type: spec
 status: living
-updated: 2026-09-25
+updated: 2026-10-02
 tags: [bookflow, roadmap, upgrade, backlog, ui, experience]
-source-files: [brainobs/05-Roadmap/Audit Compare Replan.md, brainobs/03-Psychology/Competitor Mechanics Scorecard.md, src/features/reader/config.js, src/features/reader/components/HorizonTeaser.jsx, src/features/reader/lib/dictionary.js, src/features/library/index.js, src/features/library/lib/libraryStore.js, src/features/library/lib/readingGoals.js, src/features/library/lib/readingStats.js, src/features/library/lib/durableStorage.js, src/App.jsx]
+source-files: [brainobs/05-Roadmap/Audit Compare Replan.md,brainobs/03-Psychology/Competitor Mechanics Scorecard.md,src/features/reader/config.js,src/features/reader/components/HorizonTeaser.jsx,src/features/reader/lib/dictionary.js,src/features/reader/lib/readingController.js,src/features/reader/lib/progressLabel.js,src/features/library/index.js,src/features/library/components/RecentShelf.jsx,src/features/library/lib/libraryStore.js,src/features/library/lib/readingGoals.js,src/features/library/lib/readingStats.js,src/features/library/lib/readingSpeed.js,src/features/library/lib/durableStorage.js,src/App.jsx,playwright.config.js,tests/e2e/lens-bar.spec.js]
 ---
 
 # Massive Upgrade Backlog
@@ -16,6 +16,40 @@ mean that file is absent today.
 
 Ordering follows the audit phases. Each item names the exact location, the acceptance check, and
 the invariant it must respect. No item requires a new dependency unless stated.
+
+## Status summary, re-measured 2026-10-02
+
+| Item | Status | Anchor |
+| --- | --- | --- |
+| 1 Library store | Built | `libraryStore.js` |
+| 2 Resume Card | Built, file re-selection | `ResumeCard.jsx` |
+| 3 Currently Reading | **Shipped since the last revision** | `RecentShelf.jsx` |
+| 4 Session recap | Built, opt-in | `SessionRecap.jsx` |
+| 5 Local reading speed | Built | `readingSpeed.js` |
+| 6 Time left in chapter | **Shipped since the last revision** | `progressLabel.js` |
+| 7 Unit position | Partially verified, no page concept | `progressLabel.js` |
+| 8 HorizonTeaser | Partial, derived estimate only | `TODO(backlog-8 follow-up)` |
+| 9 Local dictionary | Partial, starter lexicon | `dictionary.js` |
+| 10 Look-back | Open | `TODO(backlog-10)` |
+| 11 Note consolidation | Partial, search shipped | no marker |
+| 12 Annotation bundle | Partial, PDF export only | no marker |
+| 13 Annual goal | Built, opt-in | `readingGoals.js` |
+| 14 Derived stats | Built | `readingStats.js` |
+| 15 Gentle continuity | Not started, and only opt-in | rejected as a default |
+| 16 Reading moods | Open | `TODO(backlog-16)` |
+| 17 PWA | Open | `TODO(backlog-17)` in `index.html` |
+| 18 Durable storage | Adapter only, lifecycle unwired | `durableStorage.js` |
+| 19 Auto night theme | Open | `TODO(backlog-19)` |
+| 20 Haptic suppression | Open | `TODO(backlog-20)` |
+| 21 Column sorting | Open | `TODO(backlog-21)` |
+| 22 Orphaned `resonance.css` | Resolved, file deleted | no marker |
+| 23 Unused haptic patterns | Open | `TODO(backlog-23)` |
+| 24 Import benchmarks | Partial, one probe | `TODO(backlog-24)` |
+
+Gate counts on the same date: `npm run lint` 0 errors plus 1 warning, `npm test` 52 test files and
+506 passing tests, `npm run build` succeeds with chunk-size and `INEFFECTIVE_DYNAMIC_IMPORT`
+warnings, `pytest backend/tests/` 75 passed, and `npx playwright test --list` 19 tests in 4 specs.
+CI runs lint, test, build, and pytest only.
 
 ## Quick reference
 
@@ -70,11 +104,17 @@ Acceptance: appears only with an honest in-progress entry and explains the re-se
 
 ### 3. Currently Reading surface
 
+Status: shipped on 2026-10-02 as `src/features/library/components/RecentShelf.jsx`. It is exported
+from `src/features/library/index.js` and rendered by `LandingPage.jsx:217`. No `backlog-3` marker
+remains anywhere in source.
+
 ```text
-New file    src/features/landing/components/RecentShelf.jsx
+Component   src/features/library/components/RecentShelf.jsx
 Shows       Last 3 to 5 documents with progress and relative last-read time
 Replaces    Nothing; it sits beside the curated LivingShelf
 Note        The curated shelf stays, since it solves first-session cold start
+Fallback    Each row can prompt for the source file, because the handle is not retained
+Tests       src/features/library/components/RecentShelf.test.jsx
 ```
 
 Acceptance: the reader's own books appear alongside curated ones with clear visual distinction.
@@ -100,6 +140,9 @@ Acceptance: derived from real activity only; no inflated numbers; single dismiss
 ### 5. Local reading speed
 
 Status: built in `src/features/library/lib/readingSpeed.js`; consumed by measured session totals.
+Verified exports on 2026-10-02: `createSpeedTracker`, `computeWordsPerMinute`, `blendPace`,
+`minutesForWords`, `DEFAULT_WORDS_PER_MINUTE = 230`, `MIN_MEASURED_WORDS_PER_MINUTE = 60`,
+`MAX_MEASURED_WORDS_PER_MINUTE = 900`, `IDLE_GAP_MS = 45000`, `MIN_SAMPLES_FOR_CONFIDENCE = 3`.
 
 ```text
 Component   src/features/library/lib/readingSpeed.js
@@ -107,20 +150,28 @@ Method      Accumulate words and elapsed active time during a session
 Ignore      Idle gaps beyond a threshold, so a paused tab does not skew results
 Store       Derived from local activity; never sent anywhere
 Clamp       To a sane range so an outlier session cannot distort the estimate
-Tests       readingStats.test.js
+Tests       src/features/library/lib/readingStats.test.js
 ```
 
 ### 6. Time left in chapter
 
+Status: shipped. The label lives in `src/features/reader/lib/progressLabel.js`, which returns
+`N min left`, or `null` when it cannot be known. The `backlog-6` marker in `ReaderPage.jsx` no
+longer exists.
+
 ```text
-Modify      src/features/reader/components/ReaderPage.jsx progress area
+Component   src/features/reader/lib/progressLabel.js
 Uses        readingSpeed estimate plus remaining chapter words
-Display     "12 min left in this chapter" beside percent
-Fallback    Fixed 220 WPM until enough samples exist, and only show the estimate
-            once it is meaningful
+Display     "12 min left" beside percent
+Fallback    Hold the estimate back until MIN_SAMPLES_FOR_CONFIDENCE samples exist
 ```
 
 ### 7. Unit position, not fabricated pages
+
+Status: partially verified. `progressLabel.js` states the rule in its own header comment: the reader
+has no page concept and never fabricates a page number. Its `PROGRESS_DISPLAY_MODES` are exactly
+`percent`, `time-left-chapter`, and `hidden`, defaulting to `percent`. A `Chapter X of Y` header
+string was not located in source, so the unit-position half of this item is still unverified.
 
 ```text
 Modify      ReaderPage progress area
@@ -161,6 +212,9 @@ Dependency  No new dependency; licensed data requires explicit approval
 
 ### 10. Look-back or skim surface
 
+Status: open. `src/features/reader/components/LookBackPanel.jsx` does not exist. The work is
+anchored by a live `TODO(backlog-10)` marker at `src/features/reader/components/ContentsPanel.jsx:4`.
+
 ```text
 New file    src/features/reader/components/LookBackPanel.jsx
 Shows       Chapter and heading map with the current position marked
@@ -170,6 +224,11 @@ Never       3D page-flip animation, and never animate the reading column
 
 ### 11. Note consolidation view
 
+Status: partial. The `backlog-11` marker no longer exists in `NotesPanel.jsx` because the search
+half shipped: the panel holds a `searchQuery` state, filters notes by both text and quote, and
+renders a `Search session notes` input with an `aria-label`. Cross-chapter consolidation and a
+jump-to-quote action were not located and remain unverified.
+
 ```text
 Modify      src/features/reader/components/NotesPanel.jsx
 Adds        All notes across chapters in one list with search and jump-to-quote
@@ -177,6 +236,11 @@ Reason      Kindle My Notebook is the closest analogue, and it is the switching 
 ```
 
 ### 12. Annotation export and import
+
+Status: partial. One-way per-document PDF export is built
+(`src/features/reader/lib/notesPdfExport.js` and `notesExport.js`). The versioned round-trippable
+bundle is not: `src/features/library/lib/annotationBundle.js` does not exist, and there is no live
+marker for it. The old `backlog-12` marker in `NotesPanel.jsx` is gone.
 
 ```text
 Future file src/features/library/lib/annotationBundle.js
@@ -232,6 +296,9 @@ Default     Off. This is the user decision recorded in the scorecard
 
 ### 16. Reading moods
 
+Status: open. The `TODO(backlog-16)` marker is live at `src/features/reader/config.js:25`, and the
+target file `src/features/reader/lib/readingMoods.js` does not exist.
+
 ```text
 New file    src/features/reader/lib/readingMoods.js
 Presets     Morning, Deep Work, Night, Gentle on Eyes
@@ -248,6 +315,9 @@ derived from real activity.
 ## Phase 5: delivery parity
 
 ### 17. PWA manifest and service worker
+
+Status: open. Anchored by the `TODO(backlog-17)` comment at `index.html:74`. No manifest or service
+worker is committed.
 
 ```text
 New files   public/manifest.webmanifest, a service worker
@@ -270,6 +340,8 @@ Never       Claim that document persistence is active before the lifecycle is wi
 
 ### 19. Auto night theme
 
+Status: open. The `TODO(backlog-19)` marker is live at `src/features/reader/config.js:29`.
+
 ```text
 Modify      src/features/reader/lib/readingMoods.js or a small prefers-color-scheme hook
 Behavior    Follow the OS preference when the reader opts in
@@ -277,6 +349,8 @@ Never       Flip the theme mid-paragraph without warning
 ```
 
 ### 20. Haptic suppression under reduced motion
+
+Status: open. The `TODO(backlog-20)` marker is live at `src/shared/lib/haptics.js:6`.
 
 ```text
 Modify      src/shared/lib/haptics.js
@@ -292,6 +366,9 @@ motion suppresses haptics.
 ## Phase 6: ergonomics debt
 
 ### 21. Multi-column PDF layout sorting
+
+Status: open. The `TODO(backlog-21)` marker is live at
+`src/features/document-import/lib/pdfParser.js:95`.
 
 ```text
 Modify      src/features/document-import/lib/pdfParser.js line assembly
@@ -312,6 +389,9 @@ Status      RESOLVED - deleted. No importer, and its only two custom properties
 
 ### 23. Wire or retire unused haptic patterns
 
+Status: open. The `TODO(backlog-23)` marker is live at `src/shared/lib/haptics.js:27` and names
+HEAVY, WARNING, and SELECTION.
+
 ```text
 File        src/shared/lib/haptics.js
 Unused      HEAVY, WARNING, SELECTION
@@ -321,7 +401,9 @@ Action      Wire SELECTION to text selection, or mark the set as reserved in a d
 ### 24. Publish import benchmark numbers
 
 Status: partial. The seven `bookflow:` marks are firing, and one 420-page browser probe measured
-`3.7 s`; repeated p50/p95 numbers by format and device are still open.
+`3.7 s`; repeated p50/p95 numbers by format and device are still open. The `TODO(backlog-24)` marker
+is live at `src/shared/lib/perfMarks.js:34`. Note that CI builds but never asserts a size, so no
+bundle or timing budget is enforced remotely.
 
 ```text
 Uses        src/shared/lib/perfMarks.js
@@ -348,14 +430,15 @@ numbers with a date.
 | Token-driven styling | Reuse [[Design Tokens]] |
 | MOC link for every new note | Keeps the vault navigable |
 
-## Decisions blocking Phase 4
+## Decisions still blocking
 
 | Item | Needs |
 | --- | --- |
-| 13 Annual goal | Confirm the horizon and whether it is opt-in |
+| 13 Annual goal | Settled: opt-in via `enableAnnualGoal`, default off, recoverable, no streak language |
 | 15 Continuity counts | Confirm reject, or opt-in only |
 | 9 Local dictionary | Approve a licensed data source; starter lexicon is already wired |
 | 18 Durable storage | Adapter exists; approve and wire the document lifecycle |
+| 12 Annotation bundle | No `TODO` marker exists. Add one at the Notes export action so the item stays findable |
 
 Everything in Phases 1, 2, 3, 5, and 6 needs no invariant change and no new dependency except the
 dictionary data file.

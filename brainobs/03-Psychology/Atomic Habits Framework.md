@@ -2,9 +2,9 @@
 title: Atomic Habits Framework
 type: strategy
 status: living
-updated: 2026-09-25
+updated: 2026-10-02
 tags: [bookflow, psychology, habits, strategy, atomic-habits]
-source-files: [goals.md, features.md, Bookflowideas.md, reactUIUXcover.md, src/features/reader/config.js, src/App.jsx]
+source-files: [goals.md, features.md, Bookflowideas.md, reactUIUXcover.md, src/features/reader/config.js, src/features/library/components/RecentShelf.jsx, src/features/landing/components/LivingShelf.jsx, src/App.jsx]
 ---
 
 # Atomic Habits Framework
@@ -34,9 +34,10 @@ hunting for an entry point decays. The cue should be unmissable and unambiguous.
 
 **What is missing**
 
-There is a metadata-only library and a `ResumeCard` on the landing page today. The card records
-an in-progress title and can request the source file again, but the recent-books shelf and
-automatic reopen without re-selection are still missing. The return loop is therefore partial.
+There is a metadata-only library, a `ResumeCard` on the landing page, and a `RecentShelf` listing
+the reader's own books newest-first. The card and the shelf both record an in-progress title and
+can request the source file again, but automatic reopen without re-selection is still missing. The
+return loop is therefore partial.
 
 **Build spec: Resume Card**
 
@@ -51,15 +52,22 @@ Fallback    Hidden entirely when no honest in-progress entry exists. Never rende
 Rules: it must be honest about the current file state. The current card offers re-selection;
 automatic reopen without re-parsing remains open work.
 
-**Build spec: Recent shelf**
+**Recent shelf**
+
+Status: **verified and built.** `src/features/library/components/RecentShelf.jsx` is rendered by
+`LandingPage.jsx` after the hero. Default limit 5, heading "Your books".
 
 ```text
-Component   src/features/landing/components/RecentShelf.jsx
-Shows       Last 3 to 5 documents with title, progress, last read relative time
-Storage     New bookflow:library key holding lightweight metadata only, never text
+Component   src/features/library/components/RecentShelf.jsx
+Shows       Recent books with title, progress, and last-read relative time
+Storage     bookflow:library metadata only, never text
+Fallback    Returns null when the library is empty, so no empty shell is rendered
 ```
 
-Metadata only: title, author, kind, size, lastModified, progress, lastOpenedAt. No content.
+Its own header records the three constraints that shaped it: metadata only, the title rendered as
+a React text node so a hostile filename cannot execute, and nothing rendered at all when the
+library is empty. It accepts `onSelect` and `onLocateFile`, so an entry whose file handle is gone
+asks for re-selection instead of failing silently.
 
 **Environment design rule.** The reader itself is the cleanest environment Bookflow offers.
 `ReaderShell` shows only resume, chapter, progress, reader text, bookmark or note, and
@@ -241,13 +249,15 @@ If only some of this gets built, build it in this order. The order reflects leve
 appeal.
 
 ```text
-1  Recent Shelf           Multiple books become a library, not a chore
-2  File-handle reopen     Return to an available document without re-finding it
-3  Session Recap          Built; keep it opt-in and quiet
-4  Mood Presets           Personalization, cheap to build from existing settings
-5  Gentle continuity      Honest counts, no punishment
-6  Reading garden         Accumulated evidence, quiet and long-horizon
+1  File-handle reopen     Return to an available document without re-finding it
+2  Session Recap          Built; keep it opt-in and quiet
+3  Mood Presets           Personalization, cheap to build from existing settings
+4  Gentle continuity      Honest counts, no punishment
+5  Reading garden         Accumulated evidence, quiet and long-horizon
 ```
+
+Recent Shelf is no longer on this list: it is built. The remaining item at the top is the one it
+depended on.
 
 ## Measurement
 

@@ -2,8 +2,9 @@
 title: Behavioral Layer MOC
 type: MOC
 status: living
-updated: 2026-09-18
+updated: 2026-10-02
 tags: [bookflow, behavioral, moc]
+source-files: [src/features/reader/config.js, src/components/VariableRewardCapsule.jsx, src/components/InterventionModal.jsx, src/App.jsx]
 ---
 
 # Behavioral Layer MOC
@@ -13,18 +14,21 @@ Retention features. All opt-in, all off by default, none allowed to block readin
 ## Notes
 
 - [[Reward Capsules]] - chapter completion capsules with spring physics
-- [[Intervention Engine]] - 4-minute drop-off detection and re-anchoring
-- [[Social Resonance]] - SHA-256 paragraph hashing for shared marginalia (planned)
+- [[Intervention Engine]] - drop-off detection and re-anchoring
+- [[Social Resonance]] - SHA-256 paragraph hashing for shared marginalia (**planned only**)
 
-## Defaults
+## Defaults, verified in code
 
-| Setting | Default | File |
+Both gating settings are declared in `DEFAULT_SETTINGS` at `src/features/reader/config.js:4`:
+
+| Setting | Default | Line |
 | --- | --- | --- |
-| `showRewardCapsules` | `false` | `src/features/reader/config.js` |
-| `showInterventionModals` | `false` | `src/features/reader/config.js` |
+| `showRewardCapsules` | **`false`** | `config.js:15` |
+| `showInterventionModals` | **`false`** | `config.js:16` |
 
-Both are exposed in the settings panel as explicit on/off choices. The calm reader is the
-default reader: a user who never opens settings never sees a capsule or an intervention.
+Both are exposed in the settings panel as explicit on/off choices. The calm reader is the default
+reader: a user who never opens settings never sees a capsule or an intervention. A capsule or modal
+cannot appear in a default session under any timing.
 
 ## Gating in code
 
@@ -34,8 +38,18 @@ App.jsx passes  settings.showRewardCapsules === true
                 settings.showInterventionModals === true && showIntervention
 ```
 
-Triple-gated for interventions: user setting on, store flag true, and an actual detected drift.
+Interventions are triple-gated: user setting on, store flag true, and an actual detected drift.
 A modal cannot appear by accident.
+
+## What is real and what is not
+
+| Surface | State |
+| --- | --- |
+| Reward capsule component | Built, `src/components/VariableRewardCapsule.jsx` with `capsule.css` |
+| Intervention modal component | Built, `src/components/InterventionModal.jsx` with `intervention.css` |
+| Both wired behind `false` defaults | Yes |
+| Social Resonance frontend experience | **Not built.** No persisted frontend community surface exists |
+| Social Resonance backend | **Mocks only.** See [[Social Resonance]] |
 
 ## Design rules for everything here
 
@@ -47,4 +61,4 @@ A modal cannot appear by accident.
 
 Detail: [[Ethical Guardrails]], [[Atomic Habits Framework]].
 
-Related: [[Psychology MOC]], [[Roadmap MOC]].
+Related: [[Psychology MOC]], [[Roadmap MOC]], [[Invariants]].

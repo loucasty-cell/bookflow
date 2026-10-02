@@ -2,15 +2,18 @@
 title: Docker OCR
 type: guide
 status: verified
-updated: 2026-09-18
+updated: 2026-10-02
 tags: [bookflow, ops, docker, paddleocr, deployment]
-source-files: [docker-compose.yml, backend/Dockerfile.ocr, backend/backendskills.md, README.md]
+source-files: [docker-compose.yml,backend/Dockerfile.ocr,.env.example,backend/backendskills.md,README.md]
 ---
 
 # Docker OCR
 
 Self-hosted PaddleOCR through Docker. This is the preferred accelerated OCR path because it is
 deterministic, stays under project control, and needs no external token.
+
+Container names, ports, mounts, and environment variables below were checked against
+`docker-compose.yml` and `backend/Dockerfile.ocr` on 2026-10-02.
 
 ## Containers
 
@@ -58,10 +61,15 @@ API token. The Hugging Face fallback is optional and independently configured.
 ## Health checks
 
 ```text
-Container probe   /health on port 8080
+Container probe   /health on port 8080, curl -f against localhost inside the container,
+                  every 15s with a 120s start period
 Gateway check     /api/health on port 8000
 Startup           Confirm the gateway reports the OCR provider as available
 ```
+
+`bookflow-fastapi` declares `depends_on: bookflow-paddleocr: condition: service_healthy`, so Compose
+holds the gateway until the worker passes its healthcheck. That is a container start gate, not a
+model-readiness gate: the first scan can still hit a cold model.
 
 Verify provider availability at startup and before a job rather than discovering an outage
 mid-scan. The rollout plan in the OCR documentation lists this explicitly.
@@ -69,10 +77,18 @@ mid-scan. The rollout plan in the OCR documentation lists this explicitly.
 ## Configuration
 
 ```text
-PADDLEOCR_URL   Point the gateway at the worker, for example http://bookflow-paddleocr:8080
+PADDLEOCR_URL   Gateway-side only. docker-compose.yml already sets it to
+                http://bookflow-paddleocr:8080/ocr for the fastapi service
+PADDLEOCR_PORT  Host port mapping for the worker, default 8080
+PADDLEOCR_DEVICE, PADDLEOCR_PRELOAD_PROFILES, PADDLEOCR_MAX_IMAGE_MB
+                Worker-side knobs, defaulting to cpu, small, and 20
 OCR_MODEL       Only needed for the Hugging Face fallback
 HF_TOKEN        Only needed for the Hugging Face fallback
 ```
+
+There is no `backend/.env.example`. The template is the repository-root `.env.example`, and
+`docker-compose.yml` substitutes from it. The worker-side variables are optional because the
+compose file supplies defaults.
 
 Detail: [[Environment Config]].
 
@@ -109,4 +125,4 @@ curl http://localhost:8000/api/health # Gateway
 Then confirm an end-to-end scan in the browser and compare recognized page order against the
 source images.
 
-Related: [[Backend OCR Engine]], [[OCR Decision Tree]], [[Testing Pipeline]].
+Related: [[Backend OCR Engine]], [[OCR Decision Tree]], [[Testing Pipeline]], [[Dev Setup]].

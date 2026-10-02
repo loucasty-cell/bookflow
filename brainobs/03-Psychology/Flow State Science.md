@@ -2,7 +2,7 @@
 title: Flow State Science
 type: research
 status: verified
-updated: 2026-09-18
+updated: 2026-10-02
 tags: [bookflow, psychology, flow, research, attention]
 source-files: [src/App.jsx, src/components/InterventionModal.jsx, goals.md, Bookflowideas.md]
 ---

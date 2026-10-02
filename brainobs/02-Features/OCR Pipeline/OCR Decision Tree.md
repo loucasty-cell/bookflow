@@ -2,16 +2,16 @@
 title: OCR Decision Tree
 type: feature
 status: verified
-updated: 2026-09-25
+updated: 2026-10-02
 tags: [bookflow, ocr, decision, pipeline]
-source-files: [src/features/document-import/lib/pdfParser.js, src/features/document-import/lib/pdfOcr.js, src/features/document-import/lib/backendOcrFallback.js, src/features/document-import/hooks/useDocumentImport.js, src/features/document-import/hooks/useOcrSession.js, src/features/document-import/components/OcrUploader.jsx, backend/main.py, updateOCRdata.md]
+source-files: [src/features/document-import/lib/pdfParser.js, src/features/document-import/lib/pdfOcr.js, src/features/document-import/lib/backendOcrFallback.js, src/features/document-import/hooks/useDocumentImport.js, src/features/document-import/hooks/useOcrSession.js, src/features/document-import/components/OcrUploader.jsx, backend/main.py, backend/app/services/ocr_providers.py]
 ---
 
 # OCR Decision Tree
 
 The decision tree that decides where a page gets read. This is the single most important OCR concept
-in the project: OCR is a repair mechanism that runs only where text is missing, and remote OCR is
-an explicit user choice rather than an automatic fallback.
+in the project: OCR is a repair mechanism that runs only where text is missing, and remote OCR is an
+explicit user choice rather than an automatic fallback.
 
 ## The ladder
 
@@ -34,9 +34,11 @@ an explicit user choice rather than an automatic fallback.
 
 ## Tier 1: native text fast path
 
-A page with a usable text layer is never rasterized. The browser checks a native-text minimum
-before local OCR; the separately started backend path uses its own `>= 15` word fast-path
-threshold.
+A page with a usable text layer is never rasterized. The backend makes this explicit in the provider
+ladder: `call_ocr_with_retry` returns immediately with native text when `word_count >= 15`
+(`ocr_providers.py:298-306`), and returns native text again when no image was produced
+(`:308-316`). The rendering fast path makes the same decision earlier, keeping a page as text when
+`word_count >= 15` and `force_ocr` is false (`ocr_rendering.py:74`).
 
 Why this matters:
 
@@ -44,12 +46,12 @@ Why this matters:
 - It avoids burning GPU or inference budget on pages that do not need it.
 - It keeps the default path fully private even when the backend is running.
 
-Detail: [[PDF Parsing]].
+Detail: [[PDF Parsing]], [[Backend OCR Engine]].
 
 ## Tier 2: local Tesseract.js
 
-For image-only pages, local WASM OCR runs in the browser. This is the privacy-preserving repair
-path and the default for scanned English pages.
+For image-only pages, local WASM OCR runs in the browser. This is the privacy-preserving repair path
+and the default for scanned English pages.
 
 Costs to state honestly:
 
@@ -61,14 +63,25 @@ Detail: [[Local Tesseract.js]].
 
 ## Tier 3: explicit backend OCR
 
-The accelerated path does not activate merely because local reading failed. After a local failure,
-the user must open `Optional accelerated OCR` and press Start. The UI then discloses:
+The accelerated path does not activate merely because local reading failed. After a local failure the
+user must open `Optional accelerated OCR` and press Start.
 
-```text
-"Scanned PDF pages are sent only after you start this optional scan"
-"Ingesting PDF in memory..."
-"Use private on-device OCR"
-```
+Inside the backend, the provider order is **PaddleOCR first, Hugging Face second**:
+
+| Order | Condition | Behaviour |
+| --- | --- | --- |
+| 1 | Native text has at least 15 words | Return immediately, no OCR call (`ocr_providers.py:298-306`) |
+| 2 | No `image_b64` available | Return native text (`ocr_providers.py:308-316`) |
+| 3 | PaddleOCR reachable | Called **first** (`ocr_providers.py:341-357`) |
+| 4 | PaddleOCR returned nothing **and** `model_id` is non-empty | Hugging Face vision (`ocr_providers.py:359-401`) |
+| 5 | No `model_id` configured | A clear failure message instead of a hung request (`ocr_providers.py:359-367`) |
+| 6 | Retries exhausted | Fall back to native text when it has at least 3 words (`ocr_providers.py:448-457`) |
+
+Profiles: requesting `medium` uses `["medium"]`; requesting `small` uses `["small", "medium"]`
+(`ocr_providers.py:229`), so a small request auto-retries upward to medium rather than giving up.
+
+A per-page failure inside PaddleOCR is logged and the page continues (`:272-278`). One bad page never
+fails the job.
 
 The scan is cancellable at any time and cancellation frees the server-side buffers.
 
@@ -76,21 +89,14 @@ Detail: [[Backend OCR Engine]], [[SSE Progress Streaming]].
 
 ## Tier 4: honest failure
 
-If every option fails, the user gets a specific message. Two examples of the real wording:
-
-```text
-"Cannot reach the OCR backend at http://localhost:8000. Start it, then retry."
-"The backend scan finished but found no readable text in this PDF."
-```
-
-Naming the address and the failure mode is the difference between a dead end and a fixable
-problem.
+If every option fails, the user gets a specific message naming the address and the failure mode.
+Naming what failed is the difference between a dead end and a fixable problem.
 
 ## Failure handling inside the backend
 
-A page failure does not fail the job. Unreadable pages are collected into `failed_pages` and
-returned to the client, which surfaces them as `skippedPages`. Only when no page succeeds does
-the job fail, and then the message lists the page numbers.
+A page failure does not fail the job. Unreadable pages are collected into `failed_pages` and returned
+to the client, which surfaces them as `skippedPages`. Only when no page succeeds does the job fail, and
+then the message lists the page numbers.
 
 Detail: [[Backend Architecture]].
 
@@ -99,7 +105,7 @@ Detail: [[Backend Architecture]].
 | Input | Default path |
 | --- | --- |
 | Digital PDF | Native text extraction |
-| Scanned PDF | Render image-only pages, then OCR |
+| Scanned PDF | Render image-only pages, then local OCR |
 | Camera photo of a page | Image preprocessing, then OCR |
 | Mixed PDF | Per-page decision: native where available, OCR where not |
 
@@ -111,4 +117,4 @@ Detail: [[Backend Architecture]].
 - Uploading a document as a whole by default.
 - Treating a local parse error as permission to call the backend automatically.
 
-Related: [[Invariants]], [[Privacy Model]], [[Backlog P0-P1-P2]].
+Related: [[Invariants]], [[Privacy Model]], [[Backlog P0-P1-P2]], [[OCR-Frontend Sync Contract]].

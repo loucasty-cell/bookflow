@@ -2,21 +2,34 @@
 title: Future Features MOC
 type: MOC
 status: living
-updated: 2026-09-18
+updated: 2026-10-02
 tags: [bookflow, roadmap, future, moc]
+source-files: [brainobs/05-Roadmap/Future Features/PWA Offline.md,brainobs/05-Roadmap/Future Features/TTS Synchronization.md,brainobs/05-Roadmap/Future Features/Concept Graph.md,brainobs/02-Features/Library and Reading Stats.md,index.html,src/features/reader/config.js]
 ---
 
 # Future Features MOC
 
-Spec-ready designs for larger capabilities. Nothing here is built. Each note carries a status
-field, and all of them are planned or exploratory.
+Spec-ready designs for larger capabilities. Each note carries a status field.
 
-## Notes
+Folder state as of 2026-10-02: this folder holds **PWA Offline**, **TTS Synchronization**, and
+**Concept Graph**, and all three are still planned. **Library and Reading Stats** is no longer
+here; it moved to `02-Features/` because the metadata library, measured stats, opt-in goals, and
+deterministic achievements are built. Wikilinks to it still resolve, since the vault keys on note
+basename rather than folder.
 
-- [[Library and Reading Stats]] - persistent library, gentle continuity, reading garden
-- [[TTS Synchronization]] - speech output locked to the focus rail
-- [[PWA Offline]] - installable app with durable local storage
-- [[Concept Graph]] - cross-chapter definition linking
+## Still in this folder
+
+| Note | Status | Anchor |
+| --- | --- | --- |
+| [[PWA Offline]] | Planned | `TODO(backlog-17)` in `index.html:74`; no manifest or service worker is committed |
+| [[TTS Synchronization]] | Planned | No `TODO(backlog-N)` marker was found for it |
+| [[Concept Graph]] | Planned | No `TODO(backlog-N)` marker was found for it |
+
+## Moved out because it shipped
+
+| Note | Lives in | Why it moved |
+| --- | --- | --- |
+| [[Library and Reading Stats]] | `02-Features/` | `libraryStore.js`, `readingStats.js`, `readingSpeed.js`, `readingGoals.js`, `achievements.js`, `BadgeGallery`, `ResumeCard`, `SessionRecap`, and `RecentShelf` all exist |
 
 ## Also planned elsewhere in the vault
 

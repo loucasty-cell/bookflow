@@ -2,7 +2,7 @@
 title: Agent Context MOC
 type: MOC
 status: living
-updated: 2026-09-24
+updated: 2026-10-02
 tags: [bookflow, agent, moc]
 ---
 
@@ -17,19 +17,24 @@ Everything an AI agent needs before touching this codebase.
 - [[File Placement Map]] - where each kind of change belongs
 - [[Verification Checklist]] - what to run and inspect
 - [[Context Sync Protocol]] - how to keep this vault true after a change
+- [[Commit Conventions]] - conventional-commit types and body format
+- [[Decision Log Template]] - ADR scaffold for decisions that deserve a record
 
 ## Hard rules in one block
 
 ```text
 Local-first privacy          book text stays on device by default
 React text nodes only        never dangerouslySetInnerHTML for book contents
-Focus rail                   FOCUS_RAIL_RATIO = 0.38
+Focus rail                   FOCUS_RAIL_RATIO = 0.38 (readingController.js:1)
+Lens egress is opt-in        no selection means no request; backend needs consent or it 403s
 Opt-in behavioral layer      capsules and interventions default false
 Deterministic progress       no variable-ratio reward mechanics
+Tokens live in src/styles/tokens.css, not in the src/styles.css import manifest
 No unapproved dependencies   ask first
 No emojis, no co-author trailers, no unnecessary comments
+Never shell-write a vault note   a BOM breaks npm run check:vault
 Never claim planned as built
-Refactor status                reader hooks and feature boundaries are extracted; App composition remains
+Refactor status              complete for scope: 7 features with barrels; App.jsx is a root composer
 ```
 
 ## Reading order for a new task

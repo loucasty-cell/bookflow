@@ -2,9 +2,9 @@
 title: Success Metrics
 type: reference
 status: living
-updated: 2026-09-26
+updated: 2026-10-02
 tags: [bookflow, roadmap, metrics, benchmarks]
-source-files: [scripts/bench.md, improvements.md, src/shared/lib/perfMarks.js, tests/e2e/smoke.spec.js, tests/e2e/long-import.spec.js, src/features/document-import/hooks/useDocumentImport.js, src/features/reader/hooks/useChapterWindow.js]
+source-files: [scripts/bench.md,improvements.md,src/shared/lib/perfMarks.js,tests/e2e/smoke.spec.js,tests/e2e/long-import.spec.js,tests/e2e/lens-bar.spec.js,playwright.config.js,vitest.config.js,package.json,src/features/document-import/hooks/useDocumentImport.js,src/features/reader/hooks/useChapterWindow.js]
 ---
 
 # Success Metrics
@@ -13,21 +13,39 @@ Measurable outcomes, with current baselines and targets. A claim without a numbe
 
 ## Verified baseline
 
-| Metric | Value | Verified |
+Every row below was re-measured in one session on 2026-10-02 unless the row says otherwise.
+
+| Metric | Value | Verified by |
 | --- | --- | --- |
-| Vitest test files | 39 | `npm test`, 2026-09-26 |
-| Vitest tests | 308 passing | Same run, 2026-09-26 |
-| Vitest duration | 8.65s | Same run, machine-dependent |
-| Playwright smoke tests | 2 | `tests/e2e/smoke.spec.js`, 2026-09-25 |
-| Playwright long-import test | 1 | `tests/e2e/long-import.spec.js`, 2026-09-25 |
+| Vitest test files | 52 | `npm test` |
+| Vitest tests | 506 passing | `npm test` |
+| Vitest duration | 9.82s | same run, machine-dependent |
+| ESLint | 0 errors, 1 warning | `npm run lint`; warning is `react-refresh/only-export-components` at `src/features/reader/components/CommandPalette.jsx:12` |
+| Playwright tests | 19 in 4 spec files | `npx playwright test --list` |
+| Playwright spec split | 14 lens bar, 2 smoke, 2 Reading Lens, 1 long-import | same listing |
+| Playwright base URL and port | `http://localhost:4175` | `playwright.config.js` |
+| Playwright timeout | 60000 ms, `fullyParallel: false` | `playwright.config.js` |
+| Production build | built in 2.37s | `npm run build`, machine-dependent |
+| Build warnings | chunks over 500 kB, plus one `INEFFECTIVE_DYNAMIC_IMPORT` for `FocusCard.jsx` | `npm run build` |
+| Largest chunks | `vendor-three` 736.73 kB, main `index` 667.35 kB, `pdf` 329.86 kB | `npm run build` |
+| Contrast gate | 63 pairs checked, 11 skipped as token-absent, PASS | `node scripts/security/contrast.mjs` |
+| Vault gate | PASS, 0 problems | `npm run check:vault` |
+| Backend tests | 75 passed, 1 Starlette deprecation warning | `pytest backend/tests/ -q` |
 | 420-page browser probe | `3,847 ms` (about `3.7 s`) | One run, 2026-09-25 |
 | Probe progress | `5 → 100` | Reader appeared after the terminal 100 |
 | Probe viewport | `390 x 844`, overflow `0` | One run, 2026-09-25 |
-| Probe mounted sections | `2` | One run, 2026-09-25 |
-| Backend tests | 75 collected across 10 modules | `pytest backend/tests/ --collect-only -q`, 2026-09-26 |
+| Probe mounted sections | `2`, against a `<= 12` assertion | One run, 2026-09-25 |
 
-The prior bundle figures in `scripts/bench.md` are historical. Re-run `npm run lint` and
-`npm run build` before publishing new bundle numbers; do not copy an earlier baseline forward.
+Two cautions on this table. First, `sample-long.pdf` is a 25-page fixture; the 420-page probe
+generates its document in-spec with `pdf-lib` and is not the same input. Second, the earlier
+bundle figures in `scripts/bench.md` are historical, and so are the previously recorded Vitest
+counts of 39 files and 308 tests. Re-run the commands before publishing new numbers; do not copy
+an earlier baseline forward.
+
+`npm run preview` is `vite preview` and takes no test argument. Playwright passes
+`--port 4175 --strictPort` to it, and `channel` comes from `process.env.PLAYWRIGHT_CHANNEL`, so
+`$env:PLAYWRIGHT_CHANNEL='chrome'; npm run test:e2e` selects the system Chrome channel. There is
+no `projects` block, so no named projects exist to select from.
 
 ## Performance targets
 
@@ -40,7 +58,7 @@ The prior bundle figures in `scripts/bench.md` are historical. Re-run `npm run l
 | Long task during OCR | None over 100ms | To measure |
 | Active OCR jobs | 1 to 3 by device class | Implemented: `min(3, hw/2)` desktop, 1 mobile |
 | Reader DOM | Bound long-book chapter window | Implemented above 1,500 paragraphs; spacer heights measured in browser |
-| Mobile layout | No overflow at 390px | Verified in the long-import and smoke probes; 320px remains a separate pass |
+| Mobile layout | No overflow at 320px, 390px, and 430px | Verified in the long-import, smoke, Reading Lens, and lens-bar browser specs |
 | Memory | Bounded growth on a long book | To measure |
 
 ## Performance marks
@@ -58,7 +76,9 @@ bookflow:reader-mounted        first render after terminal import and openBook()
 ```
 
 Read marks with `getMarks()` or `performance.getEntriesByType('mark')`. `measure()` and
-`getMeasures()` are available helpers, but no p50/p95 benchmark aggregator is published yet.
+`getMeasures()` are available helpers, but no p50/p95 benchmark aggregator is published yet. Note
+that the `bookflow:` prefix is also used for localStorage keys such as `bookflow:library` and
+`bookflow:lens-bar`; filter on `performance` entries, not on a string search of the source tree.
 
 ## Fixture corpus
 
@@ -71,9 +91,10 @@ Read marks with `getMarks()` or `performance.getEntriesByType('mark')`. `measure
 | `sample-reading.txt` | TXT | Plain text book sample |
 | `sample-structure.md` | Markdown | Markdown with headings |
 
-   Regenerate with `node tests/fixtures/generate-fixtures.mjs`. `pdf-lib` now lives in
-   `dependencies` (it moved out of `devDependencies` on 2026-09-25); it is still only reached
-   by the fixture generator and is not imported from `src/`.
+Regenerate with `node tests/fixtures/generate-fixtures.mjs`. `pdf-lib` lives in `dependencies`
+(it moved out of `devDependencies` on 2026-09-25); it is reached by the fixture generator and by
+the in-spec 420-page PDF in `tests/e2e/long-import.spec.js`, and is not imported from the reader
+surface.
 
 ## Product metrics to publish
 

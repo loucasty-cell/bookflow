@@ -2,20 +2,20 @@
 title: Paragraph Classification
 type: feature
 status: verified
-updated: 2026-09-23
+updated: 2026-10-02
 tags: [bookflow, import, classification, heuristic]
-source-files: [src/shared/lib/text.js, src/shared/lib/text.test.js, src/features/reader/lib/focusEligibility.js, book-structure-algorithm.md]
+source-files: [src/shared/lib/text.js, src/shared/lib/text.test.js, src/features/reader/lib/focusEligibility.js, backend/app/services/document_service.py, book-structure-algorithm.md]
 ---
 
 # Paragraph Classification
 
 A rule-based classifier that tags prose paragraphs by rhetorical role. Implemented as
-`classifyParagraph` in `src/shared/lib/text.js`, alongside `formatClassification` for
-human-readable output.
+`classifyParagraph` in `src/shared/lib/text.js`, alongside `formatClassification` for human-readable
+output.
 
-Status: **verified implementation**, with a deliberate accuracy caveat. The classifier exists,
-is exported through `src/shared/lib/index.js`, and is unit tested in `text.test.js`. It is
-heuristic, not a model, and must never be described as understanding a document.
+Status: **verified implementation**, with a deliberate accuracy caveat. The classifier exists, is
+exported through `src/shared/lib/index.js`, and is unit tested in `text.test.js`. It is heuristic,
+not a model, and must never be described as understanding a document.
 
 ## The seven categories
 
@@ -42,40 +42,43 @@ heuristic, not a model, and must never be described as understanding a document.
 }
 ```
 
-The `logic` string explains the decision, which makes the classifier inspectable rather than
-opaque.
+The `logic` string explains the decision, which makes the classifier inspectable rather than opaque.
 
 ## Why it exists
 
-Structural awareness lets the reader treat different content differently. A section of pure
-headings and dividers should not behave like narrative prose for focus purposes, and front matter
-should scroll natively instead of snapping paragraph by paragraph.
+Structural awareness lets the reader treat different content differently. A section of pure headings
+and dividers should not behave like narrative prose for focus purposes, and front matter should
+scroll natively instead of snapping paragraph by paragraph.
 
 Detail: [[Focus Rail]].
 
 ## Accuracy discipline
 
 The classifier is regex and heuristic based. It will misclassify unusual documents, and that is
-expected and acceptable. Do not state that Bookflow "knows where the book starts" or "classifies
-all books correctly". Related: [[Ethical Guardrails]].
+expected and acceptable. Do not state that Bookflow "knows where the book starts" or "classifies all
+books correctly". Related: [[Ethical Guardrails]].
 
 ## How it is tested
 
-`src/shared/lib/text.test.js` covers dialogue classification with formatting output, and
-structural marker classification for both headings and horizontal rules. Any change to the
-category rules must add matching test coverage.
+`src/shared/lib/text.test.js` covers dialogue classification with formatting output, and structural
+marker classification for both headings and horizontal rules. Any change to the category rules must
+add matching test coverage.
 
 Detail: [[Testing Pipeline]].
 
-## Focus eligibility
+## Focus eligibility is a separate decision
 
-`isFocusEligibleChapter` in `src/features/reader/lib/focusEligibility.js` separately decides
-whether a chapter participates in automatic focus. It is the structural consumer inside the
-reader, and it is distinct from paragraph-level classification.
+`isFocusEligibleChapter` in `src/features/reader/lib/focusEligibility.js:6` decides at the *chapter*
+level whether a chapter participates in automatic focus at all, using two title patterns plus word
+count and title shape. It is not paragraph classification. Detail: [[Focus Rail]].
 
-## Planned
+## Multi-column layout sorting: backend yes, client no
 
-Spatial multi-column layout sorting to eliminate column interleaving in two-column PDFs, which
-is the largest remaining structural fidelity gap.
+The largest remaining structural fidelity gap, and it is split across two paths:
 
-Detail: [[Roadmap MOC]], [[PDF Parsing]].
+| Path | Handling |
+| --- | --- |
+| Backend | `backend/app/services/document_service.py:231` sorts PyMuPDF text blocks by `round(b[1] / 15.0)` then `b[0]`, which prevents column interleaving |
+| Client | `pdfParser.js` reads pdfjs text items in content-stream order; no column sorting |
+
+Detail: [[PDF Parsing]], [[Roadmap MOC]], [[Backlog P0-P1-P2]].

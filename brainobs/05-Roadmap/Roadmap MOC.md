@@ -2,8 +2,9 @@
 title: Roadmap MOC
 type: MOC
 status: living
-updated: 2026-09-25
+updated: 2026-10-02
 tags: [bookflow, roadmap, moc, planning]
+source-files: [brainobs/05-Roadmap/Current State Matrix.md,brainobs/07-Ops/Testing Pipeline.md,playwright.config.js,package.json]
 ---
 
 # Roadmap MOC
@@ -19,23 +20,27 @@ What exists, what is next, and how progress will be measured.
 - [[Massive Upgrade Backlog]] - the 24 item prioritized UI and experience upgrade list
 - [[Future Features MOC]] - spec-ready designs for larger capabilities
 - [[Success Metrics]] - measurable outcomes and current baselines
-- [[Library and Reading Stats]] - partial metadata library, continuity, garden
+- [[Library and Reading Stats]] - the built metadata library, goals, and achievements
 - [[TTS Synchronization]] - speech locked to the focus rail
 - [[PWA Offline]] - manifest, service worker, durable local storage
 - [[Concept Graph]] - cross-chapter definition linking
 - [[Focus Rail Performance]] - why the focus rail is not a linear scan, and the measured baseline
+- [[Testing Pipeline]] - the real gate set, and the missing DOM test environment
 
 ## Priority order
 
 ```text
-Now       Repair the 46fe51b build, route contract, and Reading Lens privacy boundary
-Next      Recent books shelf, file-handle reopen, repeated import benchmarks, durable document wiring
-Later     PWA install, TTS synchronization, concept graph
+Now       File-handle reopen without re-selection, repeated import benchmarks,
+          durable document wiring, published p50/p95 numbers
+Next      Look-back surface, want-to-read queue, versioned annotation bundle
+Later     PWA install, reading moods, auto night theme, TTS synchronization,
+          concept graph
 Deferred  Persistent social layer, native wrappers
 ```
 
-The competitor research replanned this order. See [[Audit Compare Replan]] for the reasoning and
-[[Massive Upgrade Backlog]] for the item-by-item specs.
+The 2026-09 Reading Lens repair pass is closed. The recent books shelf and chapter time-left have
+since shipped, so the return loop is narrower than it was. See [[Audit Compare Replan]] for the
+reasoning and [[Massive Upgrade Backlog]] for the item-by-item specs.
 
 ## The ordering logic
 
@@ -50,6 +55,25 @@ reliability and long-book performance remain unmeasured spends effort on the wro
 | PWA-ready | Manifest, icons, service worker, offline behaviour, install flow all tested |
 | Native-store-ready | Platform packaging, permissions, signing, store assets, device testing |
 | Shipped feature | Implemented, tested, and verified in a browser |
+
+## What CI actually enforces
+
+Verified 2026-10-02 against `.github/workflows/webpack.yml`, job `CI checks`:
+
+| Gate | In CI |
+| --- | --- |
+| `npm run lint` | Yes, Node 20.x and 22.x |
+| `npm test` | Yes, Node 20.x and 22.x |
+| `npm run build` | Yes, Node 20.x and 22.x |
+| `pytest backend/tests/ -v` | Yes, Python 3.11 and 3.12 |
+| `npm run test:e2e` | **No** |
+| `npm run check:vault` | **No** |
+| `node scripts/security/contrast.mjs` | **No** |
+| `npx pyright` | **No** |
+
+CI runs on push to `main` and on pull requests to `main`. A green badge therefore means lint, unit,
+build, and backend tests passed, and nothing more. Run the missing gates locally before claiming a
+browser or vault result. See [[Testing Pipeline]].
 
 ## Status vocabulary
 

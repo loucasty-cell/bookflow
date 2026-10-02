@@ -2,9 +2,9 @@
 title: Backlog P0-P1-P2
 type: reference
 status: living
-updated: 2026-09-25
+updated: 2026-10-02
 tags: [bookflow, roadmap, backlog, priorities]
-source-files: [Bookflowideas.md, improvements.md, goals.md, scripts/bench.md, tests/e2e/long-import.spec.js, src/features/document-import/hooks/useDocumentImport.js]
+source-files: [Bookflowideas.md,improvements.md,goals.md,scripts/bench.md,tests/e2e/long-import.spec.js,src/features/document-import/hooks/useDocumentImport.js,src/features/library/components/RecentShelf.jsx,src/features/library/lib/readingSpeed.js,src/features/reader/lib/progressLabel.js,src/features/reader/config.js,src/shared/lib/haptics.js,src/shared/lib/perfMarks.js,index.html]
 ---
 
 # Backlog P0-P1-P2
@@ -32,12 +32,12 @@ Detail: [[Import Scheduler]], [[Storage and Persistence]], [[Success Metrics]].
 | Item | Why | Status |
 | --- | --- | --- |
 | Resume card on landing | Restores the strongest habit cue | Built (`ResumeCard.jsx`) |
-| Recent books shelf | Multiple books need a library, not a chore | Open, TODO footprint in `LandingPage.jsx` (backlog-3) |
+| Recent books shelf | Multiple books need a library, not a chore | Built (`RecentShelf.jsx`, exported from `library/index.js`, rendered by `LandingPage.jsx`). No `backlog-3` marker remains |
 | Session recap | Completes the satisfying stage of the loop | Built (`SessionRecap.jsx`) |
 | Look-back drawer | Reading back is a core failure mode today | Open |
 | Tesseract worker cleanup | Resource hygiene on long scans | Built in the local OCR scheduler; repeated long-scan profiling remains open |
 | PaddleOCR small and medium profiles | Self-hosted quality tiers | Built in Docker workflow |
-| Annotation export and import | Portability across devices | Open |
+| Annotation export and import | Portability across devices | Partial: per-document PDF export is built (`notesPdfExport.js`, `notesExport.js`). The versioned round-trippable bundle is not; `src/features/library/lib/annotationBundle.js` does not exist |
 | Text-to-speech synchronization | Accessibility and comprehension support | Open |
 | Deterministic session goals | Honest, non-punitive targets | Built (`readingGoals.js`, opt-in, no streaks) |
 | Recall prompts from notes | Makes saved notes useful later | Open |
@@ -98,33 +98,59 @@ The unglamorous order in the improvement analysis, preserved here because it is 
 6  Calm reader polish and optional atmosphere work
 ```
 
-Items 1, the reader input/session decomposition, and the 420-page browser probe are done. The
-current frontier is repeated performance measurement, scanned-PDF integration, and closing the
-return loop.
+Items 1, the reader input/session decomposition, the recent books shelf, chapter time-left, note
+search, and the 420-page browser probe are done. The current frontier is repeated performance
+measurement, scanned-PDF integration, file-handle reopen, and the PWA layer.
 
 ## Code TODO footprints
 
-Every open item above (plus the validated backlog) has a `TODO(backlog-N)` marker at
-its integration point in source, so the next session starts at the exact file. Map,
-verified against source on 2026-09-25:
+Every genuinely open item has a `TODO(backlog-N)` marker at its integration point in source, so the
+next session starts at the exact file. Re-derive this table with:
 
-| Marker | File | Work |
+```bash
+Get-ChildItem -Recurse -Path src -Include *.js,*.jsx | Select-String -Pattern 'TODO\(backlog'
+Select-String -Path index.html -Pattern 'backlog'
+```
+
+Verified against source on 2026-10-02: **8** `TODO(backlog-N)` markers inside `src/` and **1** in
+`index.html`, **9** in total.
+
+| Marker | File and line | Work |
 | --- | --- | --- |
-| `backlog-3` | `src/features/landing/components/LandingPage.jsx` | RecentShelf: last 3-5 library entries beside LivingShelf |
-| `backlog-6` | `src/features/reader/components/ReaderPage.jsx` | Time left in chapter from readingSpeed, 220 WPM fallback |
-| `backlog-8 follow-up` | `src/features/reader/components/HorizonTeaser.jsx` | Prefer live readingSpeed over the current derived 230 WPM estimate |
-| `backlog-10` | `src/features/reader/components/ContentsPanel.jsx` | LookBackPanel chapter/heading map with position marked |
-| `backlog-11`, `backlog-12` | `src/features/reader/components/NotesPanel.jsx` | Note search + jump-to-quote; versioned annotation bundle |
-| `backlog-16`, `backlog-19` | `src/features/reader/config.js` | readingMoods presets; opt-in auto night theme |
-| `backlog-17` | `index.html` | PWA manifest + service worker, never cache documents |
-| `backlog-20`, `backlog-23` | `src/shared/lib/haptics.js` | Reduced-motion gate; wire or reserve unused patterns |
-| `backlog-21` | `src/features/document-import/lib/pdfParser.js` | Spatial x/y column sorting with two-column fixture |
-| `backlog-22` | `src/features/reader/components/resonance.css` | **DONE** - deleted; no importer and its tokens never existed |
-| `backlog-24` | `src/shared/lib/perfMarks.js` | Publish p50/p95 import benchmarks with a date; one 420-page probe exists |
-| `improvements-gap-4` | `src/features/reader/hooks/useReaderPersistence.js` | Quote-hash anchors + repair report |
+| `backlog-10` | `src/features/reader/components/ContentsPanel.jsx:4` | LookBackPanel chapter/heading map with position marked |
+| `backlog-8 follow-up` | `src/features/reader/components/HorizonTeaser.jsx:18` | Prefer live readingSpeed over the current derived 230 WPM estimate |
+| `backlog-16` | `src/features/reader/config.js:25` | Reading moods presets in a new `src/features/reader/lib/readingMoods.js`, which does not exist yet |
+| `backlog-19` | `src/features/reader/config.js:29` | Opt-in auto night theme from `prefers-color-scheme` |
+| `backlog-20` | `src/shared/lib/haptics.js:6` | Reduced-motion gate inside `triggerHaptic` |
+| `backlog-21` | `src/features/document-import/lib/pdfParser.js:95` | Spatial x/y column sorting with the two-column fixture |
+| `backlog-23` | `src/shared/lib/haptics.js:27` | Wire or reserve the unused HEAVY, WARNING, and SELECTION patterns |
+| `backlog-24` | `src/shared/lib/perfMarks.js:34` | Publish p50/p95 import benchmarks with a date; one 420-page probe exists |
+| `backlog-17` | `index.html:74` | PWA manifest plus service worker, never cache documents |
+
+One non-`backlog` marker also exists and is tracked here for completeness:
+
+| Marker | File and line | Work |
+| --- | --- | --- |
+| `improvements-gap-4` | `src/features/reader/hooks/useReaderPersistence.js:55` | Quote-hash anchors plus a repair report |
+
+## Markers that used to be claimed here and are not real
+
+These rows were carried in earlier revisions of this note. Each claim was checked against source on
+2026-10-02 and each one was false, in two different ways.
+
+| Marker | Claimed in | Reality on 2026-10-02 | Correct status |
+| --- | --- | --- | --- |
+| `backlog-3` | `src/features/landing/components/LandingPage.jsx` | No such marker. The feature it named shipped: `RecentShelf.jsx` exists, is exported from `src/features/library/index.js`, and is rendered at `LandingPage.jsx:217` | Built |
+| `backlog-6` | `src/features/reader/components/ReaderPage.jsx` | No such marker. The feature it named shipped: `src/features/reader/lib/progressLabel.js` renders `N min left` from `readingSpeed.js` | Built |
+| `backlog-11` | `src/features/reader/components/NotesPanel.jsx` | No such marker, and the feature shipped: `NotesPanel.jsx` holds a `searchQuery` state, filters notes by text and quote, and renders a `Search session notes` input with an `aria-label` | Built |
+| `backlog-12` | `src/features/reader/components/NotesPanel.jsx` | No such marker, and the feature did **not** ship: `src/features/library/lib/annotationBundle.js` does not exist | Still open, no marker. Track it here until a marker is added |
+| `backlog-22` | `src/features/reader/components/resonance.css` | Resolved. The file was deleted and has no importer | Closed |
+
+Lesson for the next revision: a marker table is only trustworthy if it was re-derived from source in
+the same pass that published it. Three of the five rows above were aspirational, not measured.
 
 Already built, no marker needed: backlog 1, 2, 4, 5, 7, 8 (base), 9, 13, 14, 18.
-`18` is an adapter only; wiring document persistence and recent-shelf behavior remain open.
+`18` is an adapter only; wiring document persistence and file-handle reopen remain open.
 Explicitly rejected per guardrails: backlog 15 continuity/streaks (no streak talk).
 
 Related: [[Current State Matrix]], [[Roadmap MOC]], [[Success Metrics]].

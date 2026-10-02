@@ -2,9 +2,9 @@
 title: Premium Micro-interactions
 type: spec
 status: planned
-updated: 2026-09-18
+updated: 2026-10-02
 tags: [bookflow, ux, polish, spec, micro-interactions]
-source-files: [src/App.jsx, src/features/reader/components/ReaderShell.jsx, src/features/reader/config.js, src/styles.css]
+source-files: [src/App.jsx, src/shared/lib/haptics.js, src/styles/tokens.css, src/styles/motion.css, src/shared/motion/presets.js, src/features/reader/components/ReaderShell.jsx, src/features/widgets/lib/widgetMotion.js, src/features/widgets/lib/useWidgetReveal.js, src/features/landing/components/ThreeDBookCard.jsx, src/features/reader/config.js]
 ---
 
 # Premium Micro-interactions
@@ -15,6 +15,10 @@ lives, and what constraint it must respect.
 Status labels below are per item. Nothing in this note should be described as shipped until the
 relevant component exists and is verified.
 
+Motion tokens are in `src/styles/tokens.css`, not `src/styles.css`, which is only an import
+manifest. JS motion goes through `src/shared/motion/presets.js`, whose header forbids inlining new
+easings at call sites.
+
 ## Build order
 
 ```text
@@ -22,7 +26,7 @@ relevant component exists and is verified.
 2  Resume pulse                reaches the return loop
 3  Page-turn feel              core reading texture
 4  Loading choreography        removes the last dead wait
-5  Flow sparkline              session recap support
+5  Flow sparkline               session recap support
 6  Ambient depth               optional, must never cost legibility
 ```
 
@@ -162,16 +166,73 @@ Always respect reduced motion
 Given the risk to legibility and the cost to performance, this is last for a reason. A static,
 well-composed surface is a legitimate final answer.
 
-Detail: [[Motion and Transitions]], [[Ethical Guardrails]].
+Detail: [[Motion and Transitions]], [[Ethical Guardrails]], [[Graphics Quality Tiers]].
+
+## 7. Widget value and reveal motion
+
+**Status:** partially built. The technique is shipped and verified; the React wrapper is not wired.
+
+`lib/widgetMotion.js` in the widgets feature is the reference implementation for animating a number
+without re-rendering React. The rule it encodes: the animated value lives on a plain proxy object,
+and `onUpdate` writes `textContent` straight to the DOM node. React never re-renders, so a 60fps
+counter costs no reconciliation.
+
+```text
+tweenNumber  animates proxy.value over 900ms with out(3), then writes formatted text
+tweenRing    animates strokeDashoffset over 780ms with out(2), clamping ratio to 0..1
+Reduced      both check matchMedia first, write the final value, and return null
+Scope        createScope(node) ties every tween in a widget to one revert point
+```
+
+`lib/useWidgetReveal.js` is the counterpart for entrances. It dynamically imports `gsap` and
+`gsap/ScrollTrigger`, so neither lands in the entry bundle, sets `.widget-frame` cards to opacity 0
+and y 18, and creates one ScrollTrigger at `start: "top 92%"` with `once: true` that animates them
+to opacity 1 and y 0 over 0.62s with `power3.out` and a 0.055s stagger. It returns early, before the
+imports, under reduced motion, and kills its trigger on unmount.
+
+Three properties worth carrying into any new animated surface:
+
+- Check reduced motion before doing any work, not after starting the animation.
+- Animate `opacity` and `transform`, so nothing triggers layout.
+- Load a heavy animation library dynamically, and only inside the code path that needs it.
+
+The gap: `src/features/widgets/components/AnimatedValue.jsx`, which would call these, is dead code.
+Nothing in the shipped grid uses the anime.js tween today.
+
+Detail: [[Home Widgets]], [[Motion and Transitions]].
+
+## 8. Proximity response instead of hover
+
+**Status:** verified and wired. `src/features/landing/components/LivingShelf.jsx` and
+`ThreeDBookCard.jsx`.
+
+Two hooks, two different jobs:
+
+| Hook | Default properties | Used by |
+| --- | --- | --- |
+| `usePointerCssVars` | `--pointer-x`, `--pointer-y` | `LandingPage.jsx`, the hero drag card |
+| `useProximityCssVars` | caller-supplied, `reachY: 320`, `reachXPadding: 120` | `LivingShelf.jsx` |
+
+Proximity is the better model for a shelf. A card that responds only when hovered feels broken on
+touch and lights up when the pointer merely passes across it. Reacting within a 320px vertical
+reach means the response matches intent.
+
+`ThreeDBookCard` adds the physical layer: `useMotionValue` for the raw pointer, `useTransform` to
+map it to `rotateX`, `rotateY`, and a specular highlight, then `useSpring` on the rotations so the
+tilt settles rather than snapping. Under `useReducedMotion` both rotations are forced to `0`.
+
+Detail: [[Screen Architectures]], [[Motion and Transitions]].
 
 ## Cross-cutting rules for all polish work
 
 | Rule | Consequence |
 | --- | --- |
-| Token-first | All timing and colour from tokens in `styles.css` |
+| Token-first | All timing and colour from tokens in `src/styles/tokens.css` |
+| Preset-first in JS | Animate through `src/shared/motion/presets.js`, never an inlined easing |
 | Reduced motion honoured | Remove motion, keep content |
 | Never compete with text | Polish lives at the edges of the reading column |
 | No new dependency without approval | SVG and CSS before any library |
+| Dynamic import for heavy motion | gsap and anime.js load inside the code path that needs them |
 | Measure, do not assume | Verify rendered behaviour in a browser |
 
 Detail: [[Design Tokens]], [[Accessibility Rules]].
@@ -185,4 +246,4 @@ Detail: [[Design Tokens]], [[Accessibility Rules]].
 - [ ] Each item is verified at 320px and at a 390x844 viewport.
 - [ ] No new dependency added without explicit approval.
 
-Related: [[UX Playbook MOC]], [[Roadmap MOC]], [[Feature Spec Template]].
+Related: [[UX Playbook MOC]], [[Roadmap MOC]], [[Feature Spec Template]], [[Home Widgets]].

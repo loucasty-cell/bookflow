@@ -2,9 +2,9 @@
 title: Social Resonance
 type: feature
 status: planned
-updated: 2026-09-18
+updated: 2026-10-02
 tags: [bookflow, behavioral, social, privacy, planned]
-source-files: [goals.md, features.md, api.md, AGENTS.md]
+source-files: [backend/routers/social.py]
 ---
 
 # Social Resonance
@@ -12,8 +12,8 @@ source-files: [goals.md, features.md, api.md, AGENTS.md]
 Planned. A privacy-preserving social layer where readers of the same book can see each other's
 reflections in the margin, without anyone uploading a book or an identity.
 
-Status: **planned**. The endpoints and hashing approach are specified. Do not describe this as
-shipped functionality until it is implemented and verified.
+Status: **planned, and the backend side is mocks**. Do not describe any part of this as shipped.
+See "What actually exists today" below for the precise boundary.
 
 ## The core idea
 
@@ -24,9 +24,8 @@ server stores: hash + reaction counts
 another reader with the same paragraph derives the same hash and sees the reflections
 ```
 
-The server never receives the paragraph. It receives a fixed-length digest it cannot reverse.
-Two people reading the same book align automatically because the same text produces the same
-hash.
+The server never receives the paragraph. It receives a fixed-length digest it cannot reverse. Two
+people reading the same book align automatically because the same text produces the same hash.
 
 ## Why this design
 
@@ -37,18 +36,28 @@ hash.
 | Exact alignment | Matching is on the paragraph, not on a page number that varies by edition |
 | Deniability | Hashes reveal nothing about the text to the server |
 
-## Planned endpoints
+## What actually exists today
 
-### `GET /api/social/resonance/{hash}`
+The only real code for this feature is a router of mock endpoints. Be precise about this, because
+"the endpoints exist" reads as "the feature works".
 
-Returns aggregated reflections anchored to a paragraph hash.
+| Fact | Evidence |
+| --- | --- |
+| Router file | `backend/routers/social.py` |
+| Router location | It sits at `backend/routers/social.py`, **outside** the `backend/app/` package that every other router uses |
+| `GET /api/social/resonance/{paragraph_hash}` | `social.py:50`, returns `MOCK_RESONANCES` |
+| `POST /api/social/events/session-pulse` | `social.py:62`, `status_code=202`, logs and returns `{"status": "tracked"}` |
+| The returned data | Two hard-coded reflection records in `MOCK_RESONANCES` (`social.py:29-48`) |
+| Database | None. The source comments state the DB is "intentionally disconnected" |
+| Frontend | **None.** There is no persisted frontend community experience anywhere in `src/` |
 
-### `POST /api/social/reactions`
+Two consequences follow. The mock `resonance` payload includes a plain `quote` field
+(`social.py:13,33`), which is the opposite of the zero-content-upload property described above; that
+is mock fixture data, not the intended schema, and it must not be quoted as the design. And
+`session-pulse` accepting a `user_id` would also conflict with the deniability property, so it is
+prototype scaffolding rather than a contract to build on.
 
-Records a reader reaction against a hash.
-
-Both are described in `goals.md` Phase 3 as the async in-margin social layer, with
-`/api/social/resonance/{hash}` for zero-data-leakage shared marginalia.
+Neither endpoint is registered in the running app in a way that any Bookflow client calls.
 
 ## Planned experience
 
@@ -67,10 +76,11 @@ Both are described in `goals.md` Phase 3 as the async in-margin social layer, wi
 | Seasonal uniformity | Very short paragraphs produce many collisions |
 | Spam and abuse | An unauthenticated write endpoint needs rate limiting and moderation |
 | Empty-start problem | A new reader may see nothing, which reads as broken rather than as early |
+| Hash reversibility in practice | A short, well-known paragraph is enumerable by brute force, so "cannot be reversed" is weaker than it sounds for canonical phrases |
 
-Mitigation direction: include a document-level salt derived from book metadata in the hash input
-so identical strings in different books do not collide, and version the hashing scheme so a
-format change does not silently split the community.
+Mitigation direction: include a document-level salt derived from book metadata in the hash input so
+identical strings in different books do not collide, and version the hashing scheme so a format
+change does not silently split the community.
 
 ## Build rules when implementing
 
@@ -80,14 +90,9 @@ format change does not silently split the community.
 - Show nothing rather than something misleading when data is absent.
 - Respect the calm-reader rule: social signals must never become task-switching triggers.
 - Keep the feature off by default.
+- Move the router under `backend/app/routers/` with its models under `backend/app/models/`, matching
+  every other router, and delete the mocks rather than leaving them reachable.
 
-Detail: [[Privacy Model]], [[Ethical Guardrails]], [[Invariants]].
+Detail: [[Privacy Model]], [[Ethical Guardrails]], [[Invariants]], [[File Placement Map]].
 
-## Backend hooks already present
-
-The backend context notes behavioral and social endpoints alongside the OCR pipeline, so the
-natural home is a new router in `backend/app/routers/` with models in `backend/app/models/`.
-
-Detail: [[File Placement Map]], [[Backend Endpoints]].
-
-Related: [[Roadmap MOC]], [[Competitor Analysis]].
+Related: [[Roadmap MOC]], [[Behavioral Layer MOC]], [[Competitor Analysis]].

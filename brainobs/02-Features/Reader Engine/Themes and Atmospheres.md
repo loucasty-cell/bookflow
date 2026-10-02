@@ -2,27 +2,58 @@
 title: Themes and Atmospheres
 type: feature
 status: verified
-updated: 2026-09-18
+updated: 2026-10-02
 tags: [bookflow, reader, themes, design]
-source-files: [src/styles.css, src/features/reader/config.js, src/features/reader/components/SettingsPanel.jsx]
+source-files: [src/styles/themes.css, src/styles/themes-overrides.css, src/features/reader/config.js, src/features/reader/components/SettingsPanel.jsx, src/styles/reader.css, index.html]
 ---
 
 # Themes and Atmospheres
 
-Atmosphere is chosen by reading context: daylight, night, or low-glare. Themes are token
-swaps, not separate stylesheets, so every component follows automatically.
+Atmosphere is chosen by reading context: daylight, night, or low-glare. Themes are token swaps, not
+per-theme component forks, so every component follows automatically.
 
-## Atmosphere table
+## Exactly five themes
 
-| Role | Paper (light) | Dusk (near-black) | Tint (remix) |
-| --- | --- | --- | --- |
-| Surface canvas | `#FFFEFA` | `#0B0F19` | `#F4EFEA` |
-| Reading card | `#FFFFFF` | `#121826` | `#FAF7F2` |
-| Text ink | `#1B2633` | `#F2F2F7` | `#2D251E` |
-| Text muted | `#647384` | `#94A3B8` | `#7A6E65` |
-| Brand blue | `#2B5A84` | `#6B9AC4` | `#3A6B94` |
-| Brand royal | `#4169E1` | `#5B86E5` | `#4A72E8` |
-| Wine accent | `#7B1020` | `#9B2236` | `#8A1828` |
+`theme` in settings accepts exactly these five identifiers, and no others:
+
+| Setting id | Named theme | Character |
+| --- | --- | --- |
+| `paper` | Atelier Paper | Default warm reading canvas, light |
+| `dusk` | Midnight Vault | Near-black OLED dark canvas |
+| `kyoto` | Kyoto Mist | Zen bamboo linen and slate |
+| `monocodex` | Monospace Codex | Monospace terminal / CRT phosphor |
+| `remix` | Sepia Remix | Warm sepia remix |
+
+`paper` is the default (`config.js:11`).
+
+This is enforced, not documented by convention. `index.html:45` builds
+`const validThemes = new Set(["paper", "dusk", "kyoto", "monocodex", "remix"])` and only applies a
+persisted theme that is in that set. So an unknown id from an old or corrupted storage payload is
+discarded at bootstrap rather than producing an unstyled or half-themed shell.
+
+## The two-stylesheet split
+
+| File | Owns |
+| --- | --- |
+| `src/styles/themes.css` | Shell plumbing: token declarations, theme switching mechanics, surface layering |
+| `src/styles/themes-overrides.css` | The named per-theme overrides, in document order: Atelier Paper, Midnight Vault, Kyoto Mist, Monospace Codex, Sepia Remix |
+
+`scripts/security/contrast.mjs` reads `src/styles/tokens.css`, `src/styles/themes.css`, and
+`src/styles/themes-overrides.css` together, which is why the split is a convention the gate depends
+on rather than an arbitrary division.
+
+## Bootstrap order
+
+The theme is resolved before first paint:
+
+```text
+1  localStorage["bookflow:settings"]  ->  read theme
+2  localStorage["bookflow-reader-storage"]  ->  fallback
+3  neither -> default paper
+```
+
+`useReaderPersistence.js:22` mirrors settings into `bookflow:settings` and `:24` writes the resolved
+theme onto `documentElement`, so the shell never flashes the wrong atmosphere on a reload.
 
 ## Brand role colours
 
@@ -32,11 +63,9 @@ swaps, not separate stylesheets, so every component follows automatically.
 | Focus colour | `#C2DCFF` | Active paragraph highlight |
 | Interaction accent | `#E3242B` | Focus edge, progress, active details |
 
-## Theme identifiers
-
-`theme` in settings accepts: `paper` (default), `dusk`, plus the additional palettes recorded
-in the interface contract (`kyoto`, `monocodex`, `remix`). Verify which are exposed in the
-current settings panel before documenting a specific one as user-facing.
+The concrete hex values for surface and ink per theme live in `themes-overrides.css`. Quote a
+specific value only by reading it from that file for the theme in question; the table above is role
+level, not a per-theme token dump.
 
 ## Dusk design intent
 
@@ -48,10 +77,14 @@ Near-black is a deliberate accessibility choice, not an aesthetic default:
 
 ## Contrast requirements
 
-- Prose must meet WCAG AAA against its own surface.
+- Prose must meet WCAG AAA against its own surface where the gate measures it.
 - Muted text must remain legible, not decorative.
 - Never rely on hue alone for the active state. Weight and edge treatment carry the signal too.
 - Never make blur or transparency required for legibility.
+
+Measured 2026-10-02: `node scripts/security/contrast.mjs` reports `pairs checked: 63, skipped: 11`
+across all five themes and `PASS: 63 token pairs meet their WCAG threshold`. Re-run the command for a
+current number rather than copying this one.
 
 ## Anti-patterns
 
@@ -64,8 +97,8 @@ Near-black is a deliberate accessibility choice, not an aesthetic default:
 
 ## Switching
 
-Theme changes are instant token swaps. The landing page exposes a light/dusk toggle, and the
-reader settings panel exposes the full theme selector. The transition honours
+Theme changes are instant token swaps. The landing page exposes a light/dusk toggle, and the reader
+settings panel exposes the full theme selector. The transition honours
 `prefers-reduced-motion`.
 
-Detail: [[Design Tokens]], [[Motion and Transitions]], [[Accessibility Rules]].
+Detail: [[Design Tokens]], [[Motion and Transitions]], [[Accessibility Rules]], [[Typography System]], [[Reader Engine MOC]].

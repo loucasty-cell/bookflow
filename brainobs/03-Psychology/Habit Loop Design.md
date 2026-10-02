@@ -2,9 +2,9 @@
 title: Habit Loop Design
 type: strategy
 status: living
-updated: 2026-09-18
+updated: 2026-10-02
 tags: [bookflow, psychology, habit-loop, strategy]
-source-files: [goals.md, Bookflowideas.md, src/features/reader/config.js]
+source-files: [goals.md, Bookflowideas.md, src/features/reader/config.js, src/features/library/components/RecentShelf.jsx]
 ---
 
 # Habit Loop Design

@@ -2,9 +2,9 @@
 title: Figma Inspection Evidence
 type: evidence
 status: verified
-updated: 2026-09-26
+updated: 2026-10-02
 tags: [bookflow, ux, figma, evidence]
-source-files: [src/features/reader/components/FocusCard.jsx, src/features/reader/components/NotesPanel.jsx, src/features/reader/hooks/useReadingLens.js, src/features/reader/hooks/useReaderSelection.js, src/styles/reader.css, src/styles/reader-extras.css, src/styles/tokens.css]
+source-files: [src/features/widgets/lib/tokens.js, src/features/widgets/lib/spec/appleSmallMedium.js, src/features/widgets/lib/spec/appleLarge.js, src/features/widgets/lib/spec/productivity.js, src/features/widgets/lib/spec/parts.js, src/features/widgets/lib/widgets.css, src/features/reader/components/FocusCard.jsx, src/features/reader/components/NotesPanel.jsx, src/features/reader/hooks/useReadingLens.js, src/features/reader/hooks/useReaderSelection.js, src/styles/tokens.css, src/styles/reader.css, src/styles/reader-extras.css, scripts/security/contrast.mjs]
 ---
 
 # Figma Inspection Evidence
@@ -21,9 +21,48 @@ reference evidence, not Bookflow runtime measurements.
 | iOS 14 UI Kit for Figma (Community) | `pVgvrD6Wpi3VrjnTsyorIm` | `2402793645297850125` | `0:1`, `362:14390`, `362:14628`, `362:15609`, `362:15726`, `362:16094`, `362:16285`, `362:16324`, `362:16339`, `371:13138` |
 | AI Agent UI Kit - Reasoning, Tool Use & Response Components (Community) | `dhrZUoqIQzKnKQiADT3C1N` | current fetch 2026-09-25 | `70:967`, `70:985`, `70:2146`, `70:2482`, `70:2542`, `70:2601`, `70:2678`, `70:3111`, `70:3135`, `65:553`, `64:911`, `67:573`, `78:590` |
 | Apple Widgets UI Kit (Community) | `zST5IOFYB6MgjnwAzpMxNt` | fetch 2026-09-26 | `6:59` root canvas, 83 components extracted across `appleSmallMedium`, `appleLarge`, `productivity`, `parts` |
+
 Node IDs use the Figma API colon form; Figma URLs render the same IDs with hyphens.
 
-## Measured values
+## Verified against the repository
+
+Only one of these references is reproducible from the repository alone, and that is the widget one.
+`src/features/widgets/lib/tokens.js` records the file key, the root node, the kit name, and the
+measured values in code:
+
+```text
+WIDGET_FILE_KEY = 'zST5IOFYB6MgjnwAzpMxNt'
+WIDGET_ROOT_NODE = '6:59'
+WIDGET_RADIUS    = 21.67
+```
+
+Its header names the source as the "Apple Widgets UI Kit (Community)" and states "Do not
+hand-edit: re-run the extraction instead". `WIDGET_SOURCE_URL` carries the same node in URL form.
+
+The other three file keys and their node ids are records of a past MCP fetch. Nothing in the
+repository stores them, so they can be re-checked only by repeating the fetch, not by reading the
+code. Treat them as provenance records, not as code-verifiable claims.
+
+## Apple Widgets UI Kit measurements
+
+Fetched 2026-09-26 with the Figma MCP. These are the values `src/features/widgets/lib/tokens.js`
+and the four spec files were generated from; see [[Home Widgets]] for how Bookflow binds them.
+
+| Node | Measured evidence |
+| --- | --- |
+| `6:59` root | Components canvas. 83 components extracted: `appleSmallMedium` 27, `appleLarge` 14, `productivity` 26, `parts` 16. |
+| Small bucket | `155 x 155`, corner radius `21.67` |
+| Medium bucket | `329 x 155`, corner radius `21.67` |
+| Large bucket | `329 x 345`, corner radius `21.67` |
+| `parts` set | 16 entries returned root-only, with no child layers, even at `depth: 8`. Recorded as a Figma API limitation rather than inferred children. |
+
+The radius is `21.670000076293945px` in the API response; the tail is float artifact and is stored
+as `21.67`.
+
+The four counts are mechanically checkable: counting entries in each `lib/spec/*.js` gives 27, 14,
+26, and 16, and each entry carries a real node id and a 40-hex component key.
+
+## Scrollbar Kit measurements
 
 | File key / node | Measured evidence |
 | --- | --- |
@@ -35,6 +74,11 @@ Node IDs use the Figma API colon form; Figma URLs render the same IDs with hyphe
 | `P3q0Sh8EB8X5RohRRKZi9m` / `5:835` | Mac classic showcase frame is `1000 x 346`; its child instances include `12 x 150` and `150 x 12` scrollbars. |
 | `P3q0Sh8EB8X5RohRRKZi9m` / `5:928` | Custom showcase frame is `1000 x 346`; its child instances are `8 x 150` or `150 x 8`. |
 | `P3q0Sh8EB8X5RohRRKZi9m` / `5:849` | Overview title instance is `2064 x 62`. |
+
+## iOS 14 UI Kit measurements
+
+| File key / node | Measured evidence |
+| --- | --- |
 | `pVgvrD6Wpi3VrjnTsyorIm` / `362:14390` | Lockscreen frame is `878 x 2839`; its header instance is `846 x 196`. |
 | `pVgvrD6Wpi3VrjnTsyorIm` / `362:14628` | Keyboard frame is `878 x 2489`. |
 | `pVgvrD6Wpi3VrjnTsyorIm` / `362:15609` | Status Bar & Home Indicator frame is `598 x 1857`; the iPhone X group is `407 x 943`. |
@@ -44,24 +88,10 @@ Node IDs use the Figma API colon form; Figma URLs render the same IDs with hyphe
 | `pVgvrD6Wpi3VrjnTsyorIm` / `371:13138` | Share Sheet frame is `878 x 2092`; action row is `375 x 191` and action-row group is `375 x 558`. |
 | `pVgvrD6Wpi3VrjnTsyorIm` / `0:1` | The fetched file version contains no AirDrop node in the reviewed current tree; the older AirDrop measurements are not carried forward. |
 
-Related: [[UX Playbook MOC]], [[Home Widgets]], [[Navigation and Controls]], [[Design Tokens]], [[Current State Matrix]].
-
-Fetched 2026-09-26 with the Figma MCP. These are the values that `src/features/widgets/lib/tokens.js`
-and the four spec files were generated from; see [[Home Widgets]] for how Bookflow binds them.
-
-| Node | Measured evidence |
-| --- | --- |
-| `6:59` root | Components canvas. 83 components extracted: `appleSmallMedium` 27, `appleLarge` 14, `productivity` 26, `parts` 16. |
-| Small bucket | `155 x 155`, corner radius `21.67` |
-| Medium bucket | `329 x 155`, corner radius `21.67` |
-| Large bucket | `329 x 345`, corner radius `21.67` |
-| `parts` set | 16 entries returned root-only, with no child layers, even at `depth: 8`. Recorded as a Figma API limitation rather than inferred children. |
-
-The radius is `21.670000076293945px` in the API response; the tail is float artifact and is stored as `21.67`.
-
 ## AI Agent UI Kit measurements
 
-The following values were returned by the Figma MCP fetch and are design references, not Bookflow runtime measurements.
+The following values were returned by the Figma MCP fetch and are design references, not Bookflow
+runtime measurements.
 
 | Node | Measured evidence |
 | --- | --- |
@@ -78,24 +108,57 @@ The following values were returned by the Figma MCP fetch and are design referen
 
 ### Bookflow mapping
 
-- The `AI Response` and `Tool Call` patterns map to a reading-only assistant response and provider status, not to a general chatbot.
-- The `Menu/Slash` pattern maps to quick reading actions: summarize, translate, explain, and a short custom instruction. It must remain selection-scoped.
+- The `AI Response` and `Tool Call` patterns map to a reading-only assistant response and provider
+  status, not to a general chatbot.
+- The `Menu/Slash` pattern maps to quick reading actions: summarize, translate, explain, and a
+  short custom instruction. It must remain selection-scoped.
 - The `Source Chip` pattern maps to the selected passage and paragraph location.
-- The `Menu/Model` pattern may show provider/fallback status, but must not expose or promise an unreliability-prone free quota.
-- Figma values inform spacing, radii, and hierarchy; Bookflow keeps its existing semantic tokens, 44px touch targets, reduced-motion behavior, and zero-overflow rule.
-
-
+- The `Menu/Model` pattern may show provider/fallback status, but must not expose or promise an
+  unreliability-prone free quota.
+- Figma values inform spacing, radii, and hierarchy; Bookflow keeps its existing semantic tokens,
+  44px touch targets, reduced-motion behavior, and zero-overflow rule.
 
 ## State finding
 
-The earlier scrollbar and iOS references expose light/dark, pressed, selected, device, and orientation variants, but no hover state was present in those reviewed nodes. The AI Agent UI Kit does expose `State=Hover` and `State=Running` component variants, so its hover and running states are measured references. Bookflow still keeps hover restrained and must not let it change reading focus.
+The earlier scrollbar and iOS references expose light/dark, pressed, selected, device, and
+orientation variants, but no hover state was present in those reviewed nodes. The AI Agent UI Kit
+does expose `State=Hover` and `State=Running` component variants, so its hover and running states
+are measured references. Bookflow still keeps hover restrained and must not let it change reading
+focus.
 
 ## Bookflow implementation mapping
 
-The measured geometry is mapped to semantic tokens in `src/styles.css`: custom scrollbar track `8px`, thumb `8px`, minimum vertical length `33px`, radius `100px`, and card radius `13px`. The iOS reference contributes `44px` minimum controls, subtle separators, and restrained edge highlights. The AI Agent UI Kit contributes the assistant response rhythm, neutral surfaces, quiet status states, and command-menu hierarchy; its large showcase values must be scaled down for the reader. Three.js remains limited to the existing ambient atmosphere layer. Tailwind utilities are enabled without preflight and must not introduce a second visual token system. Functional progress/focus gradients remain separate from decorative card surfaces.
+The measured geometry is mapped to semantic tokens in `src/styles/tokens.css`, not in
+`src/styles.css`, which is only an import manifest:
+
+| Measured value | Token | Value |
+| --- | --- | --- |
+| Scrollbar track | `--scrollbar-track-size` | `8px` |
+| Scrollbar thumb | `--scrollbar-thumb-size` | `8px` |
+| Minimum vertical length | `--scrollbar-thumb-min-length` | `33px` |
+| Scrollbar radius | `--scrollbar-radius` | `100px` |
+| Card radius | `--radius-card` | `13px` |
+| Minimum control | `--control-size` | `44px` |
+
+The iOS reference contributes the `44px` minimum control, subtle separators, and restrained edge
+highlights. The AI Agent UI Kit contributes the assistant response rhythm, neutral surfaces, quiet
+status states, and command-menu hierarchy; its large showcase values must be scaled down for the
+reader. Three.js remains limited to the ambient atmosphere layer and never renders book text.
+
+Tailwind utilities are enabled without preflight, and `src/styles/tailwind.css` bridges only four
+brand colours, so they cannot introduce a second visual token system. Functional progress and focus
+gradients remain separate from decorative card surfaces.
 
 ## Runtime evidence
 
-A generated 420-page native-text PDF was imported through Playwright at `390 x 844`. Progress was monotonic from `5%` through a visible `100%`, the reader opened afterward, horizontal overflow was zero, and two chapter sections were mounted. The probe completed in approximately `3.7s` in the local test environment. This is a single measured run, not a published p50/p95 benchmark.
+A generated 420-page native-text PDF was imported through Playwright at `390 x 844`. Progress was
+monotonic from `5%` through a visible `100%`, the reader opened afterward, horizontal overflow was
+zero, and two chapter sections were mounted. The probe completed in approximately `3.7s` in the
+local test environment. This is a single measured run, not a published p50/p95 benchmark.
 
-Related: [[UX Playbook MOC]], [[Navigation and Controls]], [[Design Tokens]], [[Current State Matrix]].
+Baseline measured 2026-10-02: `npm run lint` reports 0 errors and 1 warning; `npm test` runs 52
+files and 506 tests; `npm run build` completes in 10.53s; `pytest backend/tests` passes 75 tests;
+Playwright runs 19 tests across 4 specs.
+
+Related: [[UX Playbook MOC]], [[Home Widgets]], [[Navigation and Controls]], [[Design Tokens]],
+[[Current State Matrix]], [[Accessibility Rules]].

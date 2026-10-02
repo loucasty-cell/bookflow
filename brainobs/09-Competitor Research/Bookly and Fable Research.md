@@ -2,7 +2,7 @@
 title: Bookly and Fable Research
 type: research
 status: partial
-updated: 2026-09-23
+updated: 2026-10-02
 tags: [bookflow, competitor, bookly, fable, gamification]
 source-files: [brainobs/09-Competitor Research/Competitor Research MOC.md]
 ---

@@ -2,7 +2,7 @@
 title: Psychology MOC
 type: MOC
 status: living
-updated: 2026-09-18
+updated: 2026-10-02
 tags: [bookflow, psychology, moc, strategy]
 ---
 
@@ -33,10 +33,13 @@ makes people abandon books they genuinely want to read.
 
 | Law | Principle | Bookflow mechanism | Status |
 | --- | --- | --- | --- |
-| Make it obvious | Cue visibility | Resume entry, drop zone, recent shelf | Partial |
+| Make it obvious | Cue visibility | Resume entry, drop zone, recent shelf | Built |
 | Make it attractive | Craving, anticipation | Chapter teasers, capsules, typography craft | Built |
 | Make it easy | Friction removal | One-tap import, progressive OCR, exact resume | Built |
 | Make it satisfying | Immediate reward | Deterministic progress, completion, recap, notes | Partial |
+
+The cue row reached Built when the recent shelf landed. It is partial in one respect only:
+a document still needs re-selection, because durable document storage is not wired.
 
 Detail and build specs: [[Atomic Habits Framework]].
 

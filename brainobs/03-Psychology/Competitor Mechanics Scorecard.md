@@ -2,7 +2,7 @@
 title: Competitor Mechanics Scorecard
 type: strategy
 status: living
-updated: 2026-09-23
+updated: 2026-10-02
 tags: [bookflow, competitor, scorecard, decision, mechanics]
 source-files: [brainobs/09-Competitor Research/Competitor Research MOC.md, brainobs/03-Psychology/Ethical Guardrails.md]
 ---
