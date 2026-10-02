@@ -682,7 +682,8 @@
 }
 
 .shadow-pill-opt {
-  font-size: 11px;
+  position: relative;
+  font-size: var(--ui-label);
   font-weight: 600;
   line-height: 1;
   padding: 5px 12px;
@@ -692,6 +693,19 @@
   color: var(--app-text-muted, #647384);
   cursor: pointer;
   transition: background 160ms cubic-bezier(0.16, 1, 0.3, 1), color 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* The pill renders at roughly 22px tall, below the 44px minimum target. The
+   visual stays small and the tap area grows instead, extending vertically only
+   so it cannot overlap the 2px-gap siblings inside .shadow-segmented-pill. */
+.shadow-pill-opt::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: var(--control-size);
+  transform: translateY(-50%);
 }
 
 [data-theme="dusk"] .shadow-pill-opt {
