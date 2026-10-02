@@ -137,7 +137,11 @@ html {
 }
 
 body {
-  min-width: 320px;
+  /* The 320px floor the design assumes, but never wider than the space actually
+     available. At exactly a 320px viewport a classic scrollbar takes ~15px, so
+     a hard min-width: 320px made the floor itself the overflow. min() keeps the
+     floor everywhere it can hold and yields to reality where it cannot. */
+  min-width: min(320px, 100%);
   background: #fffefa;
 }
 
@@ -186,6 +190,12 @@ img {
   align-items: center;
   min-height: var(--control-size);
   padding: 10px 14px;
+  /* 44px so the skip link is a legal touch target while it is on screen. It is
+     only visible on focus, so the extra height costs nothing the rest of the
+     time. */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   color: #ffffff;
   background: var(--brand-navy);
   border: 2px solid #ffffff;

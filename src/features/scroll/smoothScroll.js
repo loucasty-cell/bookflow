@@ -5,16 +5,30 @@ const pending = new Map();
 let gsapModule = null;
 let lenisModule = null;
 let tickerBound = false;
+let tickerCallback = null;
 
 function bindTicker(gsap) {
   if (tickerBound) return;
   tickerBound = true;
-  gsap.ticker.add((time) => {
+  // The callback is kept so it can be removed again. GSAP's ticker exposes
+  // add/remove and has no clear(), so the previous ticker.clear() here always
+  // threw a TypeError on the last unmount, which the ErrorBoundary caught.
+  tickerCallback = (time) => {
     for (const lenis of instances.values()) {
       lenis.raf(time * 1000);
     }
-  });
+  };
+  gsap.ticker.add(tickerCallback);
   gsap.ticker.lagSmoothing(0);
+}
+
+function unbindTicker() {
+  if (!tickerBound) return;
+  tickerBound = false;
+  if (tickerCallback) {
+    gsapModule?.ticker?.remove?.(tickerCallback);
+    tickerCallback = null;
+  }
 }
 
 export const SMOOTH_SCROLL_REASON = {
@@ -139,9 +153,8 @@ export function stopSmoothScroll(reason) {
   }
 
   lenis.destroy();
-  if (instances.size === 0 && tickerBound && gsapModule) {
-    gsapModule.ticker.clear();
-    tickerBound = false;
+  if (instances.size === 0) {
+    unbindTicker();
   }
 }
 
