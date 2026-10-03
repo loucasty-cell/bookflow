@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useId, useRef, useState } from "react";
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { FocusBarAmbient } from "./FocusBarAmbient.jsx";
 import {
   AlignLeft,
@@ -15,9 +15,11 @@ import {
   Languages,
   Lightbulb,
   MessageSquareText,
+  RotateCcw,
   Send,
   ShieldCheck,
   Sparkles,
+  ThumbsUp,
   Trash2,
   X,
 } from "lucide-react";
@@ -40,6 +42,7 @@ import {
   quickActionStatus,
   serializeLensPosition,
 } from "../hooks/useReadingLens.js";
+import { useUIStore } from "../../../store/uiStore.js";
 
 const HIT_AREA_PX = 44;
 
@@ -56,10 +59,8 @@ function hitAreaStyle(extra = {}) {
 
 function forcedHitAreaStyle(extra = {}) {
   return {
-    minWidth: `${HIT_AREA_PX}px !important`,
-    minHeight: `${HIT_AREA_PX}px !important`,
-    width: `${HIT_AREA_PX}px !important`,
-    height: `${HIT_AREA_PX}px !important`,
+    minWidth: `${HIT_AREA_PX}px`,
+    minHeight: `${HIT_AREA_PX}px`,
     ...extra,
   };
 }
@@ -74,16 +75,18 @@ export function FocusCard({
   resumeFlow,
   selectedText = "",
   initiallyCollapsed = true,
-  boundsRef = null,
   onClearSelection,
   onAddNoteFromSelection,
   lensOpenRequest = 0,
   onLensOpened,
   surface = "reader",
+  chapterTitle = "",
+  chapterText = "",
   lens,
 }) {
   const isGlobal = surface === "global";
   const [isHidden, setIsHidden] = useState(initiallyCollapsed);
+  const [isDismissed, setIsDismissed] = useState(false);
   const [position, setPosition] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [inputPrompt, setInputPrompt] = useState("");
@@ -118,13 +121,24 @@ export function FocusCard({
     setIncludeChapterContext,
     canIncludeChapterContext,
     ask,
-    askAction,
+    retryMessage,
+    toggleFeedback,
     cancel,
     clear,
   } = lens;
 
+  const passageFallback = useMemo(() => {
+    if (selectedText && selectedText.trim()) return selectedText.trim();
+    if (activePassage && activePassage.trim()) return activePassage.trim();
+    if (focusedParagraph?.text && focusedParagraph.text.trim()) return focusedParagraph.text.trim();
+    if (chapterText && chapterText.trim()) return chapterText.trim().slice(0, 1000);
+    if (chapterTitle && chapterTitle.trim()) return `Chapter: ${chapterTitle.trim()}`;
+    if (isGlobal) return "Bookflow Reading Assistant: Focus, comprehension, and reading flow.";
+    return "";
+  }, [selectedText, activePassage, focusedParagraph, chapterText, chapterTitle, isGlobal]);
+
   const hasSelection = Boolean(selectedText.trim());
-  const hasPassage = Boolean(activePassage);
+  const hasPassage = Boolean(passageFallback);
   const mountedRef = useRef(false);
 
   /**
@@ -155,10 +169,17 @@ export function FocusCard({
     if (!lensOpenRequest || lensOpenRequest === handledOpenRequestRef.current) return;
     handledOpenRequestRef.current = lensOpenRequest;
     setIsHidden(false);
+    setIsDismissed(false);
     setIsExpanded(true);
     promptInputRef.current?.focus();
     onLensOpened?.();
   }, [lensOpenRequest, onLensOpened, setIsExpanded]);
+
+  useEffect(() => {
+    if (hasSelection) {
+      setIsDismissed(false);
+    }
+  }, [hasSelection]);
 
   useEffect(() => {
     if (chatScrollRef.current) {
@@ -166,38 +187,22 @@ export function FocusCard({
     }
   }, [messages, isLoading]);
 
-  const resolveBounds = useCallback(() => {
-    const viewportWidth = window.innerWidth || 0;
-    const viewportHeight = window.innerHeight || 0;
-    const node = boundsRef?.current ?? null;
-    if (node && typeof node.getBoundingClientRect === "function") {
-      const rect = node.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        return {
-          left: rect.left,
-          top: rect.top,
-          viewportWidth: rect.width,
-          viewportHeight: rect.height,
-        };
-      }
-    }
-    return { left: 0, top: 0, viewportWidth, viewportHeight };
-  }, [boundsRef]);
-
   const clampToBounds = useCallback(
     (desired, size) => {
-      const bounds = resolveBounds();
-      const clamped = clampLensPosition({
-        left: desired.left - bounds.left,
-        top: desired.top - bounds.top,
+      const margin = 8;
+      const viewportWidth = window.innerWidth || (document.documentElement ? document.documentElement.clientWidth : 320);
+      const viewportHeight = window.innerHeight || (document.documentElement ? document.documentElement.clientHeight : 480);
+      return clampLensPosition({
+        left: desired.left,
+        top: desired.top,
         width: size.width,
         height: size.height,
-        viewportWidth: bounds.viewportWidth,
-        viewportHeight: bounds.viewportHeight,
+        viewportWidth,
+        viewportHeight,
+        margin,
       });
-      return { left: clamped.left + bounds.left, top: clamped.top + bounds.top };
     },
-    [resolveBounds],
+    [],
   );
 
   const applyTarget = useCallback((next) => {
@@ -247,6 +252,13 @@ export function FocusCard({
     targetRef.current = null;
     setPosition(null);
     removeStorageItem(LENS_POSITION_STORAGE_KEY);
+    const card = cardRef.current;
+    if (card) {
+      card.style.left = "";
+      card.style.top = "";
+      card.style.bottom = "";
+      card.style.right = "";
+    }
   }, []);
 
   const persistPosition = useCallback((next) => {
@@ -255,60 +267,140 @@ export function FocusCard({
     setStorageItem(LENS_POSITION_STORAGE_KEY, value);
   }, []);
 
-  const handlePointerDown = useCallback(
-    (event) => {
-      if (event.button != null && event.button !== 0) return;
-      const card = cardRef.current;
-      if (!card) return;
-      const rect = card.getBoundingClientRect();
-      dragRef.current = {
-        pointerId: event.pointerId,
-        pointer: { x: event.clientX, y: event.clientY },
-        rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
-      };
-      targetRef.current = { left: rect.left, top: rect.top };
-      setIsDragging(true);
-      event.currentTarget.focus?.();
-      try {
-        event.currentTarget.setPointerCapture?.(event.pointerId);
-      } catch {
-        /* capture is best effort: a stale or synthetic pointer must not break the drag */
-      }
-      event.preventDefault();
-    },
-    [],
-  );
+  const justDraggedRef = useRef(false);
 
   const handlePointerMove = useCallback(
     (event) => {
       const drag = dragRef.current;
       if (!drag || drag.pointerId !== event.pointerId) return;
+      const card = cardRef.current;
+      if (!card) return;
+
+      const deltaX = event.clientX - drag.startPointer.x;
+      const deltaY = event.clientY - drag.startPointer.y;
+
+      if (!drag.hasMoved) {
+        if (Math.hypot(deltaX, deltaY) < 3) return;
+        drag.hasMoved = true;
+        setIsDragging(true);
+        card.classList.add("is-dragging");
+        card.style.willChange = "left, top";
+        try {
+          card.setPointerCapture?.(event.pointerId);
+        } catch {
+          /* capture is best effort */
+        }
+      }
+
+      event.preventDefault?.();
+
       const next = clampToBounds(
         {
-          left: drag.rect.left + (event.clientX - drag.pointer.x),
-          top: drag.rect.top + (event.clientY - drag.pointer.y),
+          left: drag.rect.left + deltaX,
+          top: drag.rect.top + deltaY,
         },
         { width: drag.rect.width, height: drag.rect.height },
       );
-      applyTarget(next);
+
+      targetRef.current = next;
+
+      // Direct DOM style updates prevent laggy re-renders during active drag
+      card.style.left = `${next.left}px`;
+      card.style.top = `${next.top}px`;
+      card.style.bottom = "auto";
+      card.style.right = "auto";
     },
-    [applyTarget, clampToBounds],
+    [clampToBounds],
   );
 
   const endDrag = useCallback(
     (event) => {
       const drag = dragRef.current;
       if (!drag || (event?.pointerId != null && drag.pointerId !== event.pointerId)) return;
-      try {
-        event?.currentTarget?.releasePointerCapture?.(drag.pointerId);
-      } catch {
-        /* the pointer may already be gone, which is a normal end to a drag */
+      const card = cardRef.current;
+      if (card) {
+        card.classList.remove("is-dragging");
+        card.style.willChange = "";
+        try {
+          card.releasePointerCapture?.(drag.pointerId);
+        } catch {
+          /* capture release is best effort */
+        }
       }
+      const moved = drag.hasMoved;
       dragRef.current = null;
       setIsDragging(false);
-      persistPosition(targetRef.current);
+      if (moved) {
+        justDraggedRef.current = true;
+        setTimeout(() => {
+          justDraggedRef.current = false;
+        }, 120);
+        if (targetRef.current) {
+          setPosition(targetRef.current);
+          persistPosition(targetRef.current);
+        }
+      }
     },
     [persistPosition],
+  );
+
+  const startDrag = useCallback(
+    (event) => {
+      if (event.button != null && event.button !== 0) return;
+      const target = event.target;
+      if (
+        target.closest(
+          "input, textarea, select, [contenteditable='true'], .focus-card-dismiss-btn, .lens-pill-close, .focus-card-icon-btn, .focus-chat-copy-btn, .lens-feedback-btn, .focus-card-send-btn, .lens-consent-toggle, .focus-quick-pill, .lens-chapter-toggle, .focus-card-chat-messages"
+        )
+      ) {
+        return;
+      }
+      const card = cardRef.current;
+      if (!card) return;
+      const rect = card.getBoundingClientRect();
+      dragRef.current = {
+        pointerId: event.pointerId,
+        startPointer: { x: event.clientX, y: event.clientY },
+        rect: { left: rect.left, top: rect.top, width: rect.width, height: rect.height },
+        hasMoved: false,
+      };
+      targetRef.current = { left: rect.left, top: rect.top };
+
+      const onWindowPointerMove = (e) => {
+        if (e.pointerId === event.pointerId) {
+          handlePointerMove(e);
+        }
+      };
+      const onWindowPointerUp = (e) => {
+        if (e.pointerId === event.pointerId) {
+          window.removeEventListener("pointermove", onWindowPointerMove);
+          window.removeEventListener("pointerup", onWindowPointerUp);
+          window.removeEventListener("pointercancel", onWindowPointerUp);
+          endDrag(e);
+        }
+      };
+      window.addEventListener("pointermove", onWindowPointerMove, { passive: false });
+      window.addEventListener("pointerup", onWindowPointerUp);
+      window.addEventListener("pointercancel", onWindowPointerUp);
+    },
+    [handlePointerMove, endDrag],
+  );
+
+  const handleDoubleClick = useCallback(
+    (event) => {
+      const target = event.target;
+      if (
+        target.closest(
+          "button:not(.lens-head-toggle):not(.focus-card-drag-pill), input, textarea, a, select"
+        )
+      ) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      resetPosition();
+    },
+    [resetPosition],
   );
 
   const handleHandleKeyDown = useCallback(
@@ -331,7 +423,7 @@ export function FocusCard({
         { left: current.left + delta.x, top: current.top + delta.y },
         { width: rect.width, height: rect.height },
       );
-      applyTarget(next, rect);
+      applyTarget(next);
       persistPosition(next);
     },
     [applyTarget, clampToBounds, persistPosition, resetPosition],
@@ -345,9 +437,10 @@ export function FocusCard({
       triggerHaptic(HAPTIC_PATTERNS.LIGHT);
       setInputPrompt("");
       setActiveAction("");
-      ask(value);
+      setIsExpanded(true);
+      ask(value, { passage: passageFallback });
     },
-    [ask, hasPassage, inputPrompt, isLoading],
+    [ask, hasPassage, inputPrompt, isLoading, passageFallback, setIsExpanded],
   );
 
   const handleQuickAction = useCallback(
@@ -356,57 +449,129 @@ export function FocusCard({
       triggerHaptic(HAPTIC_PATTERNS.LIGHT);
       setActiveAction(actionId);
       setInputPrompt("");
-      askAction(actionId);
+      setIsExpanded(true);
+      ask("", { action: actionId, passage: passageFallback });
     },
-    [askAction, hasPassage, isLoading],
+    [ask, hasPassage, isLoading, passageFallback, setIsExpanded],
   );
 
   const handleCardKeyDown = useCallback(
     (event) => {
-      if (event.key !== "Escape") return;
-      event.stopPropagation();
-      if (inputPrompt) {
-        setInputPrompt("");
+      const target = event.target;
+      if (target.closest("input, textarea, select, [contenteditable='true']")) {
         return;
       }
-      if (isExpanded) {
-        setIsExpanded(false);
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        if (inputPrompt) {
+          setInputPrompt("");
+          return;
+        }
+        if (isExpanded) {
+          setIsExpanded(false);
+          return;
+        }
+        setIsHidden(true);
+        onClearSelection?.();
         return;
       }
-      setIsHidden(true);
-      onClearSelection?.();
+      if (event.key === "Home" || event.key === "r" || event.key === "R" || event.key.startsWith("Arrow")) {
+        handleHandleKeyDown(event);
+      }
     },
-    [inputPrompt, isExpanded, onClearSelection, setIsExpanded],
+    [handleHandleKeyDown, inputPrompt, isExpanded, onClearSelection, setIsExpanded],
   );
 
   const handleDismiss = useCallback(() => {
     triggerHaptic(HAPTIC_PATTERNS.LIGHT);
-    setIsHidden(true);
+    if (isHidden) {
+      setIsDismissed(true);
+      if (isGlobal) {
+        useUIStore.getState().setFocusBarOpen(false);
+      }
+    } else {
+      setIsHidden(true);
+    }
     onClearSelection?.();
-  }, [onClearSelection]);
+  }, [isHidden, isGlobal, onClearSelection]);
 
+  if (isDismissed && !hasSelection) return null;
   if (!focusedParagraph && !isGlobal) return null;
 
   const overlayProps = isGlobal
     ? { "data-focus-bar-surface": "global" }
     : { "data-reader-bottom-overlay": true };
 
+  const activePosition = position || (isDragging ? targetRef.current : null);
+  const positionStyle = activePosition
+    ? {
+        left: `${activePosition.left}px`,
+        top: `${activePosition.top}px`,
+        right: "auto",
+        bottom: "auto",
+        marginLeft: "0px",
+        animation: "none",
+      }
+    : isHidden
+    ? {
+        left: "20px",
+        top: "auto",
+        right: "auto",
+        bottom: "calc(20px + var(--safe-bottom))",
+        marginLeft: "0px",
+        animation: "none",
+      }
+    : {
+        left: "12px",
+        top: "calc(var(--safe-top) + 76px)",
+        right: "auto",
+        bottom: "auto",
+        marginLeft: "0px",
+        animation: "none",
+      };
+
   if (isHidden) {
     return (
-        <div
-        className={`focus-card is-collapsed${isGlobal ? " focus-card--global" : ""}`}
+      <div
+        ref={cardRef}
+        className={`focus-card is-collapsed${isGlobal ? " focus-card--global" : ""}${isDragging ? " is-dragging" : ""}`}
         {...overlayProps}
         aria-label="Reading Lens collapsed"
+        style={positionStyle}
+        onPointerDown={startDrag}
+        onPointerMove={handlePointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onDoubleClick={handleDoubleClick}
+        onKeyDown={handleHandleKeyDown}
+        onClick={(event) => {
+          if (justDraggedRef.current) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
+          if (event.target.closest(".focus-card-dismiss-btn, .lens-pill-close")) return;
+          triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+          setIsHidden(false);
+        }}
       >
         <button
           type="button"
           className="lens-pill-toggle"
-          onClick={() => {
+          onPointerDown={startDrag}
+          onClick={(event) => {
+            if (justDraggedRef.current) {
+              event.preventDefault();
+              event.stopPropagation();
+              return;
+            }
             triggerHaptic(HAPTIC_PATTERNS.LIGHT);
             setIsHidden(false);
           }}
-          aria-label="Show Reading Lens"
-          title="Show Reading Lens"
+          onKeyDown={handleHandleKeyDown}
+          aria-label="Show Reading Lens. Drag to move, or use arrow keys."
+          aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Home R"
+          title="Drag to move, tap to open, or use arrow keys."
           style={hitAreaStyle({ minWidth: "0", minHeight: "44px" })}
         >
           <span
@@ -428,19 +593,12 @@ export function FocusCard({
         >
           <X size={13} aria-hidden="true" />
         </button>
-        </div>
+      </div>
     );
   }
 
-  const positionStyle = {
-    left: `${position?.left ?? 12}px`,
-    top: position?.top == null ? "calc(var(--safe-top) + 76px)" : `${position.top}px`,
-    marginLeft: "0px",
-    animation: "none",
-  };
-
   return (
-      <div
+    <div
       ref={cardRef}
       className={`focus-card${isGlobal ? " focus-card--global" : ""}${isExpanded ? " is-chat-expanded" : ""}${isDragging ? " is-dragging" : ""}`}
       {...overlayProps}
@@ -449,6 +607,11 @@ export function FocusCard({
       aria-label="Reading Lens Assistant"
       aria-busy={isLoading}
       style={positionStyle}
+      onPointerDown={startDrag}
+      onPointerMove={handlePointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      onDoubleClick={handleDoubleClick}
       onKeyDown={handleCardKeyDown}
     >
       {isExpanded ? (
@@ -456,11 +619,17 @@ export function FocusCard({
           <FocusBarAmbient />
         </span>
       ) : null}
-      <div className="focus-card-header">
+      <div className="focus-card-header" onPointerDown={startDrag} onDoubleClick={handleDoubleClick}>
         <button
           type="button"
           className="lens-head-toggle"
-          onClick={() => {
+          onPointerDown={startDrag}
+          onClick={(event) => {
+            if (justDraggedRef.current) {
+              event.preventDefault();
+              event.stopPropagation();
+              return;
+            }
             triggerHaptic(HAPTIC_PATTERNS.LIGHT);
             setIsExpanded(!isExpanded);
           }}
@@ -478,8 +647,8 @@ export function FocusCard({
             <span className="lens-head-sub" id={consentHintId}>
               {isGlobal
                 ? "Open a book to ground Lens."
-                : hasPassage
-                ? `${activePassage.length} chars · on device`
+                : hasSelection
+                ? `${selectedText.trim().length} chars · on device`
                 : "Select text to ask Lens."}
             </span>
           </span>
@@ -492,7 +661,7 @@ export function FocusCard({
           aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Home R"
           title="Drag to move, or use arrow keys. Home resets the position."
           style={{ touchAction: "none" }}
-          onPointerDown={handlePointerDown}
+          onPointerDown={startDrag}
           onPointerMove={handlePointerMove}
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
@@ -502,6 +671,16 @@ export function FocusCard({
         </button>
 
         <div className="focus-card-header-actions">
+          <button
+            type="button"
+            className="focus-card-icon-btn lens-header-btn"
+            onClick={resetPosition}
+            aria-label="Reset Reading Lens position"
+            title="Reset position (Home)"
+            style={forcedHitAreaStyle()}
+          >
+            <RotateCcw size={13} aria-hidden="true" />
+          </button>
           <button
             type="button"
             className="focus-card-dismiss-btn lens-header-btn"
@@ -686,6 +865,26 @@ export function FocusCard({
                     ? "Ask a question or pick a quick action to inspect this passage."
                     : "Local only. Allow sending to get an answer, or keep reading offline."}
                 </p>
+                {hasPassage && (
+                  <div className="lens-suggested-chips" role="group" aria-label="Suggested questions">
+                    {["Summarize key points", "Explain core concept", "Explore background"].map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        className="lens-suggested-chip"
+                        onClick={() => {
+                          triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+                          ask(suggestion, { passage: passageFallback });
+                        }}
+                        disabled={isLoading}
+                        aria-label={`Ask: ${suggestion}`}
+                        style={hitAreaStyle({ minHeight: "36px", height: "auto" })}
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -705,18 +904,50 @@ export function FocusCard({
                   {message.text || (message.isStreaming ? "Reading…" : "")}
                 </div>
                 {message.role === "assistant" && message.text && !message.isStreaming && (
+                  <div className="lens-message-actions">
+                    <button
+                      type="button"
+                      className="focus-chat-copy-btn lens-copy-btn"
+                      onClick={() => {
+                        navigator.clipboard?.writeText?.(message.text);
+                        triggerHaptic(HAPTIC_PATTERNS.SUCCESS);
+                      }}
+                      aria-label="Copy this answer"
+                      title="Copy answer"
+                      style={hitAreaStyle()}
+                    >
+                      <Copy size={11} aria-hidden="true" />
+                    </button>
+                    {toggleFeedback && (
+                      <button
+                        type="button"
+                        className={`lens-feedback-btn ${message.feedback === "positive" ? "is-active" : ""}`}
+                        onClick={() => {
+                          triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+                          toggleFeedback(message.id, "positive");
+                        }}
+                        aria-label="Helpful answer"
+                        title="Helpful"
+                        style={hitAreaStyle()}
+                      >
+                        <ThumbsUp size={11} aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
+                )}
+                {message.isError && retryMessage && (
                   <button
                     type="button"
-                    className="focus-chat-copy-btn lens-copy-btn"
+                    className="lens-retry-btn"
                     onClick={() => {
-                      navigator.clipboard.writeText(message.text);
-                      triggerHaptic(HAPTIC_PATTERNS.SUCCESS);
+                      triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+                      retryMessage(message.id);
                     }}
-                    aria-label="Copy this answer"
-                    title="Copy answer"
+                    aria-label="Retry reading lens answer"
+                    title="Retry"
                     style={hitAreaStyle()}
                   >
-                    <Copy size={11} aria-hidden="true" />
+                    <RotateCcw size={11} aria-hidden="true" /> Retry
                   </button>
                 )}
               </div>

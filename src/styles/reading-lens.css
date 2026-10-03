@@ -46,18 +46,32 @@
 }
 
 .focus-card.is-dragging {
-  cursor: grabbing;
+  cursor: grabbing !important;
   user-select: none;
   box-shadow: 0 28px 60px -18px rgba(15, 23, 42, 0.34), 0 6px 18px -6px rgba(15, 23, 42, 0.2);
+  transition: none !important;
+}
+
+.focus-card {
+  cursor: grab;
+  touch-action: none;
+}
+
+.focus-card button,
+.focus-card input,
+.focus-card textarea,
+.focus-card a,
+.focus-card .focus-card-chat-messages {
+  touch-action: auto;
 }
 
 .focus-card.is-collapsed {
-  left: 20px !important;
-  top: auto !important;
-  right: auto !important;
-  bottom: calc(20px + var(--safe-bottom)) !important;
-  transform: none !important;
-  animation: none !important;
+  left: 20px;
+  top: auto;
+  right: auto;
+  bottom: calc(20px + var(--safe-bottom));
+  transform: none;
+  animation: none;
 }
 
 .focus-card-header {
@@ -242,30 +256,39 @@
 }
 
 .focus-card-middle-bar {
-  padding: 0 12px 8px;
+  padding: 0 12px 6px;
 }
 
 .focus-card-input-form {
   min-height: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px;
-  background: var(--chrome-solid);
-  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.1));
-  border-radius: 14px;
+  gap: 8px;
+  padding: 4px 6px 4px 8px;
+  background: color-mix(in srgb, var(--chrome-strong) 40%, var(--chrome-solid));
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.1));
+  border-radius: 13px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.focus-card-input-form:focus-within {
+  border-color: var(--focus-edge, #06b6d4);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus-edge, #06b6d4) 22%, transparent);
 }
 
 .focus-card-prompt-input {
   min-width: 0;
   flex: 1 1 auto;
-  height: 36px;
-  padding: 0 8px;
+  height: 100%;
+  padding: 0 6px;
   color: var(--reader-ink);
   background: transparent;
   border: 0;
   outline: 0;
-  font-size: var(--ui-caption);
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .focus-card-prompt-input::placeholder {
@@ -273,65 +296,86 @@
 }
 
 .focus-card-send-btn {
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  flex: 0 0 34px;
   padding: 0;
   display: inline-grid;
   place-items: center;
-  color: #fff;
-  background: var(--focus-edge);
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--focus-edge, #06b6d4), #0ea5e9);
   border: 0;
-  border-radius: 10px;
+  border-radius: 9px;
   cursor: pointer;
+  box-shadow: 0 2px 6px -1px color-mix(in srgb, var(--focus-edge, #06b6d4) 40%, transparent);
+  transition: transform 0.12s ease, opacity 0.15s ease, box-shadow 0.12s ease;
+}
+
+.focus-card-send-btn:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.focus-card-send-btn:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 .focus-card-send-btn:disabled {
-  opacity: 0.45;
+  opacity: 0.35;
+  box-shadow: none;
   cursor: not-allowed;
 }
 
 .lens-quick-actions {
-  padding: 0 12px 8px;
+  padding: 0 12px 6px;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 5px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
 }
 
 .lens-quick-action {
+  width: 100%;
   min-width: 0;
-  min-height: 62px;
-  padding: 7px 6px;
-  display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 3px;
-  color: var(--reader-ink);
-  background: transparent;
-  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.08));
-  border-radius: 12px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  color: var(--focus-edge, #06b6d4);
+  background: color-mix(in srgb, var(--chrome-strong) 40%, transparent);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
   cursor: pointer;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .lens-quick-action:hover:not(:disabled) {
-  background: var(--chrome-strong);
-  border-color: color-mix(in srgb, var(--focus-edge) 28%, var(--app-line));
+  background: color-mix(in srgb, var(--focus-edge, #06b6d4) 14%, var(--chrome-strong));
+  border-color: color-mix(in srgb, var(--focus-edge, #06b6d4) 35%, transparent);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px -3px rgba(6, 182, 212, 0.25);
+}
+
+.lens-quick-action:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .lens-quick-action:disabled {
-  opacity: 0.48;
+  opacity: 0.38;
   cursor: not-allowed;
 }
 
 .lens-quick-action-icon {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   display: inline-grid;
   place-items: center;
-  color: var(--focus-edge);
-  background: color-mix(in srgb, var(--reader-accent-soft, #dbeafe) 72%, transparent);
-  border-radius: 10px;
+  color: inherit;
+  background: transparent;
+  border-radius: 6px;
 }
 
 .lens-quick-action-text {
@@ -359,24 +403,27 @@
 }
 
 .lens-quick-action[data-lens-action-status="running"] {
-  background: #f6f7f8;
-  border-color: #d6dde0;
-  box-shadow: 0 8px 18px -12px rgba(0, 0, 0, 0.12);
+  background: color-mix(in srgb, var(--chrome-strong) 60%, transparent);
+  border-color: color-mix(in srgb, var(--focus-edge) 40%, var(--app-line));
+  box-shadow: 0 4px 12px -6px rgba(0, 0, 0, 0.12);
 }
 
 .lens-quick-action[data-lens-action-status="running"] .lens-quick-action-icon {
-  color: #515c67;
-  background: #eef1f3;
+  color: var(--focus-edge, #06b6d4);
+  background: transparent;
 }
 
 .lens-chapter-scope {
-  margin: 0 12px 8px;
-  padding: 6px 8px;
-  display: grid;
-  gap: 2px;
-  background: color-mix(in srgb, var(--chrome-strong) 42%, transparent);
-  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.07));
-  border-radius: 12px;
+  margin: 0 12px 6px;
+  padding: 4px 8px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  background: color-mix(in srgb, var(--chrome-strong) 30%, transparent);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.06));
+  border-radius: 9px;
 }
 
 .lens-chapter-label {
@@ -483,71 +530,99 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  width: 100%;
 }
 
 .lens-message.is-user {
   justify-content: flex-end;
-  padding: 0;
-}
-
-.lens-message.is-user .lens-response-text {
-  max-width: 88%;
-  padding: 10px 12px;
-  color: var(--reader-ink);
-  background: #ebeeeF;
-  border-radius: 12px;
-}
-
-.lens-message.is-assistant {
   padding: 2px 0;
 }
 
+.lens-message.is-user .lens-response-text {
+  max-width: 82%;
+  padding: 8px 12px;
+  color: var(--reader-ink);
+  background: color-mix(in srgb, var(--focus-edge, #06b6d4) 14%, var(--chrome-strong));
+  border: 1px solid color-mix(in srgb, var(--focus-edge, #06b6d4) 28%, var(--app-line, transparent));
+  border-radius: 14px 14px 3px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.08);
+}
+
+.lens-message.is-assistant {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  column-gap: 10px;
+  row-gap: 4px;
+  align-items: start;
+  width: 100%;
+  padding: 4px 0;
+}
+
 .lens-message-avatar {
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
+  grid-column: 1;
+  grid-row: 1;
+  width: 26px !important;
+  height: 26px !important;
+  flex: 0 0 26px;
   display: inline-grid;
   place-items: center;
-  color: #fff;
-  background: #00a6f4;
-  border-radius: 999px;
+  color: #ffffff;
+  background: linear-gradient(135deg, var(--focus-edge, #06b6d4), #8b5cf6);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--focus-edge, #06b6d4) 45%, transparent);
+  margin-top: 1px;
 }
 
 .lens-response-text {
   min-width: 0;
-  flex: 1 1 auto;
   color: var(--reader-ink);
-  font-size: var(--ui-caption);
+  font-size: 13px;
   line-height: 1.5;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
 
+.lens-message.is-assistant .lens-response-text {
+  grid-column: 2;
+  padding: 1px 0;
+}
+
 .lens-message.is-user .lens-response-text {
   flex: 0 1 auto;
-  font-size: var(--ui-caption);
+}
+
+.lens-message-actions {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
 }
 
 .focus-chat-copy-btn {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 0;
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  padding: 0 !important;
   display: inline-grid;
   place-items: center;
-  flex: 0 0 44px;
+  flex: 0 0 28px;
   color: var(--reader-muted);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 10px;
+  background: color-mix(in srgb, var(--chrome-strong) 45%, transparent);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.08));
+  border-radius: 7px;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .focus-chat-copy-btn:hover {
   color: var(--reader-ink);
-  background: var(--chrome-strong);
-  border-color: var(--app-line, rgba(0, 0, 0, 0.08));
+  background: var(--chrome-solid);
+  border-color: var(--app-line, rgba(255, 255, 255, 0.18));
+  transform: translateY(-1px);
 }
 
 .focus-chat-error {
@@ -664,8 +739,8 @@
   }
 
   .focus-card.is-collapsed {
-    left: 10px !important;
-    bottom: calc(10px + var(--safe-bottom)) !important;
+    left: 10px;
+    bottom: calc(10px + var(--safe-bottom));
   }
 
   .lens-quick-actions {
@@ -776,9 +851,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 auto;
+  flex: 0 0 32px;
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  padding: 0 !important;
   border: 0;
-  border-radius: 50%;
+  border-radius: 9px;
   background: transparent;
   color: var(--reader-muted, rgb(255 255 255 / 55%));
   cursor: pointer;
@@ -791,22 +871,34 @@
 
 .lens-consent-dot.is-granted {
   color: var(--reader-accent, #06b6d4);
+  background: color-mix(in srgb, var(--reader-accent, #06b6d4) 15%, transparent);
 }
 
 .lens-chapter-scope {
+  margin: 0 12px 6px;
+  padding: 4px 8px;
+  min-height: 32px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin: 0;
+  justify-content: flex-start;
+  gap: 8px;
+  background: color-mix(in srgb, var(--chrome-strong) 30%, transparent);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.06));
+  border-radius: 9px;
 }
 
 .lens-chapter-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 auto;
-  border: 0;
-  border-radius: 50%;
+  flex: 0 0 26px;
+  width: 26px !important;
+  height: 26px !important;
+  min-width: 26px !important;
+  min-height: 26px !important;
+  padding: 0 !important;
+  border: 1px solid transparent;
+  border-radius: 7px;
   background: transparent;
   color: var(--reader-muted, rgb(255 255 255 / 55%));
   cursor: pointer;
@@ -819,6 +911,8 @@
 
 .lens-chapter-toggle.is-on {
   color: var(--reader-accent, #06b6d4);
+  background: color-mix(in srgb, var(--reader-accent, #06b6d4) 14%, transparent);
+  border-color: color-mix(in srgb, var(--reader-accent, #06b6d4) 28%, transparent);
 }
 
 .lens-chapter-toggle:disabled {
@@ -827,48 +921,28 @@
 }
 
 .focus-card-quick-pills {
-  justify-content: flex-start;
-  gap: 2px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  padding: 0 12px 6px;
+  margin: 0;
 }
 
 .focus-quick-pill {
-  flex: 0 0 auto;
-  border-radius: 50%;
-}
-
-
-.lens-consent-dot,
-.lens-chapter-toggle {
-  width: 44px;
-  height: 44px;
-  min-width: 44px !important;
-  min-height: 44px !important;
+  width: 100% !important;
+  height: 38px !important;
+  min-width: 0 !important;
+  min-height: 38px !important;
   padding: 0 !important;
-}
-
-.focus-quick-pill {
-  width: 44px;
-  height: 44px;
-  min-width: 44px !important;
-  padding: 0 !important;
-  border-radius: 50%;
-  flex: 0 0 auto;
+  border-radius: 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .lens-context {
   flex: 1 1 auto;
   min-width: 0;
-}
-
-
-.lens-chapter-scope {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  background: none;
-  border: 0;
 }
 
 .focus-card-lens-status {
@@ -1009,5 +1083,286 @@
 
 .lens-pill-close {
   flex: 0 0 auto;
+}
+
+.lens-suggested-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  justify-content: center;
+}
+
+.lens-suggested-chip {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: var(--ui-caption);
+  background: var(--chrome-strong);
+  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.1));
+  color: var(--reader-ink);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.lens-suggested-chip:hover:not(:disabled) {
+  background: var(--chrome-solid);
+  border-color: var(--focus-edge, #06b6d4);
+}
+
+.lens-suggested-chip:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lens-message-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.lens-feedback-btn,
+.lens-retry-btn {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  padding: 0 !important;
+  display: inline-grid;
+  place-items: center;
+  color: var(--reader-muted);
+  background: color-mix(in srgb, var(--chrome-strong) 45%, transparent);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.08));
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lens-feedback-btn:hover,
+.lens-retry-btn:hover {
+  color: var(--reader-ink);
+  background: var(--chrome-solid);
+  border-color: var(--app-line, rgba(255, 255, 255, 0.18));
+  transform: translateY(-1px);
+}
+
+.lens-feedback-btn.is-active {
+  color: var(--focus-edge, #06b6d4);
+  background: color-mix(in srgb, var(--focus-edge, #06b6d4) 15%, transparent);
+  border-color: color-mix(in srgb, var(--focus-edge, #06b6d4) 30%, transparent);
+}
+
+/* ==========================================================================
+   Focus Mode: Targeted Ratios, Placements, and Sizing for FocusCard Elements
+   ========================================================================== */
+
+/* Selector 1: User message bubble in chat transcript */
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(1) {
+  display: flex !important;
+  justify-content: flex-end !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 2px 0 !important;
+}
+
+/* Selector 2: Assistant message bubble in chat transcript */
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(2) {
+  display: grid !important;
+  grid-template-columns: 28px minmax(0, 1fr) !important;
+  column-gap: 10px !important;
+  row-gap: 4px !important;
+  align-items: start !important;
+  width: 100% !important;
+  padding: 4px 0 !important;
+}
+
+/* Selector 3: Assistant message avatar */
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(2) > span:nth-of-type(1) {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  width: 26px !important;
+  height: 26px !important;
+  flex: 0 0 26px !important;
+  border-radius: 8px !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  background: linear-gradient(135deg, var(--focus-edge, #06b6d4), #8b5cf6) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--focus-edge, #06b6d4) 45%, transparent) !important;
+  margin-top: 1px !important;
+}
+
+/* Selector 4: Copy button on assistant message */
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > button:nth-of-type(1) {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  padding: 0 !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  border-radius: 7px !important;
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.08)) !important;
+  background: color-mix(in srgb, var(--chrome-strong) 45%, transparent) !important;
+  color: var(--reader-muted) !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+/* Selector 5: Feedback button on assistant message */
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > button:nth-of-type(2) {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  min-height: 28px !important;
+  padding: 0 !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  border-radius: 7px !important;
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.08)) !important;
+  background: color-mix(in srgb, var(--chrome-strong) 45%, transparent) !important;
+  color: var(--reader-muted) !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+}
+
+/* Selector 6: Quick action pills row */
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 6px !important;
+  padding: 0 12px 6px !important;
+  margin: 0 !important;
+}
+
+/* Selector 7: Chapter scope container */
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  margin: 0 12px 6px !important;
+  padding: 4px 8px !important;
+  min-height: 32px !important;
+  background: color-mix(in srgb, var(--chrome-strong) 30%, transparent) !important;
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.06)) !important;
+  border-radius: 9px !important;
+}
+
+/* Selector 8: Prompt input form */
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > form:nth-of-type(1) {
+  min-height: 44px !important;
+  height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 4px 6px 4px 8px !important;
+  background: color-mix(in srgb, var(--chrome-strong) 40%, var(--chrome-solid)) !important;
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.1)) !important;
+  border-radius: 13px !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Selector 9: Send button in form */
+div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > form:nth-of-type(1) > button:nth-of-type(2) {
+  width: 34px !important;
+  height: 34px !important;
+  min-width: 34px !important;
+  min-height: 34px !important;
+  flex: 0 0 34px !important;
+  padding: 0 !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  border: 0 !important;
+  border-radius: 9px !important;
+  background: linear-gradient(135deg, var(--focus-edge, #06b6d4), #0ea5e9) !important;
+  color: #ffffff !important;
+  cursor: pointer !important;
+  box-shadow: 0 2px 6px -1px color-mix(in srgb, var(--focus-edge, #06b6d4) 40%, transparent) !important;
+  transition: transform 0.12s ease, opacity 0.15s ease, box-shadow 0.12s ease !important;
+}
+
+/* ==========================================================================
+   Selected Element: div#root:nth-of-type(1) > div:nth-of-type(2) (Landing Focus Card)
+   ========================================================================== */
+div#root:nth-of-type(1) > div:nth-of-type(2) {
+  position: fixed !important;
+  z-index: var(--z-modal, 100);
+  max-width: min(390px, calc(100vw - 24px));
+  color: var(--reader-ink);
+  font-family: var(--font-ios);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  background: color-mix(in srgb, var(--chrome-solid) 94%, transparent);
+  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.35), 0 2px 8px -2px rgba(0, 0, 0, 0.2);
+  cursor: grab !important;
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  will-change: left, top, box-shadow;
+  transition:
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.2s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+div#root:nth-of-type(1) > div:nth-of-type(2).is-collapsed {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 4px 6px 4px 12px !important;
+  width: auto !important;
+  min-width: 172px !important;
+  max-width: min(290px, calc(100vw - 24px)) !important;
+  height: auto !important;
+  min-height: 48px !important;
+  border-radius: 9999px !important;
+  overflow: visible !important;
+  cursor: grab !important;
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  box-shadow: 0 10px 28px -6px rgba(0, 0, 0, 0.32), 0 2px 6px -1px rgba(0, 0, 0, 0.15) !important;
+}
+
+div#root:nth-of-type(1) > div:nth-of-type(2) .lens-pill-toggle,
+div#root:nth-of-type(1) > div:nth-of-type(2) .focus-card-header,
+div#root:nth-of-type(1) > div:nth-of-type(2) .focus-card-drag-pill,
+div#root:nth-of-type(1) > div:nth-of-type(2) .lens-head-toggle,
+div#root:nth-of-type(1) > div:nth-of-type(2) .lens-drag-handle {
+  cursor: grab !important;
+  touch-action: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+div#root:nth-of-type(1) > div:nth-of-type(2) .lens-pill-toggle:active,
+div#root:nth-of-type(1) > div:nth-of-type(2) .focus-card-header:active,
+div#root:nth-of-type(1) > div:nth-of-type(2) .focus-card-drag-pill:active,
+div#root:nth-of-type(1) > div:nth-of-type(2) .lens-head-toggle:active,
+div#root:nth-of-type(1) > div:nth-of-type(2) .lens-drag-handle:active,
+div#root:nth-of-type(1) > div:nth-of-type(2).is-dragging,
+div#root:nth-of-type(1) > div:nth-of-type(2).is-dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+div#root:nth-of-type(1) > div:nth-of-type(2).is-dragging {
+  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.45), 0 6px 16px -2px rgba(0, 0, 0, 0.25) !important;
+  transition: none !important;
+}
+
+div#root:nth-of-type(1) > div:nth-of-type(2) input,
+div#root:nth-of-type(1) > div:nth-of-type(2) textarea,
+div#root:nth-of-type(1) > div:nth-of-type(2) .focus-card-chat-messages {
+  touch-action: pan-y !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
 }
 
