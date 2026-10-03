@@ -1,0 +1,5 @@
+interface:
+  display_name: "Reader Ergonomics & QA"
+  short_description: "Focus rail physics, atmosphere themes, and responsive QA"
+  default_prompt: "Use $reader-ergonomics-qa to audit sentence-focus rail behavior, keyboard shortcuts, responsive layout compliance, and test suites."
+  brand_color: "#7B1020"

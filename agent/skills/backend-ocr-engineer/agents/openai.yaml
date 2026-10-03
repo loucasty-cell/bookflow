@@ -1,0 +1,5 @@
+interface:
+  display_name: "Backend OCR Engineer"
+  short_description: "FastAPI, DeepSeek-OCR-2, SSE streaming, and Python backend"
+  default_prompt: "Use $backend-ocr-engineer to maintain, optimize, and test the Bookflow FastAPI backend, PyMuPDF rendering, DeepSeek-OCR-2 pipeline, and Pytest suites."
+  brand_color: "#4169E1"

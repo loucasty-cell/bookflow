@@ -242,6 +242,16 @@ describe("reading lens prompt and request contract", () => {
     expect(body.length).toBeLessThanOrEqual(24000);
     expect(body.length).toBeGreaterThan(16000);
   });
+
+  it("exposes retryMessage and toggleFeedback functions", () => {
+    const hook = useReadingLens({
+      currentParagraphText: "Full paragraph.",
+      selectedText: "",
+    });
+
+    expect(typeof hook.retryMessage).toBe("function");
+    expect(typeof hook.toggleFeedback).toBe("function");
+  });
 });
 
 describe("reading lens response parsing", () => {

@@ -792,6 +792,30 @@ export function useReadingLens({
     [ask],
   );
 
+  const retryMessage = useCallback(
+    async (messageId) => {
+      const target = messageId
+        ? messages.find((m) => m.id === messageId)
+        : [...messages].reverse().find((m) => m.role === "user");
+      if (!target) return { ok: false, reason: "not_found" };
+      return ask(target.text, { action: target.action, passage: target.passage });
+    },
+    [messages, ask],
+  );
+
+  const toggleFeedback = useCallback((messageId, type = "positive") => {
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.id !== messageId) return msg;
+        const currentFeedback = msg.feedback;
+        return {
+          ...msg,
+          feedback: currentFeedback === type ? null : type,
+        };
+      }),
+    );
+  }, []);
+
   const isLoading = status === LENS_STATUS.requesting || status === LENS_STATUS.streaming;
   const canIncludeChapterContext = Boolean(String(chapterText ?? "").trim());
   const statusLabel = describeLensStatus(status, {
@@ -821,6 +845,8 @@ export function useReadingLens({
     canIncludeChapterContext,
     ask,
     askAction,
+    retryMessage,
+    toggleFeedback,
     cancel,
     clear,
   };
