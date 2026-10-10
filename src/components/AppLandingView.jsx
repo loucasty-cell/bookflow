@@ -7,6 +7,7 @@ import {
   ResumeCard,
   SessionRecap,
   getResumeEntry,
+  loadOfflineBook,
 } from "../features/library/index.js";
 
 const OcrUploader = lazy(() =>
@@ -41,8 +42,10 @@ export function AppLandingView({
   setDragging,
   handleFile,
   openBook,
+  openRestoredBook,
   setOcrOpen,
   error,
+  setError,
   loading,
   ocrOpen,
   ocrDialogRef,
@@ -51,12 +54,23 @@ export function AppLandingView({
 }) {
   const resumeEntry = settings.showResumeCard ? getResumeEntry() : null;
 
-  const handleResume = (entry) => {
+  const handleResume = async (entry) => {
     if (entry?.documentId === "bookflow-sample" || entry?.kind === "SAMPLE") {
       openBook(SAMPLE_BOOK, "bookflow-sample");
-    } else {
-      fileInputRef.current?.click();
+      return;
     }
+    if (entry?.offline !== true) {
+      fileInputRef.current?.click();
+      return;
+    }
+    const stored = await loadOfflineBook(entry.documentId);
+    if (stored) {
+      openRestoredBook(stored, entry.documentId);
+      return;
+    }
+    setError?.(
+      `"${entry.title}" is no longer saved on this device. Choose the same file to continue where you left off.`
+    );
   };
 
   return (
@@ -93,6 +107,7 @@ export function AppLandingView({
         fileInputRef={fileInputRef}
         handleFile={handleFile}
         openBook={openBook}
+        onOpenRecent={handleResume}
         onOpenOcr={() => setOcrOpen(true)}
         error={error}
         loading={loading}

@@ -18,6 +18,7 @@ export const DEFAULT_SETTINGS = {
   showInterventionModals: false,
   useProgressiveImport: true,
   showResumeCard: true,
+  keepBooksOnDevice: true,
   showSessionRecap: false,
   showAchievements: false,
   showDefinitionLookup: false,

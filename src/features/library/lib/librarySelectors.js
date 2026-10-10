@@ -92,11 +92,13 @@ export function formatLastOpened(timestamp, now = Date.now()) {
  *
  * `file`     a real document whose file the reader must re-pick.
  * `bundled`  ships with the app, so it is always openable and needs no file.
+ * `device`   a private copy is kept in this browser, so it reopens instantly.
  * `missing`  a real document whose stored file is gone; only metadata remains.
  */
 export function describeSource(entry) {
   if (!entry || typeof entry !== 'object') return 'missing';
   if (entry.kind === 'SAMPLE' || entry.documentId === 'bookflow-sample') return 'bundled';
+  if (entry.offline === true) return 'device';
   return entry.fileName ? 'file' : 'missing';
 }
 

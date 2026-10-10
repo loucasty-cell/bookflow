@@ -17,7 +17,12 @@ import {
   useReaderSession,
   useReaderStaticRegion,
 } from "./features/reader/index.js";
-import { useReadingSession } from "./features/library/index.js";
+import {
+  forgetOfflineBooks,
+  keepBookOnDevice,
+  touchLibraryEntry,
+  useReadingSession,
+} from "./features/library/index.js";
 import { FocusBarHost } from "./features/reader/index.js";
 
 const ENTRY_INTRO_STORAGE_KEY = "bookflow:entry-intro-seen";
@@ -62,6 +67,7 @@ function App() {
   const navigationHookRef = useRef(null);
   const ocrDialogRef = useRef(null);
   const ocrCloseButtonRef = useRef(null);
+  const restoredFromDeviceRef = useRef("");
 
   const clearTimers = useCallback(() => {
     navigationHookRef.current?.clearAllTimers();
@@ -104,6 +110,22 @@ function App() {
     setStaticRegionLabel: setSessionStaticRegionLabel,
   } = session;
 
+  const openRestoredBook = useCallback(
+    (restoredBook, id) => {
+      restoredFromDeviceRef.current = id;
+      openBook(restoredBook, id);
+    },
+    [openBook]
+  );
+
+  const openImportedBook = useCallback(
+    (importedBook, id) => {
+      restoredFromDeviceRef.current = "";
+      openBook(importedBook, id);
+    },
+    [openBook]
+  );
+
   const {
     cancelActiveImport,
     handleFile,
@@ -111,7 +133,7 @@ function App() {
     jumpToUnit,
   } = useDocumentImport({
     fileInputRef,
-    openBook,
+    openBook: openImportedBook,
     setBook: setSessionBook,
     setLoading,
     setError,
@@ -176,6 +198,19 @@ function App() {
   }, [chapters]);
 
   const totalWords = useMemo(() => countBookWords(book), [book]);
+
+  const keepBooksOnDevice = settings.keepBooksOnDevice !== false;
+  useEffect(() => {
+    if (!book || !bookId) return;
+    touchLibraryEntry(bookId, book, { totalWords });
+    if (!keepBooksOnDevice || restoredFromDeviceRef.current === bookId) return;
+    keepBookOnDevice(bookId, book);
+  }, [book, bookId, totalWords, keepBooksOnDevice]);
+
+  useEffect(() => {
+    if (!keepBooksOnDevice) forgetOfflineBooks();
+  }, [keepBooksOnDevice]);
+
   const minutes = readingMinutes(totalWords);
   const focusId = pinnedId || activeParagraphId;
   const focusedParagraph = paragraphMap.get(focusId);
@@ -351,7 +386,7 @@ function App() {
   const landingViewProps = {
     showEntryIntro, completeEntryIntro, settings, setSettings, sessionRecap,
     setSessionRecap, awardedBadges, awardBadges, fileInputRef, dragging,
-    setDragging, handleFile, openBook, setOcrOpen, error, loading, ocrOpen,
+    setDragging, handleFile, openBook, openRestoredBook, setOcrOpen, error, setError, loading, ocrOpen,
     ocrDialogRef, ocrCloseButtonRef, handleOcrDocumentLoaded,
   };
 

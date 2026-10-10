@@ -5,6 +5,8 @@ import {
   clearDocumentUnits,
   saveDocument,
   loadDocument,
+  deleteDocument,
+  listDocumentIds,
   clearAllDurable,
   getDurableStore,
   getDurableKind,
@@ -34,6 +36,16 @@ describe('durableStorage', () => {
     expect(await loadDocument('doc-2')).toEqual({ title: 'T' });
     await clearAllDurable();
     expect(await loadDocument('doc-2')).toBeNull();
+  });
+
+  it('lists and deletes individual documents', async () => {
+    await saveDocument('doc-a', { title: 'A' });
+    await saveDocument('doc-b', { title: 'B' });
+    expect((await listDocumentIds()).sort()).toEqual(['doc-a', 'doc-b']);
+    await deleteDocument('doc-a');
+    expect(await loadDocument('doc-a')).toBeNull();
+    expect(await listDocumentIds()).toEqual(['doc-b']);
+    await clearAllDurable();
   });
 
   it('handles underscore keys and avoids prefix collisions on clear', async () => {

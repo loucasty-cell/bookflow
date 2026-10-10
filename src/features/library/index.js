@@ -89,9 +89,11 @@ export {
   STORES,
   clearAllDurable,
   clearDocumentUnits,
+  deleteDocument,
   getDurableKind,
   getDurableStore,
   isDurableStorageAvailable,
+  listDocumentIds,
   loadDocument,
   loadDocumentUnit,
   resetDurableStoreCache,
@@ -104,3 +106,14 @@ export { RecentShelf } from './components/RecentShelf.jsx';
 export { ResumeCard } from './components/ResumeCard.jsx';
 export { SessionRecap } from './components/SessionRecap.jsx';
 export { useReadingSession } from './hooks/useReadingSession.js';
+export {
+  MAX_OFFLINE_BOOKS,
+  SAMPLE_DOCUMENT_ID,
+  fileMetaFromDocumentId,
+  forgetOfflineBooks,
+  isReadableBook,
+  keepBookOnDevice,
+  loadOfflineBook,
+  pruneOfflineBooks,
+  touchLibraryEntry,
+} from './lib/offlineBooks.js';

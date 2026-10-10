@@ -24,6 +24,7 @@ function memoryStore() {
     async setDocument(documentId, value) { documents.set(documentId, value); return true; },
     async getDocument(documentId) { return documents.get(documentId) ?? null; },
     async deleteDocument(documentId) { documents.delete(documentId); return true; },
+    async documentKeys() { return [...documents.keys()]; },
     async setUnit(key, value) { units.set(key, value); return true; },
     async getUnit(key) { return units.get(key) ?? null; },
     async deleteUnit(key) { units.delete(key); return true; },
@@ -91,6 +92,10 @@ async function idbStore() {
     },
     async deleteDocument(documentId) {
       return del(STORES.DOCUMENTS, documentId);
+    },
+    async documentKeys() {
+      const all = await listKeys(STORES.DOCUMENTS);
+      return Array.isArray(all) ? all : [];
     },
     async setUnit(key, value) {
       return set(STORES.UNITS, key, value);
@@ -179,6 +184,20 @@ async function opfsStore() {
     },
     async deleteDocument(documentId) {
       return removeFile(`doc-${encodeOpfsName(documentId)}.json`);
+    },
+    async documentKeys() {
+      const keys = [];
+      try {
+        for await (const [name] of dir.entries()) {
+          if (!name.startsWith('doc-') || !name.endsWith('.json')) continue;
+          const decoded = decodeOpfsName(name.slice(4, -5));
+          if (decoded) keys.push(decoded);
+        }
+      } catch (err) {
+        void err;
+        return [];
+      }
+      return keys;
     },
     async setUnit(key, value) {
       return writeFile(`unit-${encodeOpfsName(key)}.json`, value);
@@ -294,6 +313,16 @@ export async function loadDocument(documentId) {
   const store = await getDurableStore();
   const record = await store.getDocument(documentId);
   return record?.document ?? null;
+}
+
+export async function deleteDocument(documentId) {
+  const store = await getDurableStore();
+  return store.deleteDocument(documentId);
+}
+
+export async function listDocumentIds() {
+  const store = await getDurableStore();
+  return store.documentKeys();
 }
 
 export async function clearAllDurable() {

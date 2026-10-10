@@ -33,6 +33,7 @@ export function LandingPage({
   fileInputRef,
   handleFile,
   openBook,
+  onOpenRecent,
   onOpenOcr,
   error,
   loading,
@@ -55,6 +56,10 @@ export function LandingPage({
   };
 
   const handleOpenRecent = (entry) => {
+    if (onOpenRecent) {
+      onOpenRecent(entry);
+      return;
+    }
     if (entry?.kind === "SAMPLE" || entry?.documentId === "bookflow-sample") {
       openBook(SAMPLE_BOOK, "bookflow-sample");
       return;

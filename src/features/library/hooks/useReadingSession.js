@@ -54,7 +54,7 @@ export function useReadingSession({
     });
   }, []);
 
-  const finalizeSession = useCallback(() => {
+  const finalizeSession = useCallback(({ silent = false } = {}) => {
     const metrics = metricsRef.current;
     if (!metrics || !book) return;
     metricsRef.current = null;
@@ -79,7 +79,7 @@ export function useReadingSession({
       activeParagraphId,
     });
 
-    if (settings.showSessionRecap && wordsRead >= MIN_RECAP_WORDS) {
+    if (!silent && settings.showSessionRecap && wordsRead >= MIN_RECAP_WORDS) {
       setSessionRecap({
         bookTitle: book.title,
         wordsRead,
@@ -110,7 +110,13 @@ export function useReadingSession({
   useEffect(() => {
     if (!sessionBookTitle) return undefined;
     resetSessionMetrics(sessionBookTitle);
+    const onPageHide = () => {
+      finalizeSessionRef.current({ silent: true });
+      resetSessionMetrics(sessionBookTitle);
+    };
+    window.addEventListener('pagehide', onPageHide);
     return () => {
+      window.removeEventListener('pagehide', onPageHide);
       finalizeSessionRef.current();
     };
   }, [sessionBookTitle, resetSessionMetrics]);

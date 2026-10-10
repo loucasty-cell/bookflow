@@ -1,7 +1,8 @@
 /**
  * libraryStore: local-only library index for resume, shelves, and derived stats.
  *
- * Stores metadata only. Document text is never persisted here.
+ * Stores metadata only. Document text is never persisted here; `offline` only
+ * records that a private on-device copy exists in durable storage.
  */
 import {
   getSafeStorage,
@@ -63,6 +64,7 @@ export function normalizeEntry(raw) {
     notesCount: toNonNegativeInt(raw.notesCount),
     bookmarksCount: toNonNegativeInt(raw.bookmarksCount),
     activeParagraphId: toStringOrEmpty(raw.activeParagraphId),
+    offline: raw.offline === true,
     shelf: SHELF_VALUES.includes(raw.shelf) ? raw.shelf : SHELVES.READING,
     addedAt,
     lastOpenedAt: toFiniteNumber(raw.lastOpenedAt, addedAt),
@@ -244,12 +246,12 @@ export function recordSession({
   return upsertEntry({
     ...(existing ?? {}),
     documentId,
-    title,
-    author,
-    kind,
-    fileName,
-    size,
-    lastModified,
+    title: title ?? existing?.title,
+    author: author ?? existing?.author,
+    kind: kind ?? existing?.kind,
+    fileName: fileName ?? existing?.fileName,
+    size: size ?? existing?.size,
+    lastModified: lastModified ?? existing?.lastModified,
     progress: clampedProgress,
     activeChapter,
     totalChapters,

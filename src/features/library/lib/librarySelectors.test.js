@@ -182,6 +182,12 @@ describe('describeSource and canResume', () => {
     expect(hasReopenableSource({ fileName: '' })).toBe(false);
   });
 
+  it('treats a private on-device copy as resumable without a file', () => {
+    expect(describeSource({ documentId: 'ocr-1', fileName: '', offline: true })).toBe('device');
+    expect(canResume({ documentId: 'ocr-1', fileName: '', offline: true })).toBe(true);
+    expect(hasReopenableSource({ documentId: 'ocr-1', fileName: '', offline: true })).toBe(false);
+  });
+
   it('lets the bundled sample resume even though it has no file', () => {
     expect(canResume({ fileName: '', kind: 'SAMPLE' })).toBe(true);
     expect(canResume({ fileName: '', kind: 'SAMPLE', documentId: 'bookflow-sample' })).toBe(true);

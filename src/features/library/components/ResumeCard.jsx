@@ -92,7 +92,7 @@ export function ResumeCard({ entry: entryOverride, onResume, onReopen, onDismiss
             <ArrowRight size={13} aria-hidden="true" />
           </button>
         )}
-        {source !== 'file' && onReopen && (
+        {source === 'missing' && onReopen && (
           <button
             type="button"
             className="resume-card-secondary"

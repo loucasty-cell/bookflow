@@ -332,6 +332,29 @@ export function SettingsPanel({ settings, setSettings, open, close, returnFocusR
           </div>
           <p>Progressive opens the first page immediately and prepares the rest in the background.</p>
         </section>
+
+        <section className="setting-group">
+          <label>Offline library</label>
+          <div className="segmented" role="group" aria-label="Keep books on this device">
+            <button
+              className={safeSettings.keepBooksOnDevice !== false ? "active" : ""}
+              type="button"
+              onClick={() => update("keepBooksOnDevice", true)}
+              aria-pressed={safeSettings.keepBooksOnDevice !== false}
+            >
+              Keep on device
+            </button>
+            <button
+              className={safeSettings.keepBooksOnDevice === false ? "active" : ""}
+              type="button"
+              onClick={() => update("keepBooksOnDevice", false)}
+              aria-pressed={safeSettings.keepBooksOnDevice === false}
+            >
+              Don't keep
+            </button>
+          </div>
+          <p>Recent books are saved privately in this browser so Resume opens them instantly. Nothing is uploaded. Turning this off removes the saved copies and keeps your progress.</p>
+        </section>
       </div>
     </aside>
   );

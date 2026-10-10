@@ -81,4 +81,32 @@ export function useReaderPersistence({ bookId, activeParagraphId, bookmarks, not
       if (bookIdRef.current !== bookId) write();
     };
   }, [activeParagraphId, bookId, bookmarks, notes, progress, readerRef]);
+
+  const latestRef = useRef(null);
+  latestRef.current = { bookId, notes, bookmarks, progress, activeParagraphId };
+  useEffect(() => {
+    if (!bookId) return undefined;
+    const flush = () => {
+      const latest = latestRef.current;
+      if (!latest?.bookId) return;
+      lastPersistRef.current = Date.now();
+      setStorageItem(documentStorageKey(latest.bookId), {
+        notes: latest.notes,
+        bookmarks: latest.bookmarks,
+        progress: latest.progress,
+        activeParagraphId: latest.activeParagraphId,
+        scrollTop: readerRef.current?.scrollTop ?? 0,
+      });
+      setStorageItem(`bookflow:quick-notes:${latest.bookId}`, latest.notes);
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [bookId, readerRef]);
 }

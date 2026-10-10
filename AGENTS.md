@@ -45,7 +45,7 @@ bookflow/
 ### Current Refactor Status
 - Reader session, navigation, input, measurement, persistence, annotations, static regions, and long-book windowing are extracted into `src/features/reader/hooks/`.
 - Document import has feature-local parsers, manifest, scheduler, coordinator, components, and OCR-session hooks.
-- The local library has its own feature boundary and public `index.js`; it stores metadata and measured session totals, not book text.
+- The local library has its own feature boundary and public `index.js`; it stores metadata and measured session totals in localStorage, and keeps private on-device copies of up to 20 recent books in OPFS/IndexedDB (`lib/offlineBooks.js`, opt-out via the `keepBooksOnDevice` setting) so Resume reopens them without re-picking the file.
 - `App.jsx` remains the root composer; import, session, annotation, static-region, and view concerns are extracted into feature hooks/components. This decomposition is complete for the current refactor scope.
 - `backend/main.py` is the runnable OCR entrypoint, while `backend/app/` contains modular routers and services.
 
@@ -158,7 +158,7 @@ Bookflow is a private, browser-based reading application that turns PDFs, EPUB e
 - **Frontend**: React 19, Vite 8, Zustand (persisted state), Framer Motion, SWR, Lucide React, Three.js ambient layer, Tailwind CSS utility layer.
 - **Local Parsing**: `pdfjs-dist` (local worker), `jszip` (EPUB parsing), `tesseract.js` WASM (on-device OCR fallback).
 - **Typography & Ergonomics**: Bionic Reading fixations (`textFormatter.js`), accessible typefaces (Atkinson Hyperlegible, OpenDyslexic), and variable letter tracking.
-- **Testing & Quality**: Vitest (57 test files, 555 tests, measured 2026-10-02), ESLint, `tsc --noEmit` via `npm run typecheck`, Playwright (19 browser tests across smoke, long-import, Reading Lens and the lens bar, run with `PLAYWRIGHT_CHANNEL=chrome`).
+- **Testing & Quality**: Vitest (58 test files, 570 tests, measured 2026-10-10), ESLint, `tsc --noEmit` via `npm run typecheck`, Playwright (20 browser tests across smoke, long-import, offline resume, Reading Lens and the lens bar, run with `PLAYWRIGHT_CHANNEL=chrome`).
 - **Backend (Optional / Accelerated)**: FastAPI, Uvicorn ASGI, PyMuPDF (fitz) thread pool rasterization, PaddleOCR worker (`Dockerfile.ocr`), vLLM / Hugging Face OpenAI-compatible vision payloads (Qwen2-VL / DeepSeek-OCR-2), Server-Sent Events (SSE), Docker Compose.
 
 ---
@@ -171,7 +171,7 @@ Bookflow is a private, browser-based reading application that turns PDFs, EPUB e
 - Keep `App.jsx` focused on application state and feature composition.
 - Keep reusable storage and text utilities in `src/shared/lib/`.
 - Keep document parsing inside `src/features/document-import/`.
-- Keep the metadata library and durable-storage adapter inside `src/features/library/`; adapter presence does not mean document text is currently persisted.
+- Keep the metadata library and durable-storage adapter inside `src/features/library/`; book text is persisted only on-device through `offlineBooks.js`, and only while `keepBooksOnDevice` is enabled.
 
 ---
 
