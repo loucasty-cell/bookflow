@@ -1,7 +1,8 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import {
   BookOpen,
+  ChevronRight,
   Moon,
   ShieldCheck,
   Sun,
@@ -12,6 +13,7 @@ import {
 import { ACCEPTED_FILES } from "../../document-import/index.js";
 import { RecentShelf } from "../../library/index.js";
 import { Brand, LoadingOverlay } from "../../../shared/components/index.js";
+import { splitSentences } from "../../../shared/lib/index.js";
 import bookflowArtwork from "../../../assets/bookflow-quill.png";
 import { SAMPLE_BOOK } from "../sampleBook.js";
 import { LivingShelf } from "./LivingShelf.jsx";
@@ -24,6 +26,9 @@ const AmbientDustCanvas = lazy(() =>
     default: module.AmbientDustCanvas,
   }))
 );
+
+const previewChapter = SAMPLE_BOOK.chapters[1];
+const previewSentences = splitSentences(previewChapter.paragraphs[0]);
 
 export function LandingPage({
   dragging,
@@ -40,6 +45,7 @@ export function LandingPage({
   onLocateFile,
 }) {
   const reduceMotion = useReducedMotion();
+  const [previewIndex, setPreviewIndex] = useState(0);
 
   const handleDragLeave = (event) => {
     if (!event.currentTarget.contains(event.relatedTarget)) {
@@ -67,12 +73,6 @@ export function LandingPage({
       data-theme={theme}
       tabIndex={-1}
     >
-      {!reduceMotion && (
-        <Suspense fallback={null}>
-          <AmbientDustCanvas theme={theme} />
-        </Suspense>
-      )}
-
       <nav className="landing-nav relative z-10" aria-label="Primary navigation">
         <Brand />
         <div className="landing-nav-actions">
@@ -91,14 +91,19 @@ export function LandingPage({
       </nav>
 
       <section className="hero relative z-10">
+        {!reduceMotion && (
+          <Suspense fallback={null}>
+            <AmbientDustCanvas theme={theme} />
+          </Suspense>
+        )}
         <div className="hero-copy-column">
           <h1>
-            Read deeper.
+            Read with
             <br />
-            <span>Keep going.</span>
+            <span>room to think.</span>
           </h1>
           <p className="hero-copy">
-            Bookflow keeps your place and brings one paragraph forward at a time. Read privately, return exactly where you left off.
+            Turn a dense PDF into a page you can read at your own pace. Follow one sentence at a time and pick up where you left off.
           </p>
 
           <div
@@ -172,14 +177,26 @@ export function LandingPage({
           )}
         </div>
 
-        <div className="hero-visual">
-          <figure className="hero-artwork">
+        <figure className="hero-visual" aria-label="Bookflow reading preview">
+          <div className="hero-artwork">
             <img
               src={bookflowArtwork}
               alt="A sculpted quill rising from an open book beside blue and red ink"
             />
-          </figure>
-        </div>
+          </div>
+          <figcaption className="hero-reading-preview">
+            <div className="hero-preview-header">
+              <span>{previewChapter.title}</span>
+              <button type="button" aria-label="Next preview sentence" onClick={() => setPreviewIndex((index) => (index + 1) % previewSentences.length)}>
+                <ChevronRight size={18} aria-hidden="true" />
+              </button>
+            </div>
+            <p>{previewSentences.map((sentence, index) => (
+              <span key={sentence} aria-current={index === previewIndex ? "true" : undefined}>{sentence} </span>
+            ))}</p>
+            <span className="visually-hidden" role="status">Sentence {previewIndex + 1} of {previewSentences.length}</span>
+          </figcaption>
+        </figure>
       </section>
 
       {/* Interactive 3D Living Shelf Section */}

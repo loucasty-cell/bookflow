@@ -79,7 +79,7 @@
   }
 
   .hero h1 {
-    font-size: clamp(3.5rem, 18vw, 5rem);
+    font-size: clamp(2.75rem, 12vw, 5rem);
   }
 
   .hero-copy {
@@ -99,6 +99,11 @@
 
   .hero-artwork {
     height: 360px;
+  }
+
+  .hero-reading-preview {
+    margin-inline: 10px;
+    margin-top: -38px;
   }
 
   .loading-overlay {

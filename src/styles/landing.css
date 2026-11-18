@@ -233,22 +233,22 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 
 .hero-copy-column {
   min-width: 0;
+  position: relative;
 }
 
 .hero h1 {
   margin: 0;
   color: var(--landing-text);
-  font: 600 clamp(4.3rem, 7.6vw, 7.3rem)/0.88 var(--font-system);
-  letter-spacing: -0.075em;
+  font: 500 clamp(3.8rem, 6.1vw, 6.5rem)/0.97 var(--font-reading);
+  letter-spacing: -0.055em;
 }
 
 .hero h1 span {
-  color: var(--brand-blue);
-  font-weight: 500;
+  color: #41654f;
 }
 
 .landing-shell[data-theme="dusk"] .hero h1 span {
-  color: #82aee0;
+  color: #acc0a4;
 }
 
 .hero-copy {
@@ -420,11 +420,11 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 .hero-visual {
   min-width: 0;
   position: relative;
-  padding: var(--space-6) 0;
+  margin: 0;
 }
 
 .hero-artwork {
-  height: clamp(440px, 53vw, 620px);
+  height: clamp(420px, 40vw, 540px);
   margin: 0;
   overflow: hidden;
   position: relative;
@@ -438,6 +438,56 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 40%;
+}
+
+.hero-reading-preview {
+  --preview-mark: #dce6d5;
+  position: relative;
+  max-width: 32rem;
+  margin: -60px clamp(12px, 4vw, 42px) 0 auto;
+  padding: 14px clamp(14px, 3vw, 26px) 21px;
+  border: 1px solid var(--landing-primary-line);
+  border-radius: var(--radius-lg);
+  color: var(--landing-text);
+  background: var(--landing-surface-strong);
+  box-shadow: var(--landing-shadow);
+}
+
+[data-theme="dusk"] .hero-reading-preview { --preview-mark: #344434; }
+
+.hero-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--landing-muted);
+  font-size: 0.8125rem;
+  font-weight: 650;
+}
+
+.hero-preview-header button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border: 1px solid var(--landing-primary-line);
+  border-radius: 50%;
+  color: var(--landing-text);
+  background: var(--preview-mark);
+  cursor: pointer;
+}
+
+.hero-reading-preview p {
+  margin: 8px 0 0;
+  color: var(--landing-muted);
+  font: 1.025rem/1.6 var(--font-reading);
+}
+
+.hero-reading-preview [aria-current] {
+  color: var(--landing-text);
+  background: var(--preview-mark);
 }
 
 .loading-overlay {
