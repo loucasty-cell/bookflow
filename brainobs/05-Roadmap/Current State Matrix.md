@@ -2,9 +2,9 @@
 title: Current State Matrix
 type: reference
 status: verified
-updated: 2026-10-02
+updated: 2026-11-18
 tags: [bookflow, roadmap, status, matrix]
-source-files: [goals.md,features.md,scripts/bench.md,src/App.jsx,src/features/document-import/index.js,src/features/document-import/hooks/useDocumentImport.js,src/features/document-import/lib/importCoordinator.js,src/features/reader/config.js,src/features/reader/hooks/useChapterWindow.js,src/features/reader/lib/readingController.js,src/features/reader/lib/progressLabel.js,src/features/reader/lib/notesPdfExport.js,src/features/reader/components/CommandPalette.jsx,src/features/library/index.js,src/features/library/hooks/useReadingSession.js,src/features/library/components/RecentShelf.jsx,src/features/library/lib/readingSpeed.js,src/features/lens-bar/index.js,src/features/widgets/index.js,src/features/scroll/index.js,src/shared/graphics/quality.js,tests/e2e/smoke.spec.js,tests/e2e/long-import.spec.js,tests/e2e/lens-bar.spec.js,playwright.config.js,vitest.config.js,scripts/security/contrast.mjs,backend/main.py,backend/tests]
+source-files: [goals.md,features.md,scripts/bench.md,src/App.jsx,src/features/document-import/index.js,src/features/document-import/hooks/useDocumentImport.js,src/features/document-import/lib/importCoordinator.js,src/features/reader/config.js,src/features/reader/hooks/useChapterWindow.js,src/features/reader/lib/readingController.js,src/features/reader/lib/progressLabel.js,src/features/reader/lib/notesPdfExport.js,src/features/reader/components/CommandPalette.jsx,src/features/library/index.js,src/features/library/hooks/useReadingSession.js,src/features/library/components/RecentShelf.jsx,src/features/library/lib/readingSpeed.js,src/features/library/lib/offlineBooks.js,src/features/lens-bar/index.js,src/features/widgets/index.js,src/features/scroll/index.js,src/shared/graphics/quality.js,tests/e2e/smoke.spec.js,tests/e2e/long-import.spec.js,tests/e2e/lens-bar.spec.js,tests/e2e/offline-resume.spec.js,playwright.config.js,vitest.config.js,scripts/security/contrast.mjs,backend/main.py,backend/tests,reports/Three Fiber creative reading features.md]
 ---
 
 # Current State Matrix
@@ -43,7 +43,7 @@ never reach into another feature's internals.
 | Letter tracking options | Verified | normal, wide, spacious |
 | Theme atmospheres | Verified | Paper, Dusk, and additional exposed palettes |
 | Selection context tooltip | Verified | Note, copy, bookmark |
-| Reading Lens | Verified | Draggable focus card, selection hook, quick actions, consent gate, and Gemini SSE proxy all work. The 2026-09-25 repair pass closed the build, transport, consent, and drag gaps. See [[Reading Lens]]. |
+| Reading Lens | Verified | Draggable focus card, selection hook, quick actions, consent gate, and Gemini SSE proxy all work. FocusCard includes `RotateCcw`, `ThumbsUp`, touch-action dragging, `isDismissed` logic, and refined CSS styling. See [[Reading Lens]]. |
 | Lens bar | Verified | Draggable question bar in `src/features/lens-bar/`: grip, capped input, three-choice consent, mode menu, theme resolution, keyboard movement, and hostile-markup escaping. 14 browser tests in `tests/e2e/lens-bar.spec.js`. See [[Reading Lens Bar]]. |
 | Command palette | Verified | `src/features/reader/components/CommandPalette.jsx` with `filterCommands`; opens from the reader. One known lint warning at that file's line 12. See [[Command Palette]]. |
 | Notes PDF export | Verified | `notesPdfExport.js` paginates long notes across pages and sanitizes unsupported glyphs; `notesExport.js` owns the filename and download behaviour. |
@@ -59,16 +59,19 @@ never reach into another feature's internals.
 | 3D book cards and living shelf | Verified | `ThreeDBookCard.jsx`, `LivingShelf.jsx` with spring physics and proximity shadows |
 | Curated shelf library | Verified | Three openable books on the landing page |
 | Local metadata library | Verified | `bookflow:library`, 60-entry cap, shelves, session totals |
-| Resume card | Partial | Metadata-only `ResumeCard`; current app action requests source-file re-selection |
+| Resume card | Verified | Reopens cached documents instantly from OPFS/IndexedDB storage without re-selecting file; falls back to locate file when un-cached |
 | Measured session statistics | Verified | `useReadingSession`, `readingStats.js`; measured words/time/session totals, no idle inflation |
 | Measured local reading speed | Verified | `readingSpeed.js` exports `createSpeedTracker`, `computeWordsPerMinute`, `blendPace`, `minutesForWords`, `IDLE_GAP_MS = 45000`, `MIN_SAMPLES_FOR_CONFIDENCE = 3`; clamped 60 to 900 wpm |
 | Opt-in goals and deterministic achievements | Verified | `readingGoals.js`, `achievements.js`, `BadgeGallery`; settings default off |
 | Local definition lookup | Partial | Starter lexicon in `dictionary.js` with opt-in `SelectionTooltip` action; licensed dataset is not wired |
-| Durable document storage | Partial | OPFS/IndexedDB adapter exists in `durableStorage.js`; not wired to app lifecycle |
+| Durable document storage | Verified | `src/features/library/lib/offlineBooks.js` integrates `durableStorage.js` into app lifecycle; caches up to 20 books in OPFS/IndexedDB with user toggle `keepBooksOnDevice` |
 | Recent books shelf | Verified | `src/features/library/components/RecentShelf.jsx`, exported from `src/features/library/index.js` and rendered by `LandingPage.jsx`; no `backlog-3` marker remains |
 | Device-tier ambient canvas | Verified | `AmbientDustCanvas` reads `QUALITY_TIERS` from `src/shared/graphics/quality.js`; static tier and `prefers-reduced-motion` render one frame and stop, Three.js is a lazy `vendor-three` chunk off the entry |
 | Ambient visual layer | Verified | `AmbientDustCanvas`, `Brand`, `ThreeDButton` in shared components |
 | Opening intro transition | Verified | `BookOpeningIntro`, skippable on click |
+| Creative coding & 3D research | Verified | Empirical research keeps raw Three.js, evaluates R3F as lazy island, enforces calm reader invariant (g = -0.33 seductive detail rule). See [[Creative Coding and 3D Features]]. |
+| Three Ps strategic framework | Verified | Comprehensive research aligning Right Place (local PWA/OPFS), Right People (ADHD, academics, minimalists), and Right Product. See [[Three Ps Strategy - Place People Product]]. |
+| Agent skills architecture | Verified | 17 engineering and design skills under `agent/skills/` (animation review, reader ergonomics, Apple HIG, parser specialist). See [[Agent Skills Architecture]]. |
 
 ## Import and performance
 

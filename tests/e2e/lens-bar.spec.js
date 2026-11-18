@@ -57,7 +57,7 @@ test('the consent line appears before any send and offers all three choices', as
 
   const consent = bar.locator('.lens-consent');
   await expect(consent).toBeVisible();
-  for (const label of ['Send once', 'Always', 'Keep local']) {
+  for (const label of ['Send once', 'This session', 'Keep local']) {
     await expect(bar.getByRole('button', { name: label })).toBeVisible();
   }
 });
@@ -83,6 +83,34 @@ test('choosing Keep local answers without any network request', async ({ page })
   await expect(bar.locator('.lens-answer')).toContainText('Offline answer (limited)');
   const lensCalls = requests.filter((url) => url.includes('/api/reading-lens'));
   expect(lensCalls).toEqual([]);
+});
+
+test('send once transmits only the attached paragraph and returns to local', async ({ page }) => {
+  const payloads = [];
+  await page.route('**/api/reading-lens', async (route) => {
+    payloads.push(route.request().postDataJSON());
+    await route.fulfill({
+      contentType: 'text/event-stream',
+      body: 'event: delta\ndata: {"text":"A grounded answer."}\n\nevent: completed\ndata: {}\n\n',
+    });
+  });
+
+  await openSampleBook(page);
+  const bar = await openBar(page);
+  await bar.getByRole('button', { name: 'Context and mode' }).click();
+  await bar.getByRole('menuitem', { name: 'Use current paragraph' }).click();
+  const passage = await bar.locator('.lens-quote span').innerText();
+  expect(passage.trim()).toBeTruthy();
+  await bar.locator('.lens-input').fill('What does this mean?');
+  await bar.getByRole('button', { name: 'Send once' }).click();
+  expect(payloads).toEqual([]);
+  await bar.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(bar.locator('.lens-answer')).toContainText('Remote answer');
+  expect(payloads).toEqual([{ action: null, consent: true, passage, prompt: 'What does this mean?' }]);
+
+  await bar.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(bar.locator('.lens-answer')).toContainText('Offline answer (limited)');
+  expect(payloads).toHaveLength(1);
 });
 
 test('sending with no passage says so instead of doing nothing', async ({ page }) => {

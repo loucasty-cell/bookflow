@@ -2,9 +2,9 @@
 title: Privacy Model
 type: concept
 status: verified
-updated: 2026-10-02
+updated: 2026-11-18
 tags: [bookflow, architecture, privacy, trust]
-source-files: [src/features/reader/lib/dictionary.js,src/features/reader/hooks/useReadingLens.js,src/features/reader/hooks/useReadingLens.test.js,src/features/document-import/lib/backendOcrFallback.js,src/features/document-import/hooks/useOcrSession.js,src/features/document-import/components/OcrUploader.jsx,src/components/ocrErrors.js,src/features/library/lib/durableStorage.js,backend/app/routers/reader.py,backend/routers/social.py,vite.config.js,AGENTS.md]
+source-files: [src/features/reader/lib/dictionary.js,src/features/reader/hooks/useReadingLens.js,src/features/reader/hooks/useReadingLens.test.js,src/features/document-import/lib/backendOcrFallback.js,src/features/document-import/hooks/useOcrSession.js,src/features/document-import/components/OcrUploader.jsx,src/components/ocrErrors.js,src/features/library/lib/durableStorage.js,src/features/library/lib/offlineBooks.js,backend/app/routers/reader.py,backend/routers/social.py,vite.config.js,AGENTS.md]
 ---
 
 # Privacy Model
@@ -15,12 +15,15 @@ Privacy is a product feature here, not a compliance footnote. It is also the hon
 ## The default
 
 ```text
-Import -> browser memory -> normalize -> render -> local metadata only
+Import -> browser memory -> normalize -> render -> local metadata & OPFS/IndexedDB on-device cache
 ```
 
-On the default path, document text stays in browser memory. Bookflow stores settings, progress,
-bookmarks, notes, and library metadata locally. The active lifecycle never sends book contents to
-a server. No account, no upload, no telemetry containing book text.
+On the default path, document text stays on the user's device. Bookflow stores settings, progress,
+bookmarks, notes, and library metadata locally. With `offlineBooks.js` (commit `10d92be`), private
+on-device copies of up to 20 recent books are cached in Origin Private File System (OPFS) and IndexedDB
+(`bookflow-durable`) so the user can reopen them instantly without picking the file again. This cache
+never leaves the device, does not upload anywhere, and is cleared when `keepBooksOnDevice` is disabled.
+The active lifecycle never sends book contents to a server. No account, no upload, no telemetry containing book text.
 
 ## What each path actually sends
 
@@ -30,6 +33,7 @@ a server. No account, no upload, no telemetry containing book text.
 | Local Tesseract OCR | none; assets are served locally from `/ocr` | nothing |
 | EPUB / TXT / Markdown | none | nothing |
 | Local dictionary lookup | none | nothing |
+| On-device offline book cache (`offlineBooks.js`) | none; saved to local OPFS/IDB | nothing |
 | Accelerated backend OCR | only after the user explicitly starts the optional scan | page images for the submitted PDF. A local import error does **not** auto-upload |
 | Reading Lens with consent | only after per-session consent is granted | the bounded passage and the user's command |
 | Reading Lens without consent | none | nothing. The client answers locally and never calls `fetch` |

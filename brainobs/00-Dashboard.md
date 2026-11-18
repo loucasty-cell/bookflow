@@ -2,7 +2,7 @@
 title: Bookflow Brain
 type: MOC
 status: living
-updated: 2026-10-02
+updated: 2026-11-18
 tags: [bookflow, index, moc]
 ---
 
@@ -19,7 +19,10 @@ Read this note first. Every other note is one hop away.
 | If you are... | Read this |
 | --- | --- |
 | An AI agent picking up a task | [[Agent Quickstart]] then [[Invariants]] |
+| Exploring agent skills & tooling | [[Agent Skills Architecture]] |
 | A new developer | [[Full-Stack Overview]] then [[Dev Setup]] |
+| Working on product strategy & positioning | [[Three Ps Strategy - Place People Product]] |
+| Working on creative coding & 3D research | [[Creative Coding and 3D Features]] |
 | Working on the reader | [[Focus Rail]], [[Reader Engine MOC]], [[Reading Lens]], [[Reading Lens Bar]], [[Sentence-Paced Scroll]], [[Command Palette]] |
 | Working on import or OCR | [[OCR Pipeline MOC]], [[OCR-Frontend Sync Contract]] |
 | Working on UX or visual design | [[Design Tokens]], [[Premium Micro-interactions]], [[Figma Inspection Evidence]], [[Home Widgets]], [[Graphics Quality Tiers]] |
@@ -42,6 +45,9 @@ Read this note first. Every other note is one hop away.
 - [[Ops MOC]] - setup, Docker, testing, debugging
 - [[Agent Context MOC]] - invariants, file map, verification
 - [[Competitor Research MOC]] - primary-source research on Kindle, Apple Books, Everand, Libby, Goodreads, Bookly, Fable
+- [[Three Ps Strategy - Place People Product]] - strategic alignment on Right Place, Right People, and Right Product
+- [[Creative Coding and 3D Features]] - technical and psychological research on WebGL, R3F, and procedural craft
+- [[Agent Skills Architecture]] - documentation of specialized agent skills under agent/skills/
 - [[Vault Maintenance]] - how to keep this vault true
 - [[Context Sync Protocol]] - the update process after every code change
 
@@ -56,8 +62,8 @@ The backend (FastAPI + PyMuPDF + PaddleOCR) is an optional accelerator for scann
 with a 50 MB upload ceiling; the user must explicitly start that scan.
 Progressive PDF import reports progress from 5 through a terminal 100 before the reader opens;
 EPUB, TXT, and Markdown currently use the blocking parser.
-A metadata-only library records sessions, pace, goals, and achievements and can show a resume
-card and a recent shelf; file-handle reuse and automatic reopen remain open.
+A metadata-only library records sessions, pace, goals, and achievements, and caches up to 20
+recent books in OPFS/IndexedDB via offlineBooks.js for instant resume without file re-selection.
 The Reading Lens answers questions about a selected passage on two surfaces that share one
 instance: a selection focus card and a draggable lens bar, both consent-gated.
 A Figma-derived home widget grid and a device-tiered ambient canvas sit on the landing surface.
@@ -76,17 +82,18 @@ Full detail in [[Invariants]].
 
 ## Verified baseline
 
-Measured on `main` at tree `cb3c71f`, 2026-10-02, after the merge of `feat/lens-bar`:
+Measured on `main` at tree `cf9e132`, 2026-11-18, after recent feature merges:
 
 | Gate | Command | Result |
 | --- | --- | --- |
 | ESLint | `npm run lint` | 0 errors, 1 warning (`CommandPalette.jsx:12`, fast-refresh) |
-| Unit | `npm test` | 52 files, 506 tests passing |
-| Vault | `npm run check:vault` | PASS, 93 notes |
-| Build | `npm run build` | built in 10.53s, chunk-size warnings above 500 kB |
+| Unit | `npm test` | 58 files, 573 tests passing |
+| Vault | `npm run check:vault` | PASS |
+| Build | `npm run build` | built clean; chunk-size warnings on main/three |
+| Typecheck | `npm run typecheck` | `tsc --noEmit` passing |
 | Contrast | `node scripts/security/contrast.mjs` | PASS, 63 pairs checked, 11 skipped as token-absent |
-| Backend | `pytest backend/tests/` | 75 passed, 1 Starlette deprecation warning |
-| Browser | `npm run test:e2e` | 19 tests in 4 spec files |
+| Backend | `pytest backend/tests/` | 78 passed, 1 Starlette deprecation warning |
+| Browser | `npm run test:e2e` | 20 tests in 5 spec files (including offline-resume.spec.js) |
 
 ## Status legend
 

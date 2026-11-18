@@ -1,29 +1,32 @@
 ---
 title: Library and Reading Stats
 type: feature
-status: partial
-updated: 2026-10-02
-tags: [bookflow, library, stats, goals, achievements, partial]
-source-files: [src/features/library/index.js, src/features/library/lib/libraryStore.js, src/features/library/lib/librarySelectors.js, src/features/library/lib/readingSpeed.js, src/features/library/lib/readingStats.js, src/features/library/lib/readingGoals.js, src/features/library/lib/achievements.js, src/features/library/lib/durableStorage.js, src/features/library/hooks/useReadingSession.js, src/features/library/components/ResumeCard.jsx, src/features/library/components/SessionRecap.jsx, src/features/library/components/BadgeGallery.jsx, src/features/library/components/RecentShelf.jsx, src/features/library/components/BadgeGlyph.jsx, src/components/AppLandingView.jsx, src/features/landing/components/LandingPage.jsx, src/features/widgets/components/WidgetGrid.jsx, src/features/reader/config.js, src/shared/lib/storage.js]
+status: verified
+updated: 2026-11-18
+tags: [bookflow, library, stats, goals, achievements]
+source-files: [src/features/library/index.js,src/features/library/lib/libraryStore.js,src/features/library/lib/librarySelectors.js,src/features/library/lib/readingSpeed.js,src/features/library/lib/readingStats.js,src/features/library/lib/readingGoals.js,src/features/library/lib/achievements.js,src/features/library/lib/durableStorage.js,src/features/library/lib/offlineBooks.js,src/features/library/hooks/useReadingSession.js,src/features/library/components/ResumeCard.jsx,src/features/library/components/SessionRecap.jsx,src/features/library/components/BadgeGallery.jsx,src/features/library/components/RecentShelf.jsx,src/components/AppLandingView.jsx,src/features/landing/components/LandingPage.jsx,src/features/widgets/components/WidgetGrid.jsx,src/features/reader/config.js,src/shared/lib/storage.js]
 ---
 
 # Library and Reading Stats
 
-The metadata library, session recording, resume surface, measured reading speed, opt-in goals, and
-deterministic achievements are built. What is missing is exactly one thing: **file handles are not
-persisted**, so resume is honest about a missing file rather than pretending to reopen it.
+The metadata library, session recording, resume surface, measured reading speed, opt-in goals,
+deterministic achievements, and offline book caching are built and verified.
 
-Status: **partial**, and the reason is specific rather than vague.
+Status: **verified**. With the introduction of `src/features/library/lib/offlineBooks.js` in
+commit `10d92be`, Bookflow caches up to 20 recent parsed books in OPFS/IndexedDB so resume
+reopens them instantly without re-picking the source file.
 
-## What is missing, stated exactly
+## Offline book caching and instant reopen
 
-| Missing | Consequence |
-| --- | --- |
-| File-handle persistence and reuse | Resume requires the reader to re-select the source file. `RecentShelf` and `ResumeCard` exist precisely because automatic reopen is not possible |
-| Note search across documents | Notes remain per-document; there is no consolidated notes index |
-| Automatic reopen without re-selection | The reader cannot land in a book from a cold start with zero interaction |
+| Mechanism | Implementation | Behavior |
+| --- | --- | --- |
+| On-device OPFS / IDB caching | `src/features/library/lib/offlineBooks.js` | Saves parsed book objects under document identity `filename:size:lastModified`. Capped at `MAX_OFFLINE_BOOKS = 20`. |
+| Instant reopen | `ResumeCard.jsx`, `RecentShelf.jsx` | Tapping Resume reopens the document immediately without prompting the file picker if cached. |
+| Fallback locating | `hasReopenableSource(entry)` | If a book was cleared or opened on a different machine, UI presents "Locate file" cleanly. |
+| User storage toggle | `SettingsPanel.jsx` (`keepBooksOnDevice`) | Setting defaults to `true`. Toggling off clears all cached document copies while preserving reading progress and metadata. |
+| Pagehide position flush | `useReaderPersistence.js` | Synchronously flushes `scrollTop` and reading progress on `pagehide` and `visibilitychange` to prevent progress loss on tab close. |
 
-Everything else described below is implemented. There is no statistics **dashboard**: the surfaces
+Everything described below is implemented. There is no statistics **dashboard**: the surfaces
 are a resume card, a recent shelf, a session recap, and a badge gallery, three of which are opt-in.
 
 ## What the library stores, and what it does not

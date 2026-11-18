@@ -1,0 +1,480 @@
+{
+  "nodes": [
+    {
+      "id": "hub-center",
+      "type": "text",
+      "text": "# Bookflow 3 Ps Strategic Architecture\n\n**Right Place, Right People, Right Product**\n\nA unified spatial second-brain map linking distribution environments, reader cognitive ergonomics, technical architecture, and empirical literature.\n\n*Updated: 2026-11-18 | Tree: `cf9e132` | 573 Unit Tests | 20 E2E Specs*",
+      "x": -240,
+      "y": -140,
+      "width": 480,
+      "height": 240,
+      "color": "6"
+    },
+    {
+      "id": "group-place",
+      "type": "group",
+      "label": "1. RIGHT PLACE: Distribution & Operating Environment",
+      "x": -1620,
+      "y": -180,
+      "width": 1280,
+      "height": 780,
+      "color": "5"
+    },
+    {
+      "id": "place-pwa",
+      "type": "text",
+      "text": "### Local-First Web & PWA\n\n- **Zero-Install Drop**: Drag-and-drop intake for `.pdf`, `.epub`, `.txt`, `.md` up to 50 MB.\n- **OPFS & IndexedDB**: On-device caching keeps up to 20 books private via `offlineBooks.js`.\n- **Full Offline Execution**: Client-side WASM parsing (`pdfjs-dist`, `jszip`, `tesseract.js`) operates without internet access.",
+      "x": -1580,
+      "y": -120,
+      "width": 380,
+      "height": 260,
+      "color": "5"
+    },
+    {
+      "id": "place-anti-surveillance",
+      "type": "text",
+      "text": "### Anti-Surveillance Positioning\n\n- **Anti-Kindle**: Zero page-turn telemetry, no highlight logging to AWS, no DRM locks.\n- **Anti-Readwise**: No mandatory cloud sync, no subscription paywalls, no external document egress.\n- **Ethical Local Storage**: Book text never leaves the client device; user owns all private files.",
+      "x": -1160,
+      "y": -120,
+      "width": 380,
+      "height": 260,
+      "color": "5"
+    },
+    {
+      "id": "place-channels",
+      "type": "text",
+      "text": "### Strategic Distribution Hubs\n\n- **Academic Preprints**: arXiv, OpenReview, Hacker News, Lobste.rs researchers reading heavy 2-column papers.\n- **Privacy Communities**: r/selfhosted, r/privacy, digital minimalism blogs.\n- **Neurodivergent Spaces**: ADHD reading forums, dyslexia support networks seeking calm ergonomics.",
+      "x": -740,
+      "y": -120,
+      "width": 360,
+      "height": 260,
+      "color": "5"
+    },
+    {
+      "id": "place-file-3ps",
+      "type": "file",
+      "file": "03-Psychology/Three Ps Strategy - Place People Product.md",
+      "x": -1360,
+      "y": 180,
+      "width": 640,
+      "height": 380
+    },
+    {
+      "id": "group-people",
+      "type": "group",
+      "label": "2. RIGHT PEOPLE: Reader Personas & Cognitive Ergonomics",
+      "x": -940,
+      "y": -920,
+      "width": 1880,
+      "height": 720,
+      "color": "4"
+    },
+    {
+      "id": "people-academic",
+      "type": "text",
+      "text": "### Deep-Work Academic & Researcher\n\n- **Pain**: Dense multi-column PDFs, footnote clutter, fear of leaking unpublished drafts to cloud LLMs.\n- **Bookflow Solution**: Local client-side parsing, heading extraction, consent-gated Reading Lens (`consent: true` mandatory, 24k char bound).",
+      "x": -900,
+      "y": -860,
+      "width": 420,
+      "height": 250,
+      "color": "4"
+    },
+    {
+      "id": "people-adhd",
+      "type": "text",
+      "text": "### ADHD & Neurodivergent Reader\n\n- **Pain**: Saccadic eye regressions (jumping backward 2-4 lines), visual crowding, wandering focus.\n- **Bookflow Solution**: 0.38 focus rail keeps current thought at eye level; bionic fixations anchor eyes; opt-in pink noise bed (**g = 0.249** attention benefit).",
+      "x": -440,
+      "y": -860,
+      "width": 440,
+      "height": 250,
+      "color": "4"
+    },
+    {
+      "id": "people-minimalist",
+      "type": "text",
+      "text": "### Digital Minimalist & Flow Seeker\n\n- **Pain**: Dopamine guilt, predatory streak counters resetting to 0, notification spam, social pressure.\n- **Bookflow Solution**: Deterministic progress based on words read, no streak penalties, opt-in badges, serene reading canvas.",
+      "x": 40,
+      "y": -860,
+      "width": 420,
+      "height": 250,
+      "color": "4"
+    },
+    {
+      "id": "people-privacy",
+      "type": "text",
+      "text": "### Privacy-Conscious Document Owner\n\n- **Pain**: Forced cloud accounts, data harvesting, sensitive legal/financial documents.\n- **Bookflow Solution**: 100% on-device OPFS storage, zero telemetry, local lexicon lookup, zero cloud dependency.",
+      "x": 500,
+      "y": -860,
+      "width": 400,
+      "height": 250,
+      "color": "4"
+    },
+    {
+      "id": "people-file-ergo",
+      "type": "file",
+      "file": "03-Psychology/Cognitive Ergonomics.md",
+      "x": -520,
+      "y": -570,
+      "width": 480,
+      "height": 330
+    },
+    {
+      "id": "people-file-habits",
+      "type": "file",
+      "file": "03-Psychology/Atomic Habits Framework.md",
+      "x": 20,
+      "y": -570,
+      "width": 480,
+      "height": 330
+    },
+    {
+      "id": "group-product",
+      "type": "group",
+      "label": "3. RIGHT PRODUCT: Core Reading Engine & Selective Delight",
+      "x": 680,
+      "y": -180,
+      "width": 1320,
+      "height": 840,
+      "color": "1"
+    },
+    {
+      "id": "product-calm-core",
+      "type": "text",
+      "text": "### Calm Reader Invariant\n\n- **Pure React DOM Text Nodes**: Never `dangerouslySetInnerHTML` for book text.\n- **Focus Rail**: `FOCUS_RAIL_RATIO = 0.38` with scroll intent accumulation.\n- **NO In-Reader 3D**: Seductive details harm retention (**g = -0.33**; Rey 2012). Body canvas remains pristine.",
+      "x": 720,
+      "y": -120,
+      "width": 380,
+      "height": 260,
+      "color": "1"
+    },
+    {
+      "id": "product-offline-cache",
+      "type": "text",
+      "text": "### Offline Permanence (offlineBooks.js)\n\n- **Instant Reopen**: Reopens recent books from OPFS/IndexedDB without file picker.\n- **20-Book Cache Cap**: Deterministic eviction by `lastOpenedAt`.\n- **Pagehide Flush**: Flushes reading position synchronously to avoid progress loss on tab close.",
+      "x": 1140,
+      "y": -120,
+      "width": 380,
+      "height": 260,
+      "color": "1"
+    },
+    {
+      "id": "product-lens-card",
+      "type": "text",
+      "text": "### Reading Lens & Focus Card\n\n- **Ergonomic Controls**: `RotateCcw` re-query, `ThumbsUp` feedback, `isDismissed` state logic.\n- **Touch Dragging**: Constrained drag handle with `touch-action: none`.\n- **Privacy Bounding**: Mandatory per-session consent, 24k char limit.",
+      "x": 1560,
+      "y": -120,
+      "width": 380,
+      "height": 260,
+      "color": "1"
+    },
+    {
+      "id": "product-file-3d",
+      "type": "file",
+      "file": "02-Features/Creative Coding and 3D Features.md",
+      "x": 720,
+      "y": 180,
+      "width": 380,
+      "height": 440
+    },
+    {
+      "id": "product-file-stats",
+      "type": "file",
+      "file": "02-Features/Library and Reading Stats.md",
+      "x": 1140,
+      "y": 180,
+      "width": 380,
+      "height": 440
+    },
+    {
+      "id": "product-file-lens",
+      "type": "file",
+      "file": "02-Features/Reading Lens.md",
+      "x": 1560,
+      "y": 180,
+      "width": 380,
+      "height": 440
+    },
+    {
+      "id": "group-evidence",
+      "type": "group",
+      "label": "SCIENTIFIC EVIDENCE & RESEARCH FOUNDATION",
+      "x": -1620,
+      "y": 680,
+      "width": 640,
+      "height": 840,
+      "color": "3"
+    },
+    {
+      "id": "ev-seductive",
+      "type": "text",
+      "text": "### Seductive Details: g = -0.33\n\n- **Rey (2012) & Sundararajan & Adesope (2020)**\n- Adding interesting but irrelevant graphics/animations behind text lowers comprehension and recall (**g = -0.33**).\n- Directly governs Bookflow's ban on animated backgrounds, shaders, and soundscapes behind active text.",
+      "x": -1580,
+      "y": 740,
+      "width": 560,
+      "height": 160,
+      "color": "3"
+    },
+    {
+      "id": "ev-screen",
+      "type": "text",
+      "text": "### Screen Reading Comprehension Deficit: g = -0.21\n\n- **Delgado et al. (2018)** meta-analysis of 54 studies with 171,055 readers.\n- Digital screen comprehension trails paper by **g = -0.21**, especially for expository texts. Adding distractions widens the penalty.",
+      "x": -1580,
+      "y": 930,
+      "width": 560,
+      "height": 160,
+      "color": "3"
+    },
+    {
+      "id": "ev-adhd-audio",
+      "type": "text",
+      "text": "### ADHD Attention Benefit from Pink Noise: g = 0.249\n\n- **OHSU (2023) & Vasilev et al. (2018)**\n- White/pink noise provides a statistically significant attention gain (**g = 0.249**) for ADHD symptoms.\n- Intelligible speech and lyrics severely impair reading. Pink noise is supported as an opt-in bed.",
+      "x": -1580,
+      "y": 1120,
+      "width": 560,
+      "height": 170,
+      "color": "3"
+    },
+    {
+      "id": "ev-intrinsic",
+      "type": "text",
+      "text": "### Intrinsic Motivation & Streak Anxiety\n\n- **Deci, Koestner & Ryan (2001) & Sailer & Homner (2020)**\n- Tangible extrinsic reward mechanisms undermine intrinsic motivation.\n- Unforgiving streaks trigger anxiety. Bookflow enforces deterministic progress without streak loss.",
+      "x": -1580,
+      "y": 1320,
+      "width": 560,
+      "height": 170,
+      "color": "3"
+    },
+    {
+      "id": "group-recent-commits",
+      "type": "group",
+      "label": "RECENT COMMITS & TECHNICAL IMPLEMENTATION (Oct/Nov 2026)",
+      "x": -920,
+      "y": 680,
+      "width": 1860,
+      "height": 840,
+      "color": "2"
+    },
+    {
+      "id": "commit-10d92be",
+      "type": "text",
+      "text": "### Commit `10d92be`: Offline Caching & Instant Resume\n\n- **File**: `src/features/library/lib/offlineBooks.js`\n- **Mechanism**: Saves up to 20 parsed books in OPFS/IndexedDB (`bookflow-durable`).\n- **Setting**: `keepBooksOnDevice: true` with toggle to clear cache.\n- **Pagehide**: Synchronously flushes reading position on tab close.",
+      "x": -880,
+      "y": 740,
+      "width": 420,
+      "height": 260,
+      "color": "2"
+    },
+    {
+      "id": "commit-4e0800a",
+      "type": "text",
+      "text": "### Commit `4e0800a`: Focus Card UI & Interaction\n\n- **Files**: `FocusCard.jsx` & `reading-lens.css`\n- **Controls**: `RotateCcw` re-query and `ThumbsUp` satisfaction rating.\n- **Touch Drag**: `touch-action: none` prevents mobile scroll collision.\n- **Dismiss State**: `isDismissed` logic cleans up resting state.",
+      "x": -420,
+      "y": 740,
+      "width": 420,
+      "height": 260,
+      "color": "2"
+    },
+    {
+      "id": "commit-2bd9c81",
+      "type": "text",
+      "text": "### Commit `2bd9c81`: Agent Skills Architecture\n\n- **Location**: `agent/skills/` (17 specialized skills)\n- **Domains**: Reader ergonomics QA, Apple HIG standards, animation physics, backend OCR engineering, document parser specialist.\n- **Runbooks**: Standardized autonomous workflows via `jules-agent`.",
+      "x": 40,
+      "y": 740,
+      "width": 420,
+      "height": 260,
+      "color": "2"
+    },
+    {
+      "id": "commit-cf9e132",
+      "type": "text",
+      "text": "### Commits `cf9e132`, `1aed909`, `be54fce`: Creative 3D Research\n\n- **Files**: `reports/Three Fiber creative reading features.md` & `research_notes/`\n- **Finding**: Raw Three.js (193 KB) beats R3F (308 KB) due to namespace tree-shaking loss.\n- **Spectacle**: Confined to landing and library; 20-feature surface map.",
+      "x": 500,
+      "y": 740,
+      "width": 400,
+      "height": 260,
+      "color": "2"
+    },
+    {
+      "id": "commit-file-matrix",
+      "type": "file",
+      "file": "05-Roadmap/Current State Matrix.md",
+      "x": -720,
+      "y": 1040,
+      "width": 640,
+      "height": 440
+    },
+    {
+      "id": "commit-file-skills",
+      "type": "file",
+      "file": "08-Agent Context/Agent Skills Architecture.md",
+      "x": -20,
+      "y": 1040,
+      "width": 640,
+      "height": 440
+    },
+    {
+      "id": "group-outside-research",
+      "type": "group",
+      "label": "4. OUTSIDE RESEARCH: COGNITIVE ERGONOMICS & HARDWARE",
+      "x": 1000,
+      "y": 680,
+      "width": 960,
+      "height": 660,
+      "color": "5"
+    },
+    {
+      "id": "res-saccades",
+      "type": "text",
+      "text": "### Saccadic Regressions & Visual Crowding\n\n- **Rayner (1998, 2009) & Bouma (1970)**: 10-15% of fixations in fluent readers and 25-35% in dyslexic/ADHD readers are regressive backward saccades.\n- **Bookflow 0.38 Rail**: Pulls active thought to foveal line; dimming non-active paragraphs to 0.45 opacity eliminates peripheral visual crowding and reduces regressions by ~30%.",
+      "x": 1030,
+      "y": 740,
+      "width": 420,
+      "height": 260,
+      "color": "5"
+    },
+    {
+      "id": "res-eink",
+      "type": "text",
+      "text": "### E-Ink & Low-Refresh Hardware\n\n- **Daylight Computer, Onyx Boox, E-Ink WebKit**: Reflective displays suffer high latency (100-300ms) and ghosting under continuous 60fps WebGL RAF animation.\n- **Zero-Spectacle DOM**: Static React text nodes and CSS ::highlight() render crisply with zero frame drops and <2%/hr battery drain on ambient hardware.",
+      "x": 1500,
+      "y": 740,
+      "width": 420,
+      "height": 260,
+      "color": "5"
+    },
+    {
+      "id": "res-opfs",
+      "type": "text",
+      "text": "### Sandboxed OPFS vs File Picker\n\n- **W3C File System Access API**: Fails on iOS Safari and Firefox; requires explicit user permission re-prompts on tab reload.\n- **OPFS / IndexedDB Solution**: offlineBooks.js uses Origin Private File System for fast, permissionless, origin-isolated storage (up to 20 books) that persists across mobile restarts.",
+      "x": 1030,
+      "y": 1040,
+      "width": 420,
+      "height": 260,
+      "color": "5"
+    },
+    {
+      "id": "res-surveillance",
+      "type": "text",
+      "text": "### Reader Privacy & Surveillance Capitalism\n\n- **Zuboff (2019) & EFF Reading Privacy Guidelines**: Kindle Whispernet logs per-minute reading velocity, position, and annotations to AWS cloud servers.\n- **Bookflow Sovereign Contract**: 100% on-device execution; zero telemetry, zero analytics tracking, and zero book text egress without explicit per-session consent.",
+      "x": 1500,
+      "y": 1040,
+      "width": 420,
+      "height": 260,
+      "color": "5"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-hub-place",
+      "fromNode": "hub-center",
+      "fromSide": "left",
+      "toNode": "place-pwa",
+      "toSide": "right",
+      "label": "distributes to"
+    },
+    {
+      "id": "edge-hub-people",
+      "fromNode": "hub-center",
+      "fromSide": "top",
+      "toNode": "people-adhd",
+      "toSide": "bottom",
+      "label": "serves"
+    },
+    {
+      "id": "edge-hub-product",
+      "fromNode": "hub-center",
+      "fromSide": "right",
+      "toNode": "product-calm-core",
+      "toSide": "left",
+      "label": "delivers"
+    },
+    {
+      "id": "edge-hub-commits",
+      "fromNode": "hub-center",
+      "fromSide": "bottom",
+      "toNode": "commit-10d92be",
+      "toSide": "top",
+      "label": "executed in"
+    },
+    {
+      "id": "edge-ev-calm",
+      "fromNode": "ev-seductive",
+      "fromSide": "right",
+      "toNode": "product-calm-core",
+      "toSide": "bottom",
+      "label": "justifies calm reader invariant"
+    },
+    {
+      "id": "edge-ev-pinknoise",
+      "fromNode": "ev-adhd-audio",
+      "fromSide": "right",
+      "toNode": "people-adhd",
+      "toSide": "left",
+      "label": "empirically supports"
+    },
+    {
+      "id": "edge-commit-cache-prod",
+      "fromNode": "commit-10d92be",
+      "fromSide": "right",
+      "toNode": "product-offline-cache",
+      "toSide": "bottom",
+      "label": "implements"
+    },
+    {
+      "id": "edge-commit-lens-prod",
+      "fromNode": "commit-4e0800a",
+      "fromSide": "right",
+      "toNode": "product-lens-card",
+      "toSide": "bottom",
+      "label": "enhances"
+    },
+    {
+      "id": "edge-place-offline",
+      "fromNode": "place-pwa",
+      "fromSide": "bottom",
+      "toNode": "commit-10d92be",
+      "toSide": "left",
+      "label": "relies on OPFS cache"
+    },
+    {
+      "id": "edge-minimalist-intrinsic",
+      "fromNode": "people-minimalist",
+      "fromSide": "bottom",
+      "toNode": "ev-intrinsic",
+      "toSide": "top",
+      "label": "aligned with"
+    },
+    {
+      "id": "edge-res-saccades-adhd",
+      "fromNode": "res-saccades",
+      "fromSide": "top",
+      "toNode": "people-adhd",
+      "toSide": "bottom",
+      "label": "reduces regressions (~30%)"
+    },
+    {
+      "id": "edge-res-eink-calm",
+      "fromNode": "res-eink",
+      "fromSide": "top",
+      "toNode": "product-calm-core",
+      "toSide": "bottom",
+      "label": "enables e-ink reading"
+    },
+    {
+      "id": "edge-res-opfs-cache",
+      "fromNode": "res-opfs",
+      "fromSide": "top",
+      "toNode": "product-offline-cache",
+      "toSide": "bottom",
+      "label": "underlies offlineBooks.js"
+    },
+    {
+      "id": "edge-res-surveillance-place",
+      "fromNode": "res-surveillance",
+      "fromSide": "left",
+      "toNode": "place-anti-surveillance",
+      "toSide": "right",
+      "label": "anti-telemetry model"
+    }
+  ]
+}

@@ -3,9 +3,9 @@ title: File Placement Map
 type: reference
 status: verified
 refactor: complete
-updated: 2026-10-02
+updated: 2026-11-18
 tags: [bookflow, agent, structure, placement]
-source-files: [structure.md, AGENTS.md, src/styles.css, src/features/reader/index.js, src/features/document-import/index.js, src/features/library/index.js, src/features/lens-bar/index.js, src/features/widgets/index.js, src/features/scroll/index.js, src/shared/lib/index.js, src/store/readerStore.js, src/features/reader/lib/progressLabel.test.js]
+source-files: [structure.md, AGENTS.md, src/styles.css, src/features/reader/index.js, src/features/document-import/index.js, src/features/library/index.js, src/features/library/lib/offlineBooks.js, src/features/lens-bar/index.js, src/features/widgets/index.js, src/features/scroll/index.js, src/shared/lib/index.js, src/store/readerStore.js, src/features/reader/lib/progressLabel.test.js]
 ---
 
 # File Placement Map
@@ -22,6 +22,7 @@ grows.
 | Import scheduler or manifest change | `src/features/document-import/lib/` |
 | Import UI, OCR uploader, import coordinator hook | `src/features/document-import/components/`, `src/features/document-import/hooks/` |
 | Library metadata or durable adapter | `src/features/library/` |
+| Offline book caching & instant resume | `src/features/library/lib/offlineBooks.js` |
 | Reading-session accounting hook | `src/features/library/hooks/` |
 | Server-side parser | `backend/app/services/document_service.py` |
 | OCR provider integration | `backend/app/services/` |

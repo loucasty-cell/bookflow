@@ -18,7 +18,6 @@ const MODES = [
  * @param {() => void} props.onSelection
  * @param {() => void} props.onParagraph
  * @param {() => void} props.onClose
- * @param {() => void} props.onFlip Change when the bar sits near the viewport top.
  */
 export function LensBarMenu({
   mode,
@@ -28,7 +27,6 @@ export function LensBarMenu({
   onSelection,
   onParagraph,
   onClose,
-  onFlip,
 }) {
   const rootRef = useRef(null);
   const triggerRef = useRef(null);
@@ -44,12 +42,6 @@ export function LensBarMenu({
     document.addEventListener('pointerdown', onPointerDown, true);
     return () => document.removeEventListener('pointerdown', onPointerDown, true);
   }, [onClose]);
-
-  useEffect(() => {
-    if (rootRef.current) {
-      onFlip?.(rootRef.current.getBoundingClientRect().top < 220);
-    }
-  }, [onFlip]);
 
   const onKeyDown = useCallback(
     (event) => {

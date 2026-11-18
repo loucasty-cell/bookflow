@@ -1,62 +1,32 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+﻿import { useRef, useState } from 'react';
 
 export const LENS_CONSENT_CHOICES = ['once', 'always', 'local'];
 
-/**
- * Consent adapter over the reader's single shared Reading Lens instance.
- *
- * The underlying hook stores one boolean, so "send once" is that boolean
- * granted for a single request and then revoked, and "keep local" never grants
- * it. The decision is session scoped, which is the existing hook's own
- * behaviour: nothing is written to storage, so a reload starts local again.
- */
 export function useLensConsent({ lens }) {
   const [choice, setChoice] = useState(null);
-  const pendingRef = useRef([]);
+  const onceRef = useRef(null);
 
-  const settle = useCallback((value) => {
-    const waiting = pendingRef.current;
-    pendingRef.current = [];
-    for (const resolve of waiting) resolve(value);
-  }, []);
+  const choose = (next, passage) => {
+    if (next !== null && !LENS_CONSENT_CHOICES.includes(next)) return;
+    onceRef.current = next === 'once' ? String(passage || '').trim() : null;
+    setChoice(next);
+    lens?.setConsentGranted?.(next === 'always');
+  };
 
-  useEffect(() => () => settle(false), [settle]);
-
-  const choose = useCallback(
-    (next) => {
-      if (!LENS_CONSENT_CHOICES.includes(next)) return;
-      setChoice(next);
-      lens?.setConsentGranted?.(next !== 'local');
-      settle(next !== 'local');
-    },
-    [lens, settle],
-  );
-
-  /** Called after a "once" request finishes so consent does not outlive it. */
-  const consumeOnce = useCallback(() => {
-    setChoice((current) => {
-      if (current === 'once') lens?.setConsentGranted?.(false);
-      return current === 'once' ? 'local' : current;
-    });
-  }, [lens]);
-
-  const ensure = useCallback(() => {
-    if (choice === 'always') return Promise.resolve(true);
-    if (choice === 'once') return Promise.resolve(true);
-    if (choice === 'local') return Promise.resolve(false);
-    return new Promise((resolve) => {
-      pendingRef.current.push(resolve);
-    });
-  }, [choice]);
-
-  const allowed = useCallback(() => choice === 'always', [choice]);
+  const take = (passage) => {
+    if (onceRef.current !== null) {
+      const permission = passage.trim() === onceRef.current ? 'once' : 'local';
+      onceRef.current = null;
+      setChoice(null);
+      return permission;
+    }
+    return choice === 'always' && lens?.consentGranted ? 'always' : 'local';
+  };
 
   return {
     choice,
-    needsDecision: choice === null,
+    needsDecision: choice === null || (choice === 'always' && !lens?.consentGranted),
     choose,
-    consumeOnce,
-    ensure,
-    allowed,
+    take,
   };
 }

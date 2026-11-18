@@ -2,7 +2,7 @@
 title: Agent Context MOC
 type: MOC
 status: living
-updated: 2026-10-02
+updated: 2026-11-18
 tags: [bookflow, agent, moc]
 ---
 
@@ -14,6 +14,7 @@ Everything an AI agent needs before touching this codebase.
 
 - [[Agent Quickstart]] - read this first
 - [[Invariants]] - rules that must not be broken
+- [[Agent Skills Architecture]] - catalog of agent skills under agent/skills/
 - [[File Placement Map]] - where each kind of change belongs
 - [[Verification Checklist]] - what to run and inspect
 - [[Context Sync Protocol]] - how to keep this vault true after a change

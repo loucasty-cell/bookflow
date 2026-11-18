@@ -1,5 +1,4 @@
 ﻿import { useState } from "react";
-import { BookOpen, Plus } from "lucide-react";
 import { ThreeDBookCard } from "./ThreeDBookCard.jsx";
 import { SAMPLE_BOOK } from "../sampleBook.js";
 import { getSafeStorage } from "../../../shared/lib/storage.js";
@@ -61,14 +60,12 @@ function toNormalizedBook(bookItem) {
 const CURATED_LIBRARY = [
   {
     ...SAMPLE_BOOK,
-    badge: "Sample Book",
     coverColor: "amber",
   },
   {
     title: "Meditations on First Philosophy",
-    author: "RenÃ© Descartes",
+    author: "René Descartes",
     kind: "PHILOSOPHY",
-    badge: "Classic",
     coverColor: "navy",
     chapters: [
       {
@@ -96,7 +93,6 @@ const CURATED_LIBRARY = [
     title: "The Architecture of Deep Focus",
     author: "Bookflow Research Lab",
     kind: "ESSAY",
-    badge: "New",
     coverColor: "emerald",
     chapters: [
       {
@@ -153,14 +149,7 @@ export function LivingShelf({ onOpenBook, onUploadClick }) {
   return (
     <section className="living-shelf-section" aria-label="Curated Library Shelf">
       <div className="living-shelf-header">
-        <div className="shelf-eyebrow">
-          <BookOpen size={14} />
-          <span>Curated Editions</span>
-        </div>
-        <h2 className="shelf-title">Select a volume or import your own</h2>
-        <p className="shelf-subtitle">
-          Open a classic instantly, or bring your own manuscript. All documents stay safely on your device.
-        </p>
+        <h2 className="shelf-title">On the shelf</h2>
         <div className="shelf-controls-bar">
           <div className="shelf-shadow-control" role="group" aria-label="Shelf plank shadow mode">
             <span className="shadow-control-label">Shelf Depth:</span>
@@ -182,36 +171,28 @@ export function LivingShelf({ onOpenBook, onUploadClick }) {
       </div>
 
       <div className="living-shelf-grid">
-        {CURATED_LIBRARY.map((bookItem, idx) => (
+        {CURATED_LIBRARY.map((bookItem) => (
           <ThreeDBookCard
-            key={`${bookItem.title}-${idx}`}
+            key={bookItem.title}
             book={bookItem}
-            badge={bookItem.badge}
             coverColor={bookItem.coverColor}
             onOpen={handleOpenBook}
           />
         ))}
 
         {/* 3D Add Custom Book Card */}
-        <div
-          className="book-3d-scene book-3d-add-scene"
-          style={{ perspective: "1200px", margin: "0 auto" }}
-        >
+        <div className="book-3d-scene book-3d-add-scene">
           <button
             type="button"
             className="book-3d-prism book-3d-add-card"
-            style={{ margin: "0 auto" }}
             onClick={onUploadClick}
             aria-label="Upload custom book"
           >
-            <div className="add-card-inner">
-              <div className="add-icon-bubble">
-                <Plus size={26} />
-              </div>
-              <h4>Import File</h4>
-              <p>PDF, EPUB, TXT, MD</p>
-              <span className="add-privacy-tag">Zero Cloud Transfer</span>
-            </div>
+            <span className="add-card-inner">
+              <span className="add-card-mark" aria-hidden="true">+</span>
+              <strong>Import a book</strong>
+              <small>PDF, EPUB, TXT, MD</small>
+            </span>
           </button>
         </div>
       </div>

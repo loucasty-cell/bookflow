@@ -166,12 +166,12 @@ describe('LensBar structure', () => {
     expect(renderPanel({ mode: 'unknown-mode' })).toContain('Ask about this');
   });
 
-  it('renders the answer region as a polite live region', () => {
-    expect(renderPanel()).toContain('aria-live="polite"');
+  it('announces streaming status separately from the answer text', () => {
+    expect(renderPanel({ req: { ...IDLE_REQ, status: 'loading' } })).toContain('role="status"');
   });
 
-  it('disables send while loading and for ask with no question', () => {
-    expect(renderPanel({ req: { ...IDLE_REQ, status: 'loading' } })).toContain('disabled');
+  it('offers stop while loading and disables send for an empty question', () => {
+    expect(renderPanel({ req: { ...IDLE_REQ, status: 'loading' } })).toContain('aria-label="Stop answer"');
     expect(renderPanel({ mode: 'ask', question: '' })).toContain('disabled');
     expect(renderPanel({ mode: 'ask', question: 'why?' })).not.toContain('disabled');
   });
@@ -194,9 +194,9 @@ describe('LensBar structure', () => {
 describe('LensBar consent line', () => {
   it('asks once with all three choices before any cloud send', () => {
     const markup = renderPanel({ consent: UNDECIDED_CONSENT });
-    expect(markup).toContain('Send this passage to Reading Lens?');
+    expect(markup).toContain('Allow the attached passage and question to be sent?');
     expect(markup).toContain('Send once');
-    expect(markup).toContain('Always');
+    expect(markup).toContain('This session');
     expect(markup).toContain('Keep local');
     expect(markup).toContain('aria-label="Allow sending this passage"');
   });
@@ -245,22 +245,22 @@ describe('LensBar safety', () => {
       'Offline answer (limited)'
     );
     expect(renderPanel({ req: { ...IDLE_REQ, status: 'done', text: 'x', source: 'cloud' } })).toContain(
-      'From the selected text'
+      'Remote answer · attached passage'
     );
   });
 
-  it('offers the four answer actions only when there is an answer', () => {
+  it('offers answer actions only when there is an answer', () => {
     const done = renderPanel({ req: { ...IDLE_REQ, status: 'done', text: 'x' } });
-    for (const label of ['Copy answer', 'Save as note', 'Regenerate', 'Clear answer']) {
+    for (const label of ['Copy answer', 'Save as note', 'Clear answer']) {
       expect(done).toContain(`aria-label="${label}"`);
     }
     expect(renderPanel()).not.toContain('aria-label="Copy answer"');
   });
 
-  it('reports a failure as an alert and says nothing was sent', () => {
+  it('reports a failure as an alert without assuming egress', () => {
     const markup = renderPanel({ req: { ...IDLE_REQ, status: 'error' } });
     expect(markup).toContain('role="alert"');
-    expect(markup).toContain('Nothing was sent unless you allowed it.');
+    expect(markup).toContain('Could not answer.');
   });
 
   it('never writes the question or the answer to storage', () => {

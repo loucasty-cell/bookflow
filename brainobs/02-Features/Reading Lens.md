@@ -2,9 +2,9 @@
 title: Reading Lens
 type: feature
 status: verified
-updated: 2026-10-02
+updated: 2026-11-18
 tags: [bookflow, reader, reading-lens, privacy, consent, overlay]
-source-files: [src/features/reader/hooks/useReadingLens.js, src/features/reader/components/FocusCard.jsx, src/features/reader/components/FocusBarHost.jsx, src/features/reader/components/FocusBarAmbient.jsx, src/features/reader/components/FocusBarBackdrop.jsx, src/features/reader/components/SelectionTooltip.jsx, src/features/reader/components/ReaderOverlays.jsx, src/features/reader/hooks/useReaderSelection.js, src/store/uiStore.js]
+source-files: [src/features/reader/hooks/useReadingLens.js,src/features/reader/components/FocusCard.jsx,src/features/reader/components/FocusBarHost.jsx,src/features/reader/components/FocusBarAmbient.jsx,src/features/reader/components/FocusBarBackdrop.jsx,src/features/reader/components/SelectionTooltip.jsx,src/features/reader/components/ReaderOverlays.jsx,src/features/reader/hooks/useReaderSelection.js,src/store/uiStore.js,src/styles/reading-lens.css]
 ---
 
 # Reading Lens
@@ -138,6 +138,14 @@ Nothing was lost for assistive technology: every explanation moved to `title` or
 `aria-describedby`, and the live region still carries `role="status"` with
 `aria-live="polite"`.
 
+## Focus card interaction enhancements
+
+Updated in commit `4e0800a` across `src/features/reader/components/FocusCard.jsx` and `src/styles/reading-lens.css`:
+- **Conversation Controls**: Integrated `RotateCcw` (restart/re-query) and `ThumbsUp` (reader feedback) action icons in the response view.
+- **Calibrated Dragging and Touch Actions**: Drag handles apply `touch-action: none` to prevent mobile scroll conflicts, constraining card movement safely within viewport bounds.
+- **Dismissed State Logic**: Introduces an explicit `isDismissed` state flag so closing the card persists smoothly without popping back open unexpectedly during paragraph traversal.
+- **Refined Form Aesthetics**: Upgraded input focus rings, button active states, and fluid responsive styling across desktop and mobile viewports.
+
 ## Scroll-away behaviour
 
 The card rests folded to its pill. Entering a book shows the text, not a panel,
@@ -207,7 +215,7 @@ overlay also lazy-loads the card.
 
 ## Tests
 
-- `src/features/reader/hooks/useReadingLens.test.js` - 29 cases, including consent
+- `src/features/reader/hooks/useReadingLens.test.js` - 30 cases, including consent
   short-circuit, quota, abort, and CSS source assertions
 - `src/features/reader/components/FocusCard.test.jsx` - static SSR markup plus
   computed-style assertions read from `src/styles/reading-lens.css`

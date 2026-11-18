@@ -178,11 +178,11 @@ describe("FocusCard structure", () => {
     expect(markup).not.toContain("Select text to ask Lens.");
   });
 
-  it("does not duplicate the selected passage back at the reader", () => {
+  it("shows the selected passage before it can be sent", () => {
     const selection = "The precise passage the reader highlighted, kept whole for consent.";
     const markup = renderCard({ selectedText: selection });
-    expect(markup).not.toContain(selection);
-    expect(markup).not.toContain("<blockquote");
+    expect(markup).toContain(selection);
+    expect(markup).toContain("<blockquote");
     expect(markup).not.toContain("lens-passage-figure");
     expect(markup).toMatch(/chars .* on device/);
   });
@@ -213,12 +213,10 @@ describe("FocusCard structure", () => {
     expect(markup).not.toContain("Send passage to Lens");
   });
 
-  it("keeps the chapter opt-in as one icon toggle, off and disabled without chapter text", () => {
+  it("offers explicit paragraph attachment without offering a chapter upload", () => {
     const markup = renderCard({ chapterTitle: "Loomings" });
-    expect(markup).toContain("lens-chapter-toggle");
-    expect(markup).toContain("Include the current chapter as context");
-    expect(markup).toContain("Chapter text is not available here");
-    expect(markup).toMatch(/class="lens-chapter-toggle[^"]*"[^>]*disabled/);
+    expect(markup).toContain("Use current paragraph");
+    expect(markup).not.toContain("Include the current chapter as context");
   });
 
   it("keeps a live status region for assistive technology", () => {
@@ -227,10 +225,11 @@ describe("FocusCard structure", () => {
     expect(markup).toContain('aria-live="polite"');
   });
 
-  it("renders quick actions as icon only, with no repeated state label", () => {
+  it("renders visible quick-action labels, with no repeated state label", () => {
     const markup = renderCard();
     expect(markup).not.toContain("lens-quick-action-status");
     expect(markup).not.toContain(">Local<");
+    expect(markup).toContain(">Summarize<");
   });
 
   it("wires every quick action to the lens contract", () => {

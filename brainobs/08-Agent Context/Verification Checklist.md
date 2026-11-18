@@ -2,7 +2,7 @@
 title: Verification Checklist
 type: reference
 status: verified
-updated: 2026-10-02
+updated: 2026-11-18
 tags: [bookflow, agent, verification, checklist]
 source-files: [package.json, AGENTS.md, playwright.config.js, scripts/check-vault.mjs, scripts/security/contrast.mjs, .github/workflows/webpack.yml, backend/tests/conftest.py, backend/Dockerfile, backend/main.py, backend/app/main.py, vite.config.js]
 ---
@@ -14,14 +14,15 @@ What to run and inspect before declaring a change complete. Scale the depth to t
 ## The real gate set
 
 There is no `format` script and Prettier is not a dependency, so `.prettierignore` is inert.
-There is no `typecheck` script. The gates that exist:
+The gates that exist:
 
 ```bash
 npm run lint                       # eslint .            0 errors expected
-npm test                           # vitest run
+npm test                           # vitest run (58 files, 573 tests)
+npm run typecheck                  # tsc --noEmit
 npm run build                      # vite build (prebuild runs scripts/copy-assets.js)
 npm run check:vault                # node scripts/check-vault.mjs
-npm run test:e2e                   # playwright test
+npm run test:e2e                   # playwright test (20 tests in 5 spec files)
 node scripts/security/contrast.mjs # WCAG gate, NOT wired to npm
 pytest backend/tests/ -v           # backend suite
 ```
@@ -53,8 +54,8 @@ Other measured config values: `testDir: tests/e2e`, `timeout: 60000`,
 `fullyParallel: false`, `reporter: 'list'`, `reuseExistingServer: true`, and **no `projects`
 block**.
 
-The e2e suite is 19 tests in 4 spec files: `smoke.spec.js` (2), `long-import.spec.js` (1),
-`reading-lens.spec.js` (2), `lens-bar.spec.js` (14). Fixtures live in `tests/fixtures/`:
+The e2e suite is 20 tests in 5 spec files: `smoke.spec.js` (2), `long-import.spec.js` (1),
+`reading-lens.spec.js` (2), `lens-bar.spec.js` (14), `offline-resume.spec.js` (1). Fixtures live in `tests/fixtures/`:
 `generate-fixtures.mjs`, `sample-long.pdf`, `sample-native.pdf`, `sample-reading.txt`,
 `sample-scanned.pdf`, `sample-structure.md`, `sample-twocol.pdf`.
 

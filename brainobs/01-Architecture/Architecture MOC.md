@@ -2,9 +2,9 @@
 title: Architecture MOC
 type: MOC
 status: living
-updated: 2026-10-02
+updated: 2026-11-18
 tags: [bookflow, architecture, moc]
-source-files: [src/features/reader/index.js,src/features/lens-bar/index.js,backend/main.py]
+source-files: [src/features/reader/index.js,src/features/lens-bar/index.js,src/features/library/lib/offlineBooks.js,backend/main.py]
 ---
 
 # Architecture MOC
@@ -19,9 +19,10 @@ How Bookflow is put together and how data moves through it.
 - [[Data Flow]] - end-to-end journey from file selection to restored reading position
 - [[Normalized Book Contract]] - the shared JSON shape every parser emits
 - [[Storage and Persistence]] - every storage key, and why only settings reach `localStorage` wholesale
-- [[Library and Reading Stats]] - metadata-only return loop and the recent shelf
+- [[Library and Reading Stats]] - metadata-only return loop, offline OPFS caching (`offlineBooks.js`), and the recent shelf
 - [[Privacy Model]] - what stays on device, what leaves, and when
 - [[Tech Stack]] - every dependency with its exact responsibility
+- [[Three Ps Strategy - Place People Product]] - strategic alignment on distribution (Place), cognitive personas (People), and architecture (Product)
 
 ## Features that changed the architecture
 
@@ -29,6 +30,7 @@ How Bookflow is put together and how data moves through it.
 - [[Reading Lens Bar]] - the lens feature folder, its own store, and its own CSS
 - [[Command Palette]] - reader-owned palette, not a cross-feature component
 - [[Graphics Quality Tiers]] - the single atmosphere budget decision shared by the ambient layer
+- [[Creative Coding and 3D Features]] - keeping raw Three.js, lazy-island R3F, and preserving the calm reader invariant (g = -0.33 rule)
 
 `Library and Reading Stats` now lives in `02-Features/`, not `05-Roadmap/Future Features/`.
 Wikilinks key on basename, so the link above still resolves.

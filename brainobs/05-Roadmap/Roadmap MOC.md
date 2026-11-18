@@ -2,7 +2,7 @@
 title: Roadmap MOC
 type: MOC
 status: living
-updated: 2026-10-02
+updated: 2026-11-18
 tags: [bookflow, roadmap, moc, planning]
 source-files: [brainobs/05-Roadmap/Current State Matrix.md,brainobs/07-Ops/Testing Pipeline.md,playwright.config.js,package.json]
 ---
@@ -13,6 +13,8 @@ What exists, what is next, and how progress will be measured.
 
 ## Notes
 
+- [[Three Ps Strategy - Place People Product]] - strategic positioning on Right Place, Right People, and Right Product
+- [[Creative Coding and 3D Features]] - research roadmap for WebGL, 3D shelves, and procedural art
 - [[Current State Matrix]] - the single source of truth for verified versus planned
 - [[Remote Main 46fe51b Audit]] - pulled Reading Lens baseline, verification failures, and repair order
 - [[Backlog P0-P1-P2]] - prioritized work, merged from the project planning documents
@@ -20,7 +22,7 @@ What exists, what is next, and how progress will be measured.
 - [[Massive Upgrade Backlog]] - the 24 item prioritized UI and experience upgrade list
 - [[Future Features MOC]] - spec-ready designs for larger capabilities
 - [[Success Metrics]] - measurable outcomes and current baselines
-- [[Library and Reading Stats]] - the built metadata library, goals, and achievements
+- [[Library and Reading Stats]] - the built metadata library, goals, achievements, and offline caching
 - [[TTS Synchronization]] - speech locked to the focus rail
 - [[PWA Offline]] - manifest, service worker, durable local storage
 - [[Concept Graph]] - cross-chapter definition linking
@@ -30,11 +32,13 @@ What exists, what is next, and how progress will be measured.
 ## Priority order
 
 ```text
-Now       File-handle reopen without re-selection, repeated import benchmarks,
-          durable document wiring, published p50/p95 numbers
+Completed File-handle reopen without re-selection and durable document wiring
+          (offlineBooks.js caches up to 20 books in OPFS/IDB)
+Now       Repeated import benchmarks, published p50/p95 numbers,
+          hash-seeded procedural covers (SVG/Canvas 2D)
 Next      Look-back surface, want-to-read queue, versioned annotation bundle
 Later     PWA install, reading moods, auto night theme, TTS synchronization,
-          concept graph
+          concept graph, CSS 3D bookshelf
 Deferred  Persistent social layer, native wrappers
 ```
 

@@ -2,7 +2,7 @@
 title: Psychology MOC
 type: MOC
 status: living
-updated: 2026-10-02
+updated: 2026-11-18
 tags: [bookflow, psychology, moc, strategy]
 ---
 
@@ -12,6 +12,7 @@ Why Bookflow is designed the way it is, and what it is allowed to do to a reader
 
 ## Notes
 
+- [[Three Ps Strategy - Place People Product]] - strategic alignment across distribution, audience psychology, and product invariants
 - [[Atomic Habits Framework]] - the four laws mapped to real Bookflow features
 - [[Competitor Mechanics Scorecard]] - every competitor mechanic scored adopt, adapt, defer, or reject
 - [[Habit Loop Design]] - cue, craving, response, reward as a reading session
@@ -36,10 +37,10 @@ makes people abandon books they genuinely want to read.
 | Make it obvious | Cue visibility | Resume entry, drop zone, recent shelf | Built |
 | Make it attractive | Craving, anticipation | Chapter teasers, capsules, typography craft | Built |
 | Make it easy | Friction removal | One-tap import, progressive OCR, exact resume | Built |
-| Make it satisfying | Immediate reward | Deterministic progress, completion, recap, notes | Partial |
+| Make it satisfying | Immediate reward | Deterministic progress, completion, recap, notes | Built |
 
-The cue row reached Built when the recent shelf landed. It is partial in one respect only:
-a document still needs re-selection, because durable document storage is not wired.
+The cue row is fully Built: with `offlineBooks.js` caching up to 20 books in OPFS/IndexedDB,
+automatic resume reopens documents instantly without re-selection.
 
 Detail and build specs: [[Atomic Habits Framework]].
 

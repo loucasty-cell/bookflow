@@ -91,9 +91,12 @@ export function ReaderOverlays({
             moveFocus={moveFocus}
             resumeFlow={resumeFlow}
             selectedText={selection.text}
+            onShowSource={selection.paragraphId ? () => {
+              const source = readerRef.current?.querySelector(`[data-paragraph-id="${CSS.escape(selection.paragraphId)}"]`);
+              source?.scrollIntoView({ block: "center" });
+              source?.focus({ preventScroll: true });
+            } : undefined}
              boundsRef={readerRef}
-             chapterTitle={activeChapterTitle}
-             chapterText={chapterText}
              onClearSelection={clearSelection}
              onAddNoteFromSelection={addNoteFromSelection}
             lensOpenRequest={lensOpenRequest}
@@ -143,8 +146,8 @@ export function ReaderOverlays({
       <ErrorBoundary>
         <LensBar
           lens={lens}
-          getParagraph={() => selection.text}
-          onSaveNote={addNoteFromSelection}
+          getParagraph={() => focusedParagraph?.text || ""}
+          onSaveNote={({ text, passage }) => addNoteFromSelection(`${passage ? `Passage:\n${passage}\n\n` : ""}Reading Lens:\n${text}`)}
         />
       </ErrorBoundary>
 

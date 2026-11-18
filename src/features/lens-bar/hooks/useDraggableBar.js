@@ -8,8 +8,9 @@ function viewport() {
   return { width: v ? v.width : window.innerWidth, height: v ? v.height : window.innerHeight };
 }
 
-export function useDraggableBar({ ratio, setRatio, watch }) {
+export function useDraggableBar({ ratio, setRatio }) {
   const nodeRef = useRef(null);
+  const observerRef = useRef(null);
   const drag = useRef(null);
 
   const size = () => {
@@ -36,15 +37,15 @@ export function useDraggableBar({ ratio, setRatio, watch }) {
    */
   const ref = useCallback(
     (node) => {
+      observerRef.current?.disconnect();
       nodeRef.current = node;
-      if (node) layout();
+      if (!node) return;
+      layout();
+      observerRef.current = new ResizeObserver(layout);
+      observerRef.current.observe(node);
     },
     [layout],
   );
-
-  useEffect(() => {
-    layout();
-  }, [layout, watch]);
 
   useEffect(() => {
     const vv = window.visualViewport;

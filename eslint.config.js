@@ -9,6 +9,8 @@ export default [
       'dist/**',
       '.next/**',
       'public/**',
+      'test-results/**',
+      'playwright-report/**',
       '**/.venv/**',
       '**/__pycache__/**',
       'backend/build/**',

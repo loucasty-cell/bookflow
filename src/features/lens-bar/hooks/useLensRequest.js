@@ -72,19 +72,21 @@ export function useLensRequest({ lens }) {
   const rawStatus = lens?.status;
   // A "done" state with no assistant message would render an empty answer under
   // a source label, so only a real message can complete the bar.
-  const status = latest
-    ? toLensStatus(rawStatus)
-    : rawStatus === 'requesting' || rawStatus === 'streaming'
-      ? 'loading'
-      : 'idle';
+  const mappedStatus = toLensStatus(rawStatus);
+  const status = mappedStatus === 'done' && !latest ? 'idle' : mappedStatus;
 
   const trimmed = Boolean(latest?.passage && latest.passage.length >= MAX_CONTEXT);
 
   const send = useCallback(
-    async ({ mode, question, context, language }) => {
+    async ({ mode, question, context, language, permission }) => {
       if (!lens?.ask) return { ok: false, reason: 'unavailable' };
       const { prompt, options } = buildLensCall({ mode, question, context, language });
-      return lens.ask(prompt, options);
+      return lens.ask(prompt, {
+        ...options,
+        includeChapterContext: false,
+        sendOnce: permission === 'once',
+        local: permission === 'local',
+      });
     },
     [lens],
   );
@@ -104,6 +106,8 @@ export function useLensRequest({ lens }) {
     // unknown is reported as local, because overstating egress is the one
     // mistake this label must never make.
     source: latest?.isLocal === false ? 'cloud' : 'local',
+    passage: latest?.passage || '',
+    error: lens?.error,
     trimmed,
     send,
     clear,

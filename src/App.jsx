@@ -23,7 +23,6 @@ import {
   touchLibraryEntry,
   useReadingSession,
 } from "./features/library/index.js";
-import { FocusBarHost } from "./features/reader/index.js";
 
 const ENTRY_INTRO_STORAGE_KEY = "bookflow:entry-intro-seen";
 
@@ -394,7 +393,6 @@ function App() {
     return (
       <>
         <AppLandingView {...landingViewProps} />
-        <FocusBarHost />
       </>
     );
 

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUp, Copy, GripHorizontal, Plus, RotateCw, StickyNote, X } from 'lucide-react';
+import { ArrowUp, Copy, GripHorizontal, Plus, Square, StickyNote, X } from 'lucide-react';
+import { LensWizard } from './LensWizard.jsx';
 import { useLensBarStore } from '../store/lensBarStore.js';
 import { useLensTheme } from '../hooks/useLensTheme.js';
 import { useDraggableBar } from '../hooks/useDraggableBar.js';
@@ -32,8 +33,6 @@ export function LensBarPanel({
   setContext,
   menuOpen,
   setMenuOpen,
-  flipMenu,
-  setFlipMenu,
   mode,
   language,
   setMode,
@@ -51,7 +50,7 @@ export function LensBarPanel({
   inputRef,
   bodyRef,
 }) {
-  const quote = context ? (context.length > 90 ? `${context.slice(0, 90)}…` : context) : '';
+  const quote = context ?? selection.current;
   const needsQuestion = mode === 'ask' && !question.trim();
 
   return (
@@ -83,6 +82,12 @@ export function LensBarPanel({
         <>
           <div className="lens-grip" {...gripProps}>
             <GripHorizontal size={14} aria-hidden="true" />
+          </div>
+
+          <div className="lens-wizard-heading">
+            <LensWizard />
+            <div><strong>Reading Lens</strong><small>{consent.choice === 'always' && !consent.needsDecision ? 'Session sending enabled' : 'On device by default'}</small></div>
+            <button type="button" className="lens-btn" aria-label="Collapse assistant" onClick={() => { req.cancel?.(); setCollapsed(true); }}><X size={16} aria-hidden="true" /></button>
           </div>
 
           {quote && (
@@ -121,7 +126,9 @@ export function LensBarPanel({
               placeholder={`${VERB[mode] ?? VERB.smart}…`}
               onChange={(event) => setQuestion(event.target.value)}
             />
-            <button
+            {req.status === 'loading' ? (
+              <button type="button" className="lens-btn" aria-label="Stop answer" onClick={req.cancel}><Square size={14} aria-hidden="true" /></button>
+            ) : <button
               type="button"
               className="lens-btn lens-send"
               aria-label="Send"
@@ -129,18 +136,18 @@ export function LensBarPanel({
               onClick={submit}
             >
               <ArrowUp size={18} aria-hidden="true" />
-            </button>
+            </button>}
           </div>
 
-          {consent.needsDecision && (
+          {(req.status !== 'loading' && (consent.needsDecision || consent.choice === 'always' || consent.choice === 'once')) && (
             <div className="lens-consent" role="group" aria-label="Allow sending this passage">
-              <p>Send this passage to Reading Lens?</p>
+              <p>{consent.choice === 'once' ? 'Your next question can send this passage.' : 'Allow the attached passage and question to be sent?'}</p>
               <div className="lens-consent-actions">
-                <button type="button" onClick={() => consent.choose('once')}>
+                  <button type="button" disabled={!quote.trim()} onClick={() => consent.choose('once', quote)}>
                   Send once
                 </button>
                 <button type="button" onClick={() => consent.choose('always')}>
-                  Always
+                  This session
                 </button>
                 <button type="button" onClick={() => consent.choose('local')}>
                   Keep local
@@ -148,6 +155,7 @@ export function LensBarPanel({
               </div>
             </div>
           )}
+          {consent.choice === 'local' && <button type="button" className="lens-sending-options" onClick={() => consent.choose(null)}>Sending options</button>}
 
           {menuOpen && (
             <LensBarMenu
@@ -167,25 +175,24 @@ export function LensBarPanel({
                 setMenuOpen(false);
               }}
               onClose={() => setMenuOpen(false)}
-              onFlip={setFlipMenu}
             />
           )}
 
-          <div className="lens-answer" aria-live="polite" data-flip={flipMenu || undefined}>
-            {req.status === 'loading' && <p className="lens-muted">Thinking…</p>}
+          <div className="lens-answer">
+            {req.status === 'loading' && <><p className="lens-muted" role="status">Reading the passage…</p>{req.text && <p>{req.text}</p>}</>}
             {(req.status === 'needs-context' || noContext) && (
               <p className="lens-muted">Select a passage first.</p>
             )}
             {req.status === 'error' && (
               <p className="lens-error" role="alert">
-                Could not answer. Nothing was sent unless you allowed it.
+                {req.error || 'Could not answer. Try again or keep local.'}
               </p>
             )}
             {req.status === 'done' && (
               <div>
-                <p className="lens-muted">
+                <p className="lens-muted" role="status">
                   {req.source === 'cloud'
-                    ? 'From the selected text'
+                    ? 'Remote answer · attached passage'
                     : 'Offline answer (limited)'}
                   {req.trimmed ? ' · trimmed to fit' : ''}
                 </p>
@@ -204,13 +211,10 @@ export function LensBarPanel({
                     type="button"
                     aria-label="Save as note"
                     onClick={() =>
-                      onSaveNote?.({ text: req.text, passage: context || selection.current })
+                      onSaveNote?.({ text: req.text, passage: req.passage })
                     }
                   >
                     <StickyNote size={15} aria-hidden="true" />
-                  </button>
-                  <button type="button" aria-label="Regenerate" onClick={submit}>
-                    <RotateCw size={15} aria-hidden="true" />
                   </button>
                   <button type="button" aria-label="Clear answer" onClick={req.clear}>
                     <X size={15} aria-hidden="true" />
@@ -236,9 +240,8 @@ export function LensBar({ lens, getParagraph, onSaveNote }) {
   const { open, collapsed, ratio, mode, language, setCollapsed, setRatio, setMode, setLanguage } =
     useLensBarStore();
   const [question, setQuestion] = useState('');
-  const [context, setContext] = useState('');
+  const [context, setContext] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [flipMenu, setFlipMenu] = useState(false);
   const [noContext, setNoContext] = useState(false);
   const input = useRef(null);
   const selection = useSelectionMemory();
@@ -249,7 +252,6 @@ export function LensBar({ lens, getParagraph, onSaveNote }) {
   const { ref: bodyRef, gripProps } = useDraggableBar({
     ratio,
     setRatio,
-    watch: `${req.text.length}:${req.status}:${collapsed}:${context ? 1 : 0}:${menuOpen ? 1 : 0}`,
   });
 
   useEffect(() => {
@@ -267,7 +269,7 @@ export function LensBar({ lens, getParagraph, onSaveNote }) {
 
   const submit = useCallback(async () => {
     if (req.status === 'loading' || needsQuestion) return;
-    const ctx = context || selection.current;
+    const ctx = context ?? selection.current;
     if (!ctx.trim()) {
       // Say so rather than doing nothing at all.
       setNoContext(true);
@@ -275,12 +277,8 @@ export function LensBar({ lens, getParagraph, onSaveNote }) {
     }
     setNoContext(false);
 
-    // Resolves once the reader has answered the consent line. Whether that
-    // answer permits a cloud call is the shared hook's decision, not ours: it
-    // answers locally on its own when consent was refused.
-    await consent.ensure();
-    await req.send({ mode, question, context: ctx, language });
-    consent.consumeOnce();
+    setContext(ctx);
+    await req.send({ mode, question, context: ctx, language, permission: consent.take(ctx) });
   }, [req, needsQuestion, context, selection, consent, mode, question, language]);
 
   // The notice clears when the reader attaches different text. The selection
@@ -299,7 +297,7 @@ export function LensBar({ lens, getParagraph, onSaveNote }) {
         else setCollapsed(true);
         return;
       }
-      if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+      if (event.target === input.current && event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
         event.preventDefault();
         submit();
       }
@@ -319,8 +317,6 @@ export function LensBar({ lens, getParagraph, onSaveNote }) {
       setContext={setContext}
       menuOpen={menuOpen}
       setMenuOpen={setMenuOpen}
-      flipMenu={flipMenu}
-      setFlipMenu={setFlipMenu}
       mode={mode}
       language={language}
       setMode={setMode}

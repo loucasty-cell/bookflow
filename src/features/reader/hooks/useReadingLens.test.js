@@ -443,6 +443,36 @@ describe("useReadingLens consent gating", () => {
 });
 
 describe("useReadingLens remote request", () => {
+  it("keeps an explicitly attached paragraph independent of the current selection", async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ text: "The attached paragraph." }));
+    const view = renderHook(() => useReadingLens({ selectedText: "Other selection.", fetchImpl }));
+    view.result.setConsentGranted(true);
+    const result = await view.result.ask("Explain", { passage: "Attached paragraph." });
+
+    expect(result.ok).toBe(true);
+    expect(JSON.parse(fetchImpl.mock.calls[0][1].body).passage).toBe("Attached paragraph.");
+    expect(view.result.messages.at(-1)).toMatchObject({ isLocal: false, passage: "Attached paragraph." });
+  });
+
+  it("keeps one-time sending out of the session and refuses truncated SSE", async () => {
+    const fetchImpl = vi.fn(async () => sseResponse('event: delta\r\ndata: {"text":"Partial"}\r\n\r\n'));
+    const view = renderHook(() => useReadingLens({ selectedText: "Passage.", fetchImpl }));
+    const result = await view.result.ask("Explain", { passage: "Passage.", sendOnce: true });
+
+    expect(result.reason).toBe(LENS_STATUS.error);
+    expect(view.result.error).toContain("interrupted");
+    expect(view.result.consentGranted).toBe(false);
+    await view.result.ask("Try again", { passage: "Passage." });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("reads Unicode and terminal events across every fixed chunk size", async () => {
+    const payload = 'event: delta\r\ndata: {"text":"Café မင်္ဂလာပါ"}\r\n\r\nevent: completed\r\ndata: {}\r\n\r\n';
+    for (let chunkSize = 1; chunkSize <= new TextEncoder().encode(payload).length; chunkSize += 1) {
+      await expect(readLensResponse(sseResponse(payload, { chunkSize }))).resolves.toBe("Café မင်္ဂလာပါ");
+    }
+  });
+
   it("sends only the selection, then reports the provider and answer", async () => {
     const fetchImpl = vi.fn(async () =>
       jsonResponse({ text: "A whale, not a porpoise.", provider: "gemini-2.5-flash" }),

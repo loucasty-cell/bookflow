@@ -386,14 +386,23 @@ def test_insecure_base_url_is_rejected(client, monkeypatch):
     assert "config" in response.json()["detail"].lower()
 
 
-def test_omitted_passage_is_accepted(client, monkeypatch):
-    provider = ok_provider(monkeypatch, "Answered without passage")
+@pytest.mark.parametrize("overrides", [{"passage": OMIT}, {"passage": " \n "}, {"consent": "true"}])
+def test_invalid_grounding_or_consent_never_reaches_provider(client, monkeypatch, overrides):
+    provider = ok_provider(monkeypatch)
+    response = client.post(LENS_URL, json=lens_request(**overrides))
+    assert response.status_code == 422
+    assert not provider.requests
 
-    response = client.post(LENS_URL, json={"prompt": "What is Bookflow?", "consent": True})
 
-    assert response.status_code == 200
-    body = json.loads(provider.requests[0].content)
-    assert "What is Bookflow?" in body["contents"][0]["parts"][0]["text"]
+def test_provider_eof_after_text_is_interrupted(client, monkeypatch):
+    provider = FakeProvider(lambda request: httpx.Response(
+        200, content=sse_body([{"candidates": [{"content": {"parts": [{"text": "Partial"}]}}]}])
+    )).install(monkeypatch)
+
+    stream = events(client.post(LENS_URL, json=lens_request()).text)
+    assert [event["event"] for event in stream] == ["start", "delta", "error"]
+    assert stream[-1]["data"]["code"] == "stream_interrupted"
+    assert len(provider.requests) == 1
 
 
 def test_duplicate_models_are_deduplicated_in_the_chain(monkeypatch):

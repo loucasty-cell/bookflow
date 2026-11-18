@@ -1152,217 +1152,106 @@
   border-color: color-mix(in srgb, var(--focus-edge, #06b6d4) 30%, transparent);
 }
 
-/* ==========================================================================
-   Focus Mode: Targeted Ratios, Placements, and Sizing for FocusCard Elements
-   ========================================================================== */
-
-/* Selector 1: User message bubble in chat transcript */
-div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(1) {
-  display: flex !important;
-  justify-content: flex-end !important;
-  width: 100% !important;
-  margin: 0 !important;
-  padding: 2px 0 !important;
+.focus-card:not(.is-collapsed) {
+  max-height: min(630px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 94px));
+  touch-action: pan-y;
+  cursor: default;
+  background: color-mix(in srgb, var(--chrome-solid) 97%, transparent);
+  box-shadow: inset 0 1px rgb(255 255 255 / 12%), 0 12px 36px rgb(18 22 33 / 22%);
 }
 
-/* Selector 2: Assistant message bubble in chat transcript */
-div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(2) {
-  display: grid !important;
-  grid-template-columns: 28px minmax(0, 1fr) !important;
-  column-gap: 10px !important;
-  row-gap: 4px !important;
-  align-items: start !important;
-  width: 100% !important;
-  padding: 4px 0 !important;
+.focus-card .lens-head-toggle { min-width: 0; }
+.focus-card .lens-head-toggle .lens-wizard { width: 32px; height: 32px; }
+.focus-card .lens-pill-toggle .lens-wizard { width: 25px; height: 25px; }
+.focus-card .lens-message-avatar { background: none; box-shadow: none; }
+.focus-card .lens-message-avatar .lens-wizard { width: 25px; height: 25px; }
+
+.focus-card .focus-card-quick-pills {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-/* Selector 3: Assistant message avatar */
-div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(2) > span:nth-of-type(1) {
-  grid-column: 1 !important;
-  grid-row: 1 !important;
-  width: 26px !important;
-  height: 26px !important;
-  flex: 0 0 26px !important;
-  border-radius: 8px !important;
-  display: inline-grid !important;
-  place-items: center !important;
-  background: linear-gradient(135deg, var(--focus-edge, #06b6d4), #8b5cf6) !important;
-  color: #ffffff !important;
-  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--focus-edge, #06b6d4) 45%, transparent) !important;
-  margin-top: 1px !important;
-}
-
-/* Selector 4: Copy button on assistant message */
-div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > button:nth-of-type(1) {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  min-height: 28px !important;
-  padding: 0 !important;
-  display: inline-grid !important;
-  place-items: center !important;
-  border-radius: 7px !important;
-  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.08)) !important;
-  background: color-mix(in srgb, var(--chrome-strong) 45%, transparent) !important;
-  color: var(--reader-muted) !important;
-  cursor: pointer !important;
-  transition: all 0.15s ease !important;
-}
-
-/* Selector 5: Feedback button on assistant message */
-div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(5) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > button:nth-of-type(2) {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  min-height: 28px !important;
-  padding: 0 !important;
-  display: inline-grid !important;
-  place-items: center !important;
-  border-radius: 7px !important;
-  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.08)) !important;
-  background: color-mix(in srgb, var(--chrome-strong) 45%, transparent) !important;
-  color: var(--reader-muted) !important;
-  cursor: pointer !important;
-  transition: all 0.15s ease !important;
-}
-
-/* Selector 6: Quick action pills row */
-div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(3) {
-  display: grid !important;
-  grid-template-columns: repeat(4, 1fr) !important;
-  gap: 6px !important;
-  padding: 0 12px 6px !important;
-  margin: 0 !important;
-}
-
-/* Selector 7: Chapter scope container */
-div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(4) {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  gap: 8px !important;
-  margin: 0 12px 6px !important;
-  padding: 4px 8px !important;
-  min-height: 32px !important;
-  background: color-mix(in srgb, var(--chrome-strong) 30%, transparent) !important;
-  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.06)) !important;
-  border-radius: 9px !important;
-}
-
-/* Selector 8: Prompt input form */
-div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > form:nth-of-type(1) {
+.focus-card .focus-quick-pill {
   min-height: 44px !important;
+  font-size: var(--ui-caption);
+}
+
+.focus-card .lens-consent-dot {
+  flex-basis: 44px;
+  width: 44px !important;
   height: 44px !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-  padding: 4px 6px 4px 8px !important;
-  background: color-mix(in srgb, var(--chrome-strong) 40%, var(--chrome-solid)) !important;
-  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.1)) !important;
-  border-radius: 13px !important;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  min-width: 44px !important;
+  min-height: 44px !important;
 }
 
-/* Selector 9: Send button in form */
-div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > form:nth-of-type(1) > button:nth-of-type(2) {
-  width: 34px !important;
-  height: 34px !important;
-  min-width: 34px !important;
-  min-height: 34px !important;
-  flex: 0 0 34px !important;
-  padding: 0 !important;
-  display: inline-grid !important;
-  place-items: center !important;
-  border: 0 !important;
-  border-radius: 9px !important;
-  background: linear-gradient(135deg, var(--focus-edge, #06b6d4), #0ea5e9) !important;
-  color: #ffffff !important;
-  cursor: pointer !important;
-  box-shadow: 0 2px 6px -1px color-mix(in srgb, var(--focus-edge, #06b6d4) 40%, transparent) !important;
-  transition: transform 0.12s ease, opacity 0.15s ease, box-shadow 0.12s ease !important;
+.lens-source,
+.focus-card .lens-translation-language {
+  margin-inline: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: var(--ui-caption);
 }
 
-/* ==========================================================================
-   Selected Element: div#root:nth-of-type(1) > div:nth-of-type(2) (Landing Focus Card)
-   ========================================================================== */
-div#root:nth-of-type(1) > div:nth-of-type(2) {
-  position: fixed !important;
-  z-index: var(--z-modal, 100);
-  max-width: min(390px, calc(100vw - 24px));
+.lens-passage-preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 9px;
+  border-inline-start: 2px solid var(--reader-accent);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font: 0.9rem/1.35 var(--font-reading);
+  user-select: text;
+}
+
+.lens-source button,
+.lens-attach-paragraph,
+.lens-dock-right,
+.lens-translation-language select {
+  min-height: 44px;
+  padding-inline: 9px;
+  border: 1px solid var(--app-line);
+  border-radius: 9px;
+  background: var(--chrome-solid);
   color: var(--reader-ink);
-  font-family: var(--font-ios);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  background: color-mix(in srgb, var(--chrome-solid) 94%, transparent);
-  border: 1px solid var(--app-line, rgba(255, 255, 255, 0.1));
-  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.35), 0 2px 8px -2px rgba(0, 0, 0, 0.2);
-  cursor: grab !important;
-  touch-action: none !important;
-  user-select: none !important;
-  -webkit-user-select: none !important;
-  will-change: left, top, box-shadow;
-  transition:
-    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.2s ease,
-    background 0.2s ease,
-    border-color 0.2s ease;
+  font: inherit;
 }
 
-div#root:nth-of-type(1) > div:nth-of-type(2).is-collapsed {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  gap: 4px !important;
-  padding: 4px 6px 4px 12px !important;
-  width: auto !important;
-  min-width: 172px !important;
-  max-width: min(290px, calc(100vw - 24px)) !important;
-  height: auto !important;
-  min-height: 48px !important;
-  border-radius: 9999px !important;
-  overflow: visible !important;
-  cursor: grab !important;
-  touch-action: none !important;
-  user-select: none !important;
-  -webkit-user-select: none !important;
-  box-shadow: 0 10px 28px -6px rgba(0, 0, 0, 0.32), 0 2px 6px -1px rgba(0, 0, 0, 0.15) !important;
+.lens-source button {
+  flex: 0 0 auto;
 }
 
-div#root:nth-of-type(1) > div:nth-of-type(2) .lens-pill-toggle,
-div#root:nth-of-type(1) > div:nth-of-type(2) .focus-card-header,
-div#root:nth-of-type(1) > div:nth-of-type(2) .focus-card-drag-pill,
-div#root:nth-of-type(1) > div:nth-of-type(2) .lens-head-toggle,
-div#root:nth-of-type(1) > div:nth-of-type(2) .lens-drag-handle {
-  cursor: grab !important;
-  touch-action: none !important;
-  user-select: none !important;
-  -webkit-user-select: none !important;
+.lens-attach-paragraph,
+.lens-dock-right {
+  align-self: start;
+  margin-inline: 12px;
+  font-size: var(--ui-caption);
 }
 
-div#root:nth-of-type(1) > div:nth-of-type(2) .lens-pill-toggle:active,
-div#root:nth-of-type(1) > div:nth-of-type(2) .focus-card-header:active,
-div#root:nth-of-type(1) > div:nth-of-type(2) .focus-card-drag-pill:active,
-div#root:nth-of-type(1) > div:nth-of-type(2) .lens-head-toggle:active,
-div#root:nth-of-type(1) > div:nth-of-type(2) .lens-drag-handle:active,
-div#root:nth-of-type(1) > div:nth-of-type(2).is-dragging,
-div#root:nth-of-type(1) > div:nth-of-type(2).is-dragging * {
-  cursor: grabbing !important;
-  user-select: none !important;
-  -webkit-user-select: none !important;
+.lens-dock-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-div#root:nth-of-type(1) > div:nth-of-type(2).is-dragging {
-  box-shadow: 0 24px 60px -12px rgba(0, 0, 0, 0.45), 0 6px 16px -2px rgba(0, 0, 0, 0.25) !important;
-  transition: none !important;
+.focus-card .lens-status {
+  padding-inline: 12px;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
-div#root:nth-of-type(1) > div:nth-of-type(2) input,
-div#root:nth-of-type(1) > div:nth-of-type(2) textarea,
-div#root:nth-of-type(1) > div:nth-of-type(2) .focus-card-chat-messages {
-  touch-action: pan-y !important;
-  user-select: text !important;
-  -webkit-user-select: text !important;
-}
+.focus-card > * { flex-shrink: 0; }
+.focus-card .lens-quick-action-icon { display: none; }
+.focus-card .focus-card-chat-space { max-height: none; backdrop-filter: none; }
+.focus-card .lens-transcript { max-height: none; overflow: visible; }
+.focus-card .lens-response-text { font-size: 0.875rem; }
 
+@media (prefers-reduced-transparency: reduce) {
+  .focus-card:not(.is-collapsed) { background: var(--chrome-solid); }
+}

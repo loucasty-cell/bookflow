@@ -2,7 +2,7 @@
 title: Reader Engine MOC
 type: MOC
 status: living
-updated: 2026-09-25
+updated: 2026-11-18
 tags: [bookflow, reader, moc]
 ---
 
@@ -23,6 +23,7 @@ The reader is Bookflow's product. Everything else supports it.
 - [[Command Palette]] - Ctrl/Cmd+K control surface and the progress-display preference
 - [[Graphics Quality Tiers]] - device-tiered ambient canvas and the Three-off-entry rule
 - [[Sentence-Paced Scroll]] - Lenis configuration, single-ticker rule, programmatic scroll routing
+- [[Creative Coding and 3D Features]] - why the reader stays calm, browser APIs, and where spectacle belongs
 - Long-book windowing - `useChapterWindow` keeps a bounded chapter window with spacers
 - Local definition lookup - opt-in starter lexicon in `dictionary.js`; no network lookup
 

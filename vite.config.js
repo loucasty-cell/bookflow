@@ -76,9 +76,77 @@ function localOcrAssets() {
   }
 }
 
+function handleAiStudioMock(req, res) {
+  const url = req.url || ''
+  if (url.includes('/reading-lens')) {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    })
+    res.write('event: start\ndata: {"status":"streaming","candidates":["ai-studio-mock"]}\n\n')
+    res.write('event: message\ndata: {"text":"[Google AI Studio Mock] Reading Lens simulated response. Passage analyzed in frontend-first development mode."}\n\n')
+    res.write('event: completed\ndata: {"status":"complete","provider":"AI Studio Mock Engine","fallbackUsed":false}\n\n')
+    res.end()
+    return true
+  }
+  if (url.includes('/ocr/scan')) {
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ job_id: 'mock-ocr-1', stream_url: '/api/ocr/progress/mock-ocr-1' }))
+    return true
+  }
+  if (url.includes('/ocr/progress')) {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    })
+    res.write('event: progress\ndata: {"page":1,"total_pages":1,"percent":100,"velocity_pages_per_sec":5.0,"text":"[Google AI Studio Mock] Document extracted successfully."}\n\n')
+    res.write('event: done\ndata: {"job_id":"mock-ocr-1","status":"completed"}\n\n')
+    res.end()
+    return true
+  }
+  if (url.includes('/ocr/result')) {
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ job_id: 'mock-ocr-1', markdown: '# Scanned Document\n\nSample page text extracted via AI Studio Mock Gate.' }))
+    return true
+  }
+  if (url.includes('/social/events')) {
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ ok: true, status: 'recorded_mock' }))
+    return true
+  }
+  if (url.includes('/social/resonance')) {
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ count: 42, readers: 12 }))
+    return true
+  }
+  if (url.includes('/health')) {
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ status: 'healthy', mode: 'ai-studio-gate', backend: 'mock-fallback' }))
+    return true
+  }
+  return false
+}
+
+function aiStudioMockGate() {
+  const isMockMode = process.env.VITE_AI_STUDIO_MODE === 'true' || process.env.VITE_MOCK_BACKEND === 'true'
+  return {
+    name: 'bookflow-ai-studio-gate',
+    configureServer(server) {
+      if (isMockMode) {
+        server.middlewares.use('/api', (req, res, next) => {
+          if (handleAiStudioMock(req, res)) return
+          next()
+        })
+      }
+    },
+  }
+}
+
 export default defineConfig({
   base: './',
-  plugins: [react(), tailwindcss(), localOcrAssets()],
+  plugins: [react(), tailwindcss(), localOcrAssets(), aiStudioMockGate()],
   server: {
     port: 3000,
     host: '0.0.0.0',
@@ -98,6 +166,18 @@ export default defineConfig({
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
         secure: false,
+        configure: (proxy) => {
+          proxy.on('error', (err, req, res) => {
+            if ((err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') && !res.headersSent) {
+              const handled = handleAiStudioMock(req, res)
+              if (handled) return
+            }
+            if (!res.headersSent) {
+              res.writeHead(502, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ error: 'Proxy error', detail: err.message }))
+            }
+          })
+        },
       },
     },
   },

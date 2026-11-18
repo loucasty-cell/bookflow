@@ -1,0 +1,33 @@
+filters:
+  and: []
+views:
+  - type: table
+    name: "3 Ps Strategic & Feature Matrix"
+    order:
+      - file.name
+      - note.title
+      - note.type
+      - note.status
+      - note.updated
+      - note.tags
+  - type: cards
+    name: "3 Ps & Features Cards"
+    groupBy:
+      property: note.type
+      direction: ASC
+    order:
+      - note.title
+      - note.status
+      - note.updated
+      - note.tags
+properties:
+  note.title:
+    displayName: "Title"
+  note.type:
+    displayName: "Type"
+  note.status:
+    displayName: "Status"
+  note.updated:
+    displayName: "Updated"
+  note.tags:
+    displayName: "Tags"

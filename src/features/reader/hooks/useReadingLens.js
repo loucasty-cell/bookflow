@@ -44,7 +44,7 @@ const ACTION_PROMPTS = {
   explain: "Explain the core ideas of this passage in plain language.",
   translate: (language) => `Translate this passage into ${language}.`,
   trivia:
-    "Give the historical, literary, or conceptual background that makes this passage easier to read.",
+    "Identify the context the author supplies for this passage. Say what remains unclear from this text alone.",
 };
 
 export function resolveLensPrompt(promptText, options = {}) {
@@ -60,7 +60,7 @@ export function resolveLensPrompt(promptText, options = {}) {
 
 function clip(value, max) {
   const text = String(value ?? "");
-  return text.length > max ? `${text.slice(0, max)}…` : text;
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
 export function composeLensPassage({
@@ -220,16 +220,16 @@ export function createLensStreamParser(handlers = {}) {
   let buffer = "";
   let text = "";
   const drain = (final) => {
-    let boundary = buffer.indexOf("\n\n");
-    while (boundary >= 0) {
-      const block = buffer.slice(0, boundary);
-      buffer = buffer.slice(boundary + 2);
+    let boundary = /\r?\n\r?\n/.exec(buffer);
+    while (boundary) {
+      const block = buffer.slice(0, boundary.index);
+      buffer = buffer.slice(boundary.index + boundary[0].length);
       const delta = parseStreamBlock(block, handlers);
       if (delta) {
         text += delta;
         handlers.onText?.(delta, text);
       }
-      boundary = buffer.indexOf("\n\n");
+      boundary = /\r?\n\r?\n/.exec(buffer);
     }
     if (final && buffer.trim()) {
       const delta = parseStreamBlock(buffer, handlers);
@@ -262,7 +262,13 @@ export async function readLensResponse(response, handlers = {}) {
       : "";
 
   if (contentType.includes("text/event-stream") && response.body) {
-    const parser = createLensStreamParser(handlers);
+    let completed = false;
+    let failed = false;
+    const parser = createLensStreamParser({
+      ...handlers,
+      onDone: () => { completed = true; handlers.onDone?.(); },
+      onError: (...args) => { failed = true; handlers.onError?.(...args); },
+    });
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     try {
@@ -275,7 +281,9 @@ export async function readLensResponse(response, handlers = {}) {
     } finally {
       reader.releaseLock?.();
     }
-    return parser.flush();
+    const text = parser.flush();
+    if (!completed && !failed) throw new Error("The answer was interrupted. Try again.");
+    return text;
   }
 
   const raw = await response.text();
@@ -338,14 +346,11 @@ export function describePassageLocally(passage) {
 }
 
 export function buildLocalLensReply(passage, options = {}) {
-  const stats = describePassageLocally(passage);
-  const opening =
-    stats.opening.length > 180 ? `${stats.opening.slice(0, 179)}…` : stats.opening;
-  const intent = LENS_ACTIONS.find((action) => action.id === options.action)?.label;
-  const tail = intent
-    ? `No request was sent. Allow "Send passage to Lens" to ask ${intent} remotely.`
-    : 'No request was sent. Allow "Send passage to Lens" to ask remotely.';
-  return `Local only. Passage stayed on this device: ${stats.words} words, ${stats.sentences} sentences, ${stats.characters} characters. Opening line: "${opening}". ${tail}`;
+  const text = String(passage ?? "").trim();
+  const sentences = splitSentences(text);
+  const excerpt = clip(sentences.slice(0, options.action === "summarize" ? 2 : 1).join(" ") || text, 420);
+  if (options.action === "summarize") return `Local only. No request was sent.\n\nOpening sentences from the passage:\n${excerpt}`;
+  return `Local only. No request was sent. This mode can show an excerpt. Enable sending for an explanation, translation, or answer.\n\n${excerpt}`;
 }
 
 export function describeLensStatus(
@@ -560,7 +565,7 @@ export function useReadingLens({
         return { ok: false, reason: LENS_STATUS.empty };
       }
 
-      if (!consentRef.current) {
+      if (!(options.sendOnce || (options.local !== true && consentRef.current))) {
         const reply = buildLocalLensReply(passage, { action, prompt });
         setMessages((prev) => [
           ...prev,
@@ -601,12 +606,13 @@ export function useReadingLens({
         return { ok: false, reason: LENS_STATUS.rateLimited };
       }
 
+      controllerRef.current?.abort();
       requestIdRef.current += 1;
       const requestId = requestIdRef.current;
       const capturedPassage = passage;
       const requestPassage = composeLensPassage({
         selection: capturedPassage,
-        includeChapterContext: chapterContextRef.current,
+        includeChapterContext: options.includeChapterContext ?? chapterContextRef.current,
         chapterTitle,
         chapterText,
       });
@@ -628,13 +634,21 @@ export function useReadingLens({
           role: "assistant",
           text: "",
           action,
-          passage: capturedPassage,
+          passage: requestPassage,
+          request: { prompt: promptText, options: { ...options, passage: capturedPassage, sendOnce: false, includeChapterContext: false } },
+          isLocal: false,
           isStreaming: true,
         },
       ]);
 
-      const isStale = () =>
-        requestIdRef.current !== requestId || passageRef.current !== capturedPassage;
+      const isCurrent = () => mountedRef.current && requestIdRef.current === requestId;
+      const isStale = () => !isCurrent() || (options.passage == null && passageRef.current !== capturedPassage);
+      const discardStale = () => {
+        controller.abort();
+        if (mountedRef.current) setMessages((prev) => prev.filter((message) => message.id !== assistantId));
+        if (isCurrent()) setStatus(LENS_STATUS.stale);
+        return { ok: false, reason: LENS_STATUS.stale };
+      };
 
       const appendText = (text) => {
         setMessages((prev) =>
@@ -676,19 +690,12 @@ export function useReadingLens({
 
         const response = await request;
 
-        if (isStale()) {
-          controller.abort();
-          if (mountedRef.current) {
-            setStatus(LENS_STATUS.stale);
-            setMessages((prev) => prev.filter((message) => message.id !== assistantId));
-          }
-          return { ok: false, reason: LENS_STATUS.stale };
-        }
+        if (isStale()) return discardStale();
 
         if (response.status === 429) {
           const detail = extractLensError(await response.json().catch(() => null));
           const message = detail || describeLensStatus(LENS_STATUS.rateLimited);
-          if (mountedRef.current) {
+          if (isCurrent()) {
             setError(message);
             setStatus(LENS_STATUS.rateLimited);
             setMessages((prev) => prev.filter((item) => item.id !== assistantId));
@@ -698,7 +705,7 @@ export function useReadingLens({
 
         if (response.status === 403) {
           const detail = extractLensError(await response.json().catch(() => null));
-          if (mountedRef.current) {
+          if (isCurrent()) {
             setError(detail || "The server refused the request because consent was not recorded.");
             setStatus(LENS_STATUS.blocked);
             setMessages((prev) => prev.filter((item) => item.id !== assistantId));
@@ -724,16 +731,16 @@ export function useReadingLens({
             }
           },
           onProvider: (name, isFallback) => {
-            if (!mountedRef.current) return;
+            if (isStale()) return;
             setProvider(name);
             if (isFallback) setUsedFallback(true);
           },
           onCandidates: (candidates) => {
-            if (!mountedRef.current || !candidates.length) return;
+            if (isStale() || !candidates.length) return;
             setAttempts(candidates);
           },
           onAttempts: (candidates) => {
-            if (!mountedRef.current || !candidates.length) return;
+            if (isStale() || !candidates.length) return;
             setAttempts(candidates);
           },
           onStatus: (value) => {
@@ -745,14 +752,7 @@ export function useReadingLens({
           },
         });
 
-        if (isStale()) {
-          controller.abort();
-          if (mountedRef.current) {
-            setStatus(LENS_STATUS.stale);
-            setMessages((prev) => prev.filter((message) => message.id !== assistantId));
-          }
-          return { ok: false, reason: LENS_STATUS.stale };
-        }
+        if (isStale()) return discardStale();
 
         if (streamError) throw new Error(streamError);
 
@@ -772,6 +772,7 @@ export function useReadingLens({
           if (requestIdRef.current === requestId) setStatus(LENS_STATUS.aborted);
           return { ok: false, reason: LENS_STATUS.aborted };
         }
+        if (isStale()) return discardStale();
         const message = caught?.message || "Reading Lens request failed.";
         setError(message);
         setStatus(LENS_STATUS.error);
@@ -798,6 +799,7 @@ export function useReadingLens({
         ? messages.find((m) => m.id === messageId)
         : [...messages].reverse().find((m) => m.role === "user");
       if (!target) return { ok: false, reason: "not_found" };
+      if (target.request) return ask(target.request.prompt, target.request.options);
       return ask(target.text, { action: target.action, passage: target.passage });
     },
     [messages, ask],

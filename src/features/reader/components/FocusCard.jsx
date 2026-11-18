@@ -1,14 +1,14 @@
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { FocusBarAmbient } from "./FocusBarAmbient.jsx";
+import React, { useCallback, useEffect, useId, useRef, useState } from "react";
+import { LensWizard } from "../../lens-bar/index.js";
 import {
   AlignLeft,
-  BookOpen,
   Bookmark,
   BookmarkCheck,
   Check,
   ChevronLeft,
   ChevronRight,
   Copy,
+  PanelRight,
   Focus,
   GripHorizontal,
   Landmark,
@@ -19,7 +19,7 @@ import {
   Send,
   ShieldCheck,
   Sparkles,
-  ThumbsUp,
+  StickyNote,
   Trash2,
   X,
 } from "lucide-react";
@@ -74,14 +74,13 @@ export function FocusCard({
   moveFocus,
   resumeFlow,
   selectedText = "",
+  onShowSource,
   initiallyCollapsed = true,
   onClearSelection,
   onAddNoteFromSelection,
   lensOpenRequest = 0,
   onLensOpened,
   surface = "reader",
-  chapterTitle = "",
-  chapterText = "",
   lens,
 }) {
   const isGlobal = surface === "global";
@@ -91,6 +90,8 @@ export function FocusCard({
   const [isDragging, setIsDragging] = useState(false);
   const [inputPrompt, setInputPrompt] = useState("");
   const [activeAction, setActiveAction] = useState("");
+  const [attachedParagraph, setAttachedParagraph] = useState("");
+  const [language, setLanguage] = useState("English");
 
   const cardRef = useRef(null);
   const dragRef = useRef(null);
@@ -99,7 +100,6 @@ export function FocusCard({
   const chatScrollRef = useRef(null);
   const handledOpenRequestRef = useRef(0);
   const consentHintId = useId();
-  const chapterHintId = useId();
   const statusId = useId();
 
   const focusedId = focusedParagraph?.id;
@@ -114,28 +114,15 @@ export function FocusCard({
     usedFallback,
     isExpanded,
     setIsExpanded,
-    activePassage,
     consentGranted,
     setConsentGranted,
-    includeChapterContext,
-    setIncludeChapterContext,
-    canIncludeChapterContext,
     ask,
     retryMessage,
-    toggleFeedback,
     cancel,
     clear,
   } = lens;
 
-  const passageFallback = useMemo(() => {
-    if (selectedText && selectedText.trim()) return selectedText.trim();
-    if (activePassage && activePassage.trim()) return activePassage.trim();
-    if (focusedParagraph?.text && focusedParagraph.text.trim()) return focusedParagraph.text.trim();
-    if (chapterText && chapterText.trim()) return chapterText.trim().slice(0, 1000);
-    if (chapterTitle && chapterTitle.trim()) return `Chapter: ${chapterTitle.trim()}`;
-    if (isGlobal) return "Bookflow Reading Assistant: Focus, comprehension, and reading flow.";
-    return "";
-  }, [selectedText, activePassage, focusedParagraph, chapterText, chapterTitle, isGlobal]);
+  const passageFallback = selectedText.trim() || attachedParagraph;
 
   const hasSelection = Boolean(selectedText.trim());
   const hasPassage = Boolean(passageFallback);
@@ -157,22 +144,19 @@ export function FocusCard({
   }, [focusedId, onClearSelection]);
 
   useEffect(() => {
-    if (!hasSelection) return;
-    setIsHidden(false);
-  }, [hasSelection, selectedText]);
-
-  useEffect(() => {
     if (!isLoading) setActiveAction("");
   }, [isLoading]);
 
   useEffect(() => {
     if (!lensOpenRequest || lensOpenRequest === handledOpenRequestRef.current) return;
     handledOpenRequestRef.current = lensOpenRequest;
+    setAttachedParagraph("");
     setIsHidden(false);
     setIsDismissed(false);
     setIsExpanded(true);
-    promptInputRef.current?.focus();
+    const frame = requestAnimationFrame(() => promptInputRef.current?.focus({ preventScroll: true }));
     onLensOpened?.();
+    return () => cancelAnimationFrame(frame);
   }, [lensOpenRequest, onLensOpened, setIsExpanded]);
 
   useEffect(() => {
@@ -266,6 +250,14 @@ export function FocusCard({
     if (!value) return;
     setStorageItem(LENS_POSITION_STORAGE_KEY, value);
   }, []);
+
+  const dockRight = () => {
+    const bounds = cardRef.current?.getBoundingClientRect();
+    if (!bounds) return;
+    const next = clampToBounds({ left: window.innerWidth - bounds.width - 12, top: bounds.top }, bounds);
+    applyTarget(next);
+    persistPosition(next);
+  };
 
   const justDraggedRef = useRef(false);
 
@@ -438,7 +430,7 @@ export function FocusCard({
       setInputPrompt("");
       setActiveAction("");
       setIsExpanded(true);
-      ask(value, { passage: passageFallback });
+      ask(value, { passage: passageFallback, includeChapterContext: false });
     },
     [ask, hasPassage, inputPrompt, isLoading, passageFallback, setIsExpanded],
   );
@@ -450,18 +442,19 @@ export function FocusCard({
       setActiveAction(actionId);
       setInputPrompt("");
       setIsExpanded(true);
-      ask("", { action: actionId, passage: passageFallback });
+      ask("", { action: actionId, passage: passageFallback, targetLang: language, includeChapterContext: false });
     },
-    [ask, hasPassage, isLoading, passageFallback, setIsExpanded],
+    [ask, hasPassage, isLoading, language, passageFallback, setIsExpanded],
   );
 
   const handleCardKeyDown = useCallback(
     (event) => {
       const target = event.target;
-      if (target.closest("input, textarea, select, [contenteditable='true']")) {
+      if (event.key !== "Escape" && target.closest("input, textarea, select, [contenteditable='true']")) {
         return;
       }
       if (event.key === "Escape") {
+        event.preventDefault();
         event.stopPropagation();
         if (inputPrompt) {
           setInputPrompt("");
@@ -472,6 +465,7 @@ export function FocusCard({
           return;
         }
         setIsHidden(true);
+        cancel();
         onClearSelection?.();
         return;
       }
@@ -479,11 +473,13 @@ export function FocusCard({
         handleHandleKeyDown(event);
       }
     },
-    [handleHandleKeyDown, inputPrompt, isExpanded, onClearSelection, setIsExpanded],
+    [cancel, handleHandleKeyDown, inputPrompt, isExpanded, onClearSelection, setIsExpanded],
   );
 
   const handleDismiss = useCallback(() => {
     triggerHaptic(HAPTIC_PATTERNS.LIGHT);
+    cancel();
+    setAttachedParagraph("");
     if (isHidden) {
       setIsDismissed(true);
       if (isGlobal) {
@@ -493,7 +489,7 @@ export function FocusCard({
       setIsHidden(true);
     }
     onClearSelection?.();
-  }, [isHidden, isGlobal, onClearSelection]);
+  }, [cancel, isHidden, isGlobal, onClearSelection]);
 
   if (isDismissed && !hasSelection) return null;
   if (!focusedParagraph && !isGlobal) return null;
@@ -574,10 +570,7 @@ export function FocusCard({
           title="Drag to move, tap to open, or use arrow keys."
           style={hitAreaStyle({ minWidth: "0", minHeight: "44px" })}
         >
-          <span
-            className={`focus-status-indicator ${pinnedId ? "is-paused" : "is-live"}`}
-            aria-hidden="true"
-          />
+          <LensWizard />
           <span className="lens-pill-text">
             <span className="lens-pill-title">Reading Lens</span>
             <span className="lens-pill-sub">{pinnedId ? "Held" : "Tap to open"}</span>
@@ -607,23 +600,16 @@ export function FocusCard({
       aria-label="Reading Lens Assistant"
       aria-busy={isLoading}
       style={positionStyle}
-      onPointerDown={startDrag}
       onPointerMove={handlePointerMove}
       onPointerUp={endDrag}
       onPointerCancel={endDrag}
       onDoubleClick={handleDoubleClick}
       onKeyDown={handleCardKeyDown}
     >
-      {isExpanded ? (
-        <span className="focus-card__ambient" aria-hidden="true">
-          <FocusBarAmbient />
-        </span>
-      ) : null}
-      <div className="focus-card-header" onPointerDown={startDrag} onDoubleClick={handleDoubleClick}>
+      <div className="focus-card-header">
         <button
           type="button"
           className="lens-head-toggle"
-          onPointerDown={startDrag}
           onClick={(event) => {
             if (justDraggedRef.current) {
               event.preventDefault();
@@ -638,17 +624,14 @@ export function FocusCard({
           title={isExpanded ? "Collapse" : "Expand"}
           style={hitAreaStyle({ minWidth: "0", minHeight: "44px" })}
         >
-          <span
-            className={`focus-status-indicator ${pinnedId ? "is-paused" : "is-live"}`}
-            aria-hidden="true"
-          />
+          <LensWizard />
           <span className="lens-head-text">
             <span className="lens-head-title">Reading Lens</span>
             <span className="lens-head-sub" id={consentHintId}>
               {isGlobal
                 ? "Open a book to ground Lens."
-                : hasSelection
-                ? `${selectedText.trim().length} chars · on device`
+                : hasPassage
+                ? `${passageFallback.length} chars · ${consentGranted ? "sending on" : "on device"}`
                 : "Select text to ask Lens."}
             </span>
           </span>
@@ -693,6 +676,15 @@ export function FocusCard({
           </button>
         </div>
       </div>
+
+      {hasPassage ? (
+        <div className="lens-source">
+          <blockquote className="lens-passage-preview">{passageFallback.slice(0, 180)}{passageFallback.length > 180 ? "…" : ""}</blockquote>
+          {hasSelection && onShowSource && <button type="button" aria-label="Show source" style={hitAreaStyle()} onClick={() => { handleDismiss(); onShowSource(); }}>Show source</button>}
+        </div>
+      ) : focusedParagraph?.text ? (
+        <button type="button" className="lens-attach-paragraph" aria-label="Use current paragraph" style={hitAreaStyle()} onClick={() => setAttachedParagraph(focusedParagraph.text.trim())}>Use current paragraph</button>
+      ) : null}
 
       <div className="focus-card-middle-bar">
         <form onSubmit={handlePromptSubmit} className="focus-card-input-form">
@@ -771,40 +763,26 @@ export function FocusCard({
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "0px",
+                gap: "4px",
               })}
             >
               <span className="lens-quick-action-icon" aria-hidden="true">
                 <Icon size={15} />
               </span>
+              <span>{action.label}</span>
             </button>
           );
         })}
       </div>
 
-      <div className="lens-chapter-scope">
-        <button
-          type="button"
-          className={`lens-chapter-toggle ${includeChapterContext ? "is-on" : ""}`}
-          onClick={() => {
-            triggerHaptic(HAPTIC_PATTERNS.LIGHT);
-            setIncludeChapterContext(!includeChapterContext);
-          }}
-          disabled={!canIncludeChapterContext}
-          aria-pressed={includeChapterContext}
-          aria-describedby={chapterHintId}
-          aria-label="Include the current chapter as context"
-          title="Include the current chapter as context"
-          style={forcedHitAreaStyle()}
-        >
-          <BookOpen size={14} aria-hidden="true" />
-        </button>
-        <span className="visually-hidden" id={chapterHintId}>
-          {canIncludeChapterContext
-            ? "Adds the current chapter text to the request."
-            : "Chapter text is not available here, so only the passage can be sent."}
-        </span>
-      </div>
+      {hasPassage && (
+        <label className="lens-translation-language">
+          Translate to
+          <select value={language} onChange={(event) => setLanguage(event.target.value)}>
+            {["English", "Burmese", "Chinese", "French", "Hindi", "Japanese", "Spanish"].map((name) => <option key={name}>{name}</option>)}
+          </select>
+        </label>
+      )}
 
       <p
         className="lens-status focus-card-lens-status"
@@ -817,6 +795,7 @@ export function FocusCard({
         {usedFallback && provider ? ` (fallback: ${provider})` : ""}
         {error ? ` ${error}` : ""}
       </p>
+      <button type="button" className="lens-dock-right" aria-label="Dock right" style={hitAreaStyle()} onClick={dockRight}><PanelRight size={14} aria-hidden="true" /> Dock right</button>
 
       {isExpanded && (
         <div className="focus-card-chat-space">
@@ -854,8 +833,6 @@ export function FocusCard({
             ref={chatScrollRef}
              className="focus-card-chat-messages lens-transcript"
              aria-label="Reading Lens answers"
-             aria-live="polite"
-             aria-relevant="additions text"
           >
             {messages.length === 0 && !error && (
               <div className="focus-card-empty-state lens-empty-state">
@@ -867,14 +844,14 @@ export function FocusCard({
                 </p>
                 {hasPassage && (
                   <div className="lens-suggested-chips" role="group" aria-label="Suggested questions">
-                    {["Summarize key points", "Explain core concept", "Explore background"].map((suggestion) => (
+                    {["What is the author's main claim?", "What does the text leave unclear?"].map((suggestion) => (
                       <button
                         key={suggestion}
                         type="button"
                         className="lens-suggested-chip"
                         onClick={() => {
                           triggerHaptic(HAPTIC_PATTERNS.LIGHT);
-                          ask(suggestion, { passage: passageFallback });
+                          ask(suggestion, { passage: passageFallback, includeChapterContext: false });
                         }}
                         disabled={isLoading}
                         aria-label={`Ask: ${suggestion}`}
@@ -897,7 +874,7 @@ export function FocusCard({
               >
                 {message.role === "assistant" && (
                   <span className="lens-message-avatar" aria-hidden="true">
-                    <Sparkles size={14} />
+                    <LensWizard />
                   </span>
                 )}
                 <div className="focus-chat-bubble-content lens-response-text">
@@ -918,19 +895,16 @@ export function FocusCard({
                     >
                       <Copy size={11} aria-hidden="true" />
                     </button>
-                    {toggleFeedback && (
+                    {onAddNoteFromSelection && !message.isError && (
                       <button
                         type="button"
-                        className={`lens-feedback-btn ${message.feedback === "positive" ? "is-active" : ""}`}
-                        onClick={() => {
-                          triggerHaptic(HAPTIC_PATTERNS.LIGHT);
-                          toggleFeedback(message.id, "positive");
-                        }}
-                        aria-label="Helpful answer"
-                        title="Helpful"
+                        className="lens-feedback-btn"
+                        onClick={() => onAddNoteFromSelection(`Passage:\n${message.passage}\n\nReading Lens:\n${message.text}`)}
+                        aria-label="Save this answer as a note"
+                        title="Save as note"
                         style={hitAreaStyle()}
                       >
-                        <ThumbsUp size={11} aria-hidden="true" />
+                        <StickyNote size={14} aria-hidden="true" />
                       </button>
                     )}
                   </div>

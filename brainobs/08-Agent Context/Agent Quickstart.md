@@ -2,10 +2,10 @@
 title: Agent Quickstart
 type: briefing
 status: living
-updated: 2026-10-02
+updated: 2026-11-18
 tags: [bookflow, agent, briefing]
 refactor: complete
-source-files: [AGENTS.md, package.json, src/App.jsx, src/main.jsx, src/styles.css, src/features/reader/config.js, src/features/reader/lib/readingController.js, src/features/document-import/lib/fileValidation.js, src/features/library/lib/libraryStore.js, backend/main.py, backend/app/core/config.py]
+source-files: [AGENTS.md, package.json, src/App.jsx, src/main.jsx, src/styles.css, src/features/reader/config.js, src/features/reader/lib/readingController.js, src/features/document-import/lib/fileValidation.js, src/features/library/lib/libraryStore.js, src/features/library/lib/offlineBooks.js, backend/main.py, backend/app/core/config.py]
 ---
 
 # Agent Quickstart
@@ -41,7 +41,7 @@ bookflow/
     main.py                     613 lines. The app Docker actually serves.
     app/                        Routers, Pydantic v2 schemas, services
       main.py                   82 lines. A SECOND app; the one the tests import.
-    tests/                      Pytest suite, 75 tests across 11 test modules
+    tests/                      Pytest suite, 78 tests across 11 test modules
 ```
 
 Two facts that cause real errors:
@@ -110,9 +110,10 @@ Complete for its scope.
 - Reader session, navigation, input, measurement, persistence, annotations, static-region, and
   chapter-window logic live in `src/features/reader/hooks/`.
 - Document import has feature-local parser, manifest, scheduler, and coordinator modules.
-- The metadata library has its own public `index.js`. The durable adapter exists but does not
-  imply that document text is persisted.
-- `src/App.jsx` is a root composer at 11,807 bytes holding application state and composition.
+- The metadata library has its own public `index.js`. With `offlineBooks.js` (commit `10d92be`),
+  it caches up to 20 recent parsed books in OPFS/IndexedDB so resume reopens them instantly without
+  re-picking the file.
+- `src/App.jsx` is a root composer holding application state and composition.
   Import, session, annotation, static-region, and view concerns are in feature hooks and
   components. Keep extracted internals out of the root.
 - `backend/main.py` remains the runnable OCR entrypoint alongside the modular `backend/app/`
@@ -126,16 +127,17 @@ One known boundary violation exists, in test code only:
 
 ```bash
 npm run lint                       # eslint .
-npm test                           # vitest run
+npm test                           # vitest run (58 files, 573 tests)
+npm run typecheck                  # tsc --noEmit
 npm run build                      # prebuild runs scripts/copy-assets.js, then vite build
 npm run check:vault                # run from the repository root
-npm run test:e2e                   # playwright; see the Windows channel note
+npm run test:e2e                   # playwright (20 tests in 5 spec files)
 node scripts/security/contrast.mjs # WCAG gate, not wired to an npm script
 pytest backend/tests/ -v
 ```
 
 There is **no `format` script and no Prettier dependency**, so `.prettierignore` is inert.
-There is no `typecheck` script.
+`npm run typecheck` runs TypeScript verification without emit.
 
 On Windows, set the Playwright channel before running e2e:
 

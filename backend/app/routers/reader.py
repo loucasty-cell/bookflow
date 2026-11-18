@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, field_validator
 
 from ..core.config import settings
 from ..services.text_service import TextService, get_text_service
@@ -46,7 +46,7 @@ Support:
 - explain the passage in clear language
 - answer a short question grounded in the passage
 
-Never invent quotations, citations, or claims. Be concise, calm, and useful. Return plain text or Markdown only."""
+Give the answer first in plain text. Keep explanations and summaries under 120 words unless the reader asks for more. Translation should preserve the meaning and structure of the selected text. Where useful, include a short exact quote the reader can find in the passage. Never invent quotations, page numbers, citations, or claims."""
 
 LensAction = Literal["summarize", "explain", "translate", "trivia"]
 
@@ -57,16 +57,16 @@ class ReadingLensRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     prompt: str = Field(min_length=1, max_length=LENS_MAX_PROMPT_CHARS)
-    passage: Optional[str] = Field(default=None, max_length=LENS_MAX_PASSAGE_CHARS)
+    passage: str = Field(min_length=1, max_length=LENS_MAX_PASSAGE_CHARS)
     action: Optional[LensAction] = None
-    consent: bool = Field(default=False)
+    consent: StrictBool = Field(default=False)
 
-    @model_validator(mode="before")
+    @field_validator("passage", "prompt")
     @classmethod
-    def reject_null_passage(cls, data: Any) -> Any:
-        if isinstance(data, dict) and "passage" in data and data["passage"] is None:
-            raise ValueError("passage must be a string when provided; null is not accepted.")
-        return data
+    def reject_blank_lens_text(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Passage and prompt must contain text.")
+        return value
 
 
 class LensUpstreamError(Exception):
@@ -293,6 +293,13 @@ async def _lens_event_stream(
                 return
             continue
 
+        if produced and not finish_reason:
+            yield _sse_event(
+                "error",
+                {"error": "The reading lens answer was interrupted. Please try again.", "code": "stream_interrupted"},
+            )
+            return
+
         if produced:
             yield _sse_event(
                 "completed",
@@ -301,7 +308,7 @@ async def _lens_event_stream(
                     "model": model,
                     "fallbackUsed": len(attempts) > 1,
                     "attempts": attempts,
-                    "finishReason": finish_reason or "STOP",
+                    "finishReason": finish_reason,
                 },
             )
             return

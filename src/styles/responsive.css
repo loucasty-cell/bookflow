@@ -5,8 +5,7 @@
   }
 
   .sample-button:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+    border-color: var(--landing-muted);
   }
 }
 
@@ -23,14 +22,6 @@
 
   .hero-artwork {
     height: min(600px, 76vw);
-  }
-
-  .visual-card-focus {
-    left: var(--space-5);
-  }
-
-  .visual-card-private {
-    right: var(--space-5);
   }
 }
 
@@ -96,25 +87,7 @@
     font-size: 16px;
   }
 
-  .drop-card {
-    min-height: 214px;
-    padding: var(--space-5);
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
-  }
-
-  .drop-card-copy small {
-    margin-top: 8px;
-  }
-
-  .format-row {
-    margin: 0;
-    justify-content: center;
-  }
-
-  .hero-actions,
-  .trust-row {
+  .hero-actions {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -126,30 +99,6 @@
 
   .hero-artwork {
     height: 360px;
-    border-radius: var(--radius-xl);
-  }
-
-  .hero-artwork figcaption {
-    left: var(--space-3);
-    right: var(--space-3);
-    bottom: var(--space-3);
-  }
-
-  .visual-card {
-    display: none;
-  }
-
-  .feature-strip {
-    width: calc(100% - 32px);
-    grid-template-columns: 1fr;
-  }
-
-  .feature-strip article {
-    padding: var(--space-5) var(--space-2);
-  }
-
-  .feature-strip article + article {
-    border-left: 0;
   }
 
   .loading-overlay {
@@ -317,7 +266,6 @@
   .landing-nav .nav-trust,
   .theme-toggle,
   .drop-card,
-  .visual-card,
   .reader-topbar,
   .focus-card,
   .settings-popover,
@@ -327,7 +275,6 @@
   }
 
   .drop-card,
-  .visual-card,
   .reader-topbar,
   .focus-card,
   .settings-popover,

@@ -1,5 +1,6 @@
 export { LensBar } from './components/LensBar.jsx';
 export { LensBarLauncher } from './components/LensBarLauncher.jsx';
+export { LensWizard } from './components/LensWizard.jsx';
 export { LensBarMenu, LENS_MENU_MODES } from './components/LensBarMenu.jsx';
 export { useLensConsent, LENS_CONSENT_CHOICES } from './hooks/useLensConsent.js';
 export { detectLensTheme, useLensTheme } from './hooks/useLensTheme.js';

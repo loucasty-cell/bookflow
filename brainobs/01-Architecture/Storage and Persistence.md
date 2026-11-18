@@ -2,9 +2,9 @@
 title: Storage and Persistence
 type: contract
 status: verified
-updated: 2026-10-02
+updated: 2026-11-18
 tags: [bookflow, architecture, storage, persistence]
-source-files: [src/shared/lib/storage.js,src/store/readerStore.js,src/features/reader/config.js,src/features/reader/hooks/useReaderPersistence.js,src/features/reader/hooks/useReaderSession.js,src/features/library/hooks/useReadingSession.js,src/features/library/lib/libraryStore.js,src/features/library/lib/readingGoals.js,src/features/library/lib/durableStorage.js,src/features/lens-bar/store/lensBarStore.js,src/features/reader/hooks/useReadingLens.js,src/features/reader/components/NotesPanel.jsx,src/App.jsx]
+source-files: [src/shared/lib/storage.js,src/store/readerStore.js,src/features/reader/config.js,src/features/reader/hooks/useReaderPersistence.js,src/features/reader/hooks/useReaderSession.js,src/features/library/hooks/useReadingSession.js,src/features/library/lib/libraryStore.js,src/features/library/lib/readingGoals.js,src/features/library/lib/durableStorage.js,src/features/library/lib/offlineBooks.js,src/features/lens-bar/store/lensBarStore.js,src/features/reader/hooks/useReadingLens.js,src/features/reader/components/NotesPanel.jsx,src/App.jsx]
 ---
 
 # Storage and Persistence
@@ -44,6 +44,7 @@ Fifteen entries. Fifteen is a lot; this table is the reason it is a table.
 | `bookflow:entry-intro-seen` | **`sessionStorage`** | `src/App.jsx:23`, `:300`, `:313` | first-visit intro flag | `App.jsx` |
 | `bookflow-durable`, version 1 | **IndexedDB** | `src/features/library/lib/durableStorage.js:1-7` | object stores `DOCUMENTS` and `UNITS` | `durableStorage.js` |
 | `bookflow-units` | **OPFS directory** | `durableStorage.js:138` | same records, when IndexedDB is unavailable | `durableStorage.js` |
+| `offlineBooks` cache | **OPFS / IndexedDB** | `src/features/library/lib/offlineBooks.js:20` | up to 20 parsed books cached on-device for instant resume | `offlineBooks.js` |
 
 Two things that look like keys and are not:
 
@@ -90,8 +91,7 @@ Two adjacent guards in the same file:
 
 ## The settings payload
 
-`DEFAULT_SETTINGS` in `src/features/reader/config.js` has **20 keys**. Earlier copies of this note
-listed 19 because `progressDisplay` was dropped.
+`DEFAULT_SETTINGS` in `src/features/reader/config.js` has **22 keys** (including `keepBooksOnDevice` and `panelRatio`).
 
 ```json
 {
@@ -109,18 +109,29 @@ listed 19 because `progressDisplay` was dropped.
   "showInterventionModals": false,
   "useProgressiveImport": true,
   "showResumeCard": true,
+  "keepBooksOnDevice": true,
   "showSessionRecap": false,
   "showAchievements": false,
   "showDefinitionLookup": false,
   "progressDisplay": "percent",
+  "panelRatio": 0.32,
   "enableAnnualGoal": false,
   "annualGoalTarget": 12
 }
 ```
 
 Every opt-in surface defaults to off: bionic fixations, reward capsules, intervention modals,
-session recap, achievements, definition lookup, annual goals. Only `useProgressiveImport` and
-`showResumeCard` default to on.
+session recap, achievements, definition lookup, annual goals. `useProgressiveImport`,
+`showResumeCard`, and `keepBooksOnDevice` default to on.
+
+## Offline book caching and instant resume
+
+Added in commit `10d92be`, `src/features/library/lib/offlineBooks.js` wires durable storage (`durableStorage.js`)
+to the active app lifecycle:
+1. **On-Device Storage**: Parsed book objects are saved to OPFS or IndexedDB under their document identity (`filename:size:lastModified`). Up to `MAX_OFFLINE_BOOKS = 20` books are kept, with older books pruned by `lastOpenedAt`.
+2. **Instant Reopen**: When the user clicks Resume on `ResumeCard` or `RecentShelf`, Bookflow checks `getOfflineBook(documentId)`. If cached, the book opens immediately with zero network requests and without re-picking the source file.
+3. **User Sovereign Control**: The `keepBooksOnDevice` setting controls caching. When toggled off in `SettingsPanel.jsx`, existing cached books are cleared via `clearOfflineBooks()`, while metadata and reading progress remain in `localStorage`.
+4. **Pagehide Position Flushing**: `useReaderPersistence` attaches listeners to `pagehide` and `visibilitychange` to synchronously flush `scrollTop`, `activeParagraphId`, and reading progress, ensuring no reading progress is lost even if the browser tab is abruptly closed.
 
 ## Document identity and the session key
 
