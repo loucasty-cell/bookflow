@@ -1,0 +1,34 @@
+# Bookflow Three Ps engineering review
+
+Bookflow’s first job is to help someone finish a difficult PDF they already intend to read. Keep the loop short: open a file, find a comfortable pace, get help on one passage when needed, and return to the same place. A strong landing page should let a visitor feel that loop before asking for a file. The recommendation is an engineering judgment and a demand hypothesis. This review contains no new user interviews or usage data.
+
+## Right place
+
+Start at the moment someone has a PDF in hand. A link from a course reading list, a study group, or a public technical reading guide can carry the same sample used on the landing page. The visitor should be able to try sentence focus with the sample, open their own PDF, and understand the local-file boundary from the entry screen. Test a study-group cohort and a technical-reading cohort separately. Their document shapes and reasons for returning differ.
+
+Desktop and mobile serve different parts of the same job. Desktop is the first place to test papers with dense prose, columns, and footnotes. Mobile is where a quick return, usable controls, and a recoverable reading position matter more than elaborate effects. Local resume applies to the same browser profile and depends on browser storage. Present cross-device continuity and installable offline availability as separate work until each is verified. [Local book store](../src/features/library/lib/offlineBooks.js)
+
+## Right person
+
+Begin with students and independent technical learners who read several long PDFs each week and already use workarounds for losing their place, searching for definitions, or asking about a paragraph in a separate tab. Recruit based on observed behavior. Interview people who read in a second language or use focus and type settings, and see which steps they can complete independently. This captures differences in reading needs without attributing a clinical benefit to a focus treatment.
+
+Watch for two distinct problems in sessions. For the learner who cannot parse a passage, check whether a short explanation helps them answer one specific question and resume. For a person who already understands the material, check that the assistant stays out of the way and that returning to their position works without assistance. Readers of scanned or multi-column PDFs also need confidence in the imported reading order. Record those failures separately from answer quality.
+
+## Right product
+
+The landing page now puts a short interactive sample underneath the quill artwork. The visitor can move the highlight through real sample sentences, then open the reader with a single action. React and ordinary HTML own text and controls. Three.js supplies atmosphere within the hero, with a reduced-motion path that keeps the artwork and demonstration. This keeps the most expensive visual system out of the reading task. [Landing implementation](../src/features/landing/components/LandingPage.jsx), [Three.js rendering on demand](https://threejs.org/manual/pages/rendering-on-demand.html)
+
+Reading Lens takes the characterful companion idea from Grok, the quiet workspace cues from Muse, now Allume, and the distinction between chrome and content from Apple. Its palette uses opaque paper and graphite-green surfaces, a muted sage accent, and distinct treatments for the question, answer, and source. The wizard is a small identifier. At the moment of help, prioritize the passage, the action, the sending state, and the return path. Acrobat’s jump-to-source feature is useful precedent for testing that return path. [Grok FAQ](https://x.ai/legal/faq), [Allume](https://allume.com/), [Apple materials](https://developer.apple.com/design/human-interface-guidelines/materials), [Acrobat source navigation](https://helpx.adobe.com/acrobat/desktop/use-acrobat-ai/generative-ai-features/ai-get-answers.html)
+
+ChatGPT Dots and Meta Muse point to a specific design decision for Bookflow. Both make authorization visible for actions that matter. In a reading app, the consequential action is passage egress. The Lens should show which passage will be sent, how long permission lasts, and how to stop. Its working context can end when the reader closes the book. Local resume and explicit notes carry forward the reader’s work. [Dots approvals](https://help.openai.com/en/articles/20001529-dots-privacy-security-and-safety-faqs), [Meta Muse](https://about.fb.com/news/2026/09/introducing-muse-personal-ai-agent/)
+
+| Priority | Code slice | Real-world evidence |
+| --- | --- | --- |
+| First | Keep the sample and import controls independently usable. Compare the interactive sample with a still image using the same copy. Test a local file and a return visit on both screen sizes. | Track successful first opens and first rereads in moderated sessions. Compare time to first readable paragraph and task completion against the still-image baseline. |
+| Next | Carry the imported page or paragraph identifier with the captured Lens passage and note. Resolve source jumps locally. Mark source information unavailable when extraction cannot reliably produce it. | On representative prose, column layouts, and scans, check that every displayed source jump reaches the intended paragraph. A missing source is preferable to a wrong one. |
+| Next | Evaluate Explain and Summarize on a fixed set of public or synthetic passages. Include ambiguous pronouns, narrow claims, broken OCR, and questions the passage cannot answer. Evaluate consent and interrupted requests at the network boundary. | Have a reader score whether the answer resolved the question and whether they could resume without re-finding their place. Treat unauthorized requests and fabricated source references as release blockers. |
+| Later | Tune the existing Three.js scene with GPU and browser measurements on low-power hardware. Preserve the image fallback and measure the impact of the effect independently. | Compare interaction readiness, first paint, and scroll behavior with the scene enabled and disabled. Keep the effect if the sample remains easy to reach and the input remains responsive. |
+
+The first demand test is voluntary return with another document or to the same document on another day. Record what participants do with the product while working on a real reading task and compare it to their existing reader. Landing engagement is an acquisition signal. Repeat use and easier resumption tell you whether the reading product has earned a place in their workflow.
+
+The existing strategy note is useful for generating segments and hypotheses. Its proposed clinical, competitor, and hardware-performance claims need direct evidence before they become product copy. [Existing Three Ps strategy](<../brainobs/03-Psychology/Three Ps Strategy - Place People Product.md>)

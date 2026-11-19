@@ -234,3 +234,17 @@ For reader, parser, or visual changes, verify:
 - Reading Lens stays local-only until consent, and the card stays inside the viewport at `320px`, `390px`, and desktop widths.
 
 Known non-failing signals on the current baseline: `pyright` reports two environment warnings, `npm run build` warns about the large main and Three.js chunks, and full `npm audit` reports dev-only findings while `npm audit --omit=dev` is clean.
+
+## Agent skills
+
+### Issue tracker
+
+Bookflow work is tracked in GitHub Issues for `loucasty-cell/bookflow`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five default Matt Pocock labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Use a single context with a root glossary and `docs/adr/`. See `docs/agents/domain.md`.
