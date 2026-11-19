@@ -29,3 +29,16 @@ test('narrow viewport has no horizontal overflow', async ({ page }) => {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+test('the sample preview advances by keyboard with reduced motion', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto('/');
+
+  const preview = page.getByRole('figure', { name: 'Bookflow reading preview' });
+  await expect(preview.getByRole('status')).toHaveText('Sentence 1 of 3');
+  await preview.getByRole('button', { name: 'Next preview sentence' }).press('Enter');
+  await expect(preview.getByRole('status')).toHaveText('Sentence 2 of 3');
+  await expect(preview.locator('[aria-current="true"]')).toContainText('The useful pace');
+  await expect(page.locator('.ambient-dust-canvas')).toHaveCount(0);
+});

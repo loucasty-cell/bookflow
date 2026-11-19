@@ -1,4 +1,12 @@
 .focus-card {
+  --lens-panel: #faf7ef;
+  --lens-surface: #f0ece2;
+  --lens-line: #d9d3c5;
+  --lens-highlight: #dce6d5;
+  --lens-ink: #252d27;
+  --lens-muted: #525c50;
+  --lens-accent: #41634e;
+  --lens-on-accent: #fffdf7;
   position: fixed !important;
   z-index: var(--z-modal);
   left: 12px;
@@ -18,16 +26,14 @@
   animation: none !important;
   padding: 0 !important;
   border-radius: 20px !important;
-  color: var(--reader-ink);
+  color: var(--lens-ink);
   font-family: var(--font-ios);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   user-select: none;
-  background: color-mix(in srgb, var(--chrome-solid) 94%, transparent);
-  border: 1px solid var(--app-line, rgba(0, 0, 0, 0.1));
+  background: var(--lens-panel);
+  border: 1px solid var(--lens-line);
   box-shadow: 0 20px 50px -18px rgba(15, 23, 42, 0.28), 0 4px 14px -6px rgba(15, 23, 42, 0.16);
-  -webkit-backdrop-filter: blur(22px) saturate(150%);
-  backdrop-filter: blur(22px) saturate(150%);
   transition:
     box-shadow 0.2s ease,
     opacity 0.2s ease,
@@ -35,6 +41,17 @@
     border-color 0.2s ease,
     width 0.2s ease;
   scrollbar-width: thin;
+}
+
+:is([data-theme="dusk"], [data-theme="monocodex"]) .focus-card {
+  --lens-panel: #1e2420;
+  --lens-surface: #292f29;
+  --lens-line: #414b41;
+  --lens-highlight: #334638;
+  --lens-ink: #f2f0e7;
+  --lens-muted: #bac5b5;
+  --lens-accent: #acc9ae;
+  --lens-on-accent: #18231b;
 }
 
 .focus-card.is-chat-expanded {
@@ -305,7 +322,7 @@
   display: inline-grid;
   place-items: center;
   color: #ffffff;
-  background: linear-gradient(135deg, var(--focus-edge, #06b6d4), #0ea5e9);
+  background: var(--lens-accent);
   border: 0;
   border-radius: 9px;
   cursor: pointer;
@@ -569,7 +586,7 @@
   display: inline-grid;
   place-items: center;
   color: #ffffff;
-  background: linear-gradient(135deg, var(--focus-edge, #06b6d4), #8b5cf6);
+  background: var(--lens-surface);
   border-radius: 8px;
   box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--focus-edge, #06b6d4) 45%, transparent);
   margin-top: 1px;
@@ -1156,7 +1173,6 @@
   max-height: min(630px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 94px));
   touch-action: pan-y;
   cursor: default;
-  background: color-mix(in srgb, var(--chrome-solid) 97%, transparent);
   box-shadow: inset 0 1px rgb(255 255 255 / 12%), 0 12px 36px rgb(18 22 33 / 22%);
 }
 
@@ -1202,8 +1218,8 @@
   flex: 1 1 auto;
   min-width: 0;
   margin: 0;
-  padding: 6px 9px;
-  border-inline-start: 2px solid var(--reader-accent);
+  padding-inline: 9px;
+  border-inline-start: 2px solid var(--lens-accent);
   white-space: normal;
   overflow-wrap: anywhere;
   font: 0.9rem/1.35 var(--font-reading);
@@ -1216,10 +1232,10 @@
 .lens-translation-language select {
   min-height: 44px;
   padding-inline: 9px;
-  border: 1px solid var(--app-line);
+  border: 1px solid var(--lens-line);
   border-radius: 9px;
-  background: var(--chrome-solid);
-  color: var(--reader-ink);
+  background: var(--lens-surface);
+  color: var(--lens-ink);
   font: inherit;
 }
 
@@ -1248,10 +1264,45 @@
 
 .focus-card > * { flex-shrink: 0; }
 .focus-card .lens-quick-action-icon { display: none; }
-.focus-card .focus-card-chat-space { max-height: none; backdrop-filter: none; }
+.focus-card .focus-card-chat-space { max-height: none; backdrop-filter: none; background: var(--lens-panel); border-color: var(--lens-line); }
 .focus-card .lens-transcript { max-height: none; overflow: visible; }
 .focus-card .lens-response-text { font-size: 0.875rem; }
 
-@media (prefers-reduced-transparency: reduce) {
-  .focus-card:not(.is-collapsed) { background: var(--chrome-solid); }
+.focus-card :is(.focus-card-header, .focus-card-chat-header) { border-color: var(--lens-line); }
+.focus-card :is(.lens-status, .lens-head-sub, .lens-pill-sub, .lens-empty-state) { color: var(--lens-muted); }
+.focus-card .focus-card-input-form { background: var(--lens-surface); border-color: var(--lens-line); }
+.focus-card .lens-prompt-input { color: var(--lens-ink); }
+.focus-card .lens-prompt-input::placeholder { color: var(--lens-muted); }
+.focus-card .focus-card-input-form:focus-within { border-color: var(--lens-accent); }
+.focus-card :is(.lens-message.is-user, .lens-message.is-assistant) { background: transparent; border: 0; }
+.focus-card .lens-message.is-user .lens-response-text { background: var(--lens-highlight); border-color: var(--lens-line); box-shadow: none; }
+.focus-card .lens-message.is-assistant .lens-response-text { background: var(--lens-surface); border-radius: 10px; padding: 10px 12px; }
+.focus-card .lens-response-text { color: var(--lens-ink); }
+
+.focus-card button:is(.focus-card-send-btn, .focus-card-primary) {
+  color: var(--lens-on-accent);
+  background: var(--lens-accent);
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.focus-card button:is(.focus-card-send-btn, .focus-card-primary):hover:not(:disabled) {
+  color: var(--lens-on-accent);
+  background: color-mix(in srgb, var(--lens-accent) 90%, var(--lens-ink));
+  box-shadow: none;
+}
+
+.focus-card button:is(.lens-quick-action, .lens-attach-paragraph, .lens-dock-right, .lens-source button) {
+  color: var(--lens-ink);
+  background: var(--lens-surface);
+  border-color: var(--lens-line);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.focus-card button:is(.lens-quick-action, .lens-attach-paragraph, .lens-dock-right, .lens-source button):hover:not(:disabled) {
+  background: var(--lens-highlight);
+  border-color: var(--lens-accent);
+  box-shadow: none;
 }

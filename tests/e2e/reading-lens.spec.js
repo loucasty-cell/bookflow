@@ -17,6 +17,7 @@ for (const width of [320, 390]) {
   test(`selection Lens stays usable at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
     await page.goto('/', { waitUntil: 'domcontentloaded' });
+    if (width === 390) await page.getByRole('button', { name: 'Use dark appearance' }).click();
     await page.getByRole('button', { name: 'Read the sample' }).click();
     await expect(page.locator('[data-paragraph-id]').first()).toBeVisible();
 
@@ -27,6 +28,8 @@ for (const width of [320, 390]) {
 
     const card = page.locator('.focus-card');
     await expect(card).toBeVisible();
+    await expect(card).toHaveCSS('background-image', 'none');
+    await expect(card).toHaveCSS('background-color', width === 390 ? 'rgb(30, 36, 32)' : 'rgb(250, 247, 239)');
     await expect(page.locator('.lens-head-sub')).toContainText('chars');
     await expect(page.locator('.lens-consent-dot')).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Ask Reading Lens a question about the passage' })).toBeEnabled();

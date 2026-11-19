@@ -1041,20 +1041,6 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
     inset 0 1.5px 0 0 rgba(255, 255, 255, 0.9) !important;
 }
 
-[data-theme="dusk"] .focus-card,
-[data-theme="monocodex"] .focus-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(10, 14, 24, 0.75) 100%), rgba(16, 20, 30, 0.82) !important;
-  -webkit-backdrop-filter: blur(32px) saturate(210%) !important;
-  backdrop-filter: blur(32px) saturate(210%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow:
-    0 20px 48px -8px rgba(0, 0, 0, 0.65),
-    0 4px 16px -2px rgba(0, 0, 0, 0.35),
-    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.32),
-    inset 0 -1px 0 0 rgba(0, 0, 0, 0.4) !important;
-  color: #f2f2f7 !important;
-}
-
 .focus-card.is-chat-expanded {
   width: min(94vw, 680px);
   padding: 10px 14px 12px;
@@ -1193,9 +1179,6 @@ div#root:nth-of-type(1) > div.app-shell > div:nth-of-type(1) > section:nth-of-ty
   align-items: center;
   justify-content: center;
   border-radius: 50% !important;
-  background: linear-gradient(135deg, #783d31 0%, #421e17 100%) !important;
-  color: #fff2eb !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
   cursor: pointer;
   padding: 0 !important;
   transition: transform 0.1s ease, opacity 0.15s ease;
@@ -1574,20 +1557,6 @@ div#root:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-
 
 .focus-card button:not(.focus-card-dismiss-btn):active {
   transform: translateY(0);
-}
-
-.focus-card-actions .focus-card-primary {
-  color: #fff2eb !important;
-  background: linear-gradient(135deg, #783d31 0%, #421e17 100%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.25) !important;
-  border-radius: 9999px !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 10px rgba(102, 59, 59, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
-}
-
-.focus-card-actions .focus-card-primary:hover {
-  background: linear-gradient(135deg, #8c4739 0%, #50251c 100%) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45), 0 0 14px rgba(102, 59, 59, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
-  color: #ffffff !important;
 }
 
 .focus-card-actions .focus-card-bookmark.is-active {

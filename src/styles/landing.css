@@ -236,6 +236,10 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
   position: relative;
 }
 
+.hero .ambient-dust-canvas {
+  mask-image: radial-gradient(ellipse 59% 63% at center, #000 34%, transparent 83%);
+}
+
 .hero h1 {
   margin: 0;
   color: var(--landing-text);
