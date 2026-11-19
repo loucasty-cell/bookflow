@@ -237,7 +237,10 @@ div#root:nth-of-type(1) > main#main-content:nth-of-type(1) > nav:nth-of-type(1),
 }
 
 .hero .ambient-dust-canvas {
-  mask-image: radial-gradient(ellipse 59% 63% at center, #000 34%, transparent 83%);
+  mask-image:
+    linear-gradient(to right, transparent, #000 9% 91%, transparent),
+    linear-gradient(to bottom, transparent, #000 9% 91%, transparent);
+  mask-composite: intersect;
 }
 
 .hero h1 {

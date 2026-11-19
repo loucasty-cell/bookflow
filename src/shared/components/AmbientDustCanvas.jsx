@@ -24,7 +24,7 @@ const THEME_PALETTES = {
     moteOpacity: 0.24,
     letterInk: new THREE.Color("#523f30"),
     letterGlow: new THREE.Color("#9e6b28"),
-    letterBaseOpacity: 0.25,
+    letterBaseOpacity: 0.34,
   },
   dusk: {
     bg: new THREE.Color("#090b10"),
